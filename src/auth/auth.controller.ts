@@ -1,7 +1,12 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Delete, Req, Patch } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from '../DTOS/register.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from './roles.gaurd';
+import { Roles } from './Role.decorator';
+import { Role } from './roles.enum';
+import { UpdateUserDto } from 'src/DTOS/update.user.dto';
+import { LoginDto } from 'src/DTOS/login.dto';
 
 
 
@@ -10,16 +15,39 @@ import { AuthGuard } from '@nestjs/passport';
 export class AuthController {
 
     constructor(private readonly authService: AuthService) { }
-    @UseGuards(AuthGuard("jwt"))
-    @Post("register")
+    @UseGuards(AuthGuard("jwt"), RolesGuard)
+    @Roles(Role.ADMIN)
+    @Post("add-user")
     async register(@Body() dto: RegisterDto) {
         return this.authService.register(dto);
     }
 
 
+    @UseGuards(AuthGuard("jwt"), RolesGuard)
+    @Roles(Role.ADMIN)
+    @Delete('delete-user')
+    async deleteUsere(@Body() user: { id: string }) {
+
+        return this.authService.deleteUser(user.id)
+    }
+    // auth.controller.ts
+
+    @UseGuards(AuthGuard("jwt"), RolesGuard)
+    @Roles(Role.ADMIN)
+    @Patch('update-user')
+    async updateUser(@Body() user: UpdateUserDto) {
+        return this.authService.updateUser(user);
+    }
+
+
+
+
+
+
+
 
     @Post("login")
-    async login(@Body() dto: RegisterDto) {
+    async login(@Body() dto: LoginDto) {
         return this.authService.login(dto);
     }
 

@@ -1,17 +1,110 @@
 generator client {
   provider = "prisma-client-js"
-   }
+}
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  sales_admin
+  team_leader
+  sales_rep
+}
+
+enum LeadStatus {
+  fresh_lead
+  follow_up
+  scheduled_visit
+  open_deal
+  cancellation
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String   @default("user")
+  password     String
+  role         Role
   refreshToken String?
+  createdAt    DateTime @default(now())
+  leads        Lead[]   // One-to-many relationship with leads
+teamLeader     User?  @relation("TeamMembers",fields: [teamLeaderId],references: [id])
+teamLeaderId  String?
+teamMembers    User[]  @relation("TeamMembers")
+}
+
+model Lead {
+  id                  String     @id @default(uuid())
+  name                String
+  contact             String     @unique
+  budget              Float
+  leadSource          String
+  status              LeadStatus
+  notes               String?    
+  lastCall            DateTime?
+  lastVisit           DateTime?
+  owner               User       @relation(fields: [ownerId], references: [id])
+  ownerId             String
+  inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id])
+  inventoryInterestId String?
+  calls               Call[]
+  visits              Visit[]
+  createdAt           DateTime   @default(now())
+}
+
+model Inventory {
+  id          String   @id @default(uuid())
+  title       String
+  type        String
+  price       Float
+  location    String
+  area        Float
+  bedrooms    Int
+  bathrooms   Int
+  parking     Boolean
+  amenities   String
+  geo         String
+  images      String
+  project     Project?  @relation(fields: [projectId], references: [id])
+  projectId   String?   
+  leads       Lead[]
+  visits      Visit[]
+  createdAt   DateTime @default(now())
+}
+
+model Project {
+  id         String      @id @default(uuid())
+  name       String
+  location   String
+  description String?
+  inventories Inventory[] // One-to-Many: Project → Inventories
+  createdAt  DateTime    @default(now())
+}
+
+model Visit {
+  id          String     @id @default(uuid())
+  date        DateTime
+  status      String
+  notes       String?
+  lead        Lead       @relation(fields: [leadId], references: [id])
+  leadId      String
+  inventory   Inventory  @relation(fields: [inventoryId], references: [id])
+  inventoryId String
+  createdAt   DateTime   @default(now())
+}
+
+model Call {
+
+  id       String   @id @default(uuid())
+  date     DateTime
+  outcome  String
+  duration Int
+  notes    String?
+  lead     Lead     @relation(fields: [leadId], references: [id])
+  leadId   String
+  createdAt DateTime @default(now())
+  
 }

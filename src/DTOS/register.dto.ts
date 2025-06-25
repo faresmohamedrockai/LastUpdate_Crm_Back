@@ -7,6 +7,10 @@ export class RegisterDto {
  @MinLength(6,{message:"Minimum Length of Password 6 characters"})
  password: string;
 
+  @IsNotEmpty({message: "Name Is Required"})
+name:string
+
+
 
    @IsNotEmpty({message:"Role is Required"})
     role:string
