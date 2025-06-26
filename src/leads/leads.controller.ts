@@ -26,11 +26,14 @@ export class LeadsController {
 
 
 
-  @Get("find-lead")
+  @Get("find-leads")
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   async getLeads(@Req() req) {
     return this.leadsService.getLeads(req.user);
   }
+
+
+
 
 
 

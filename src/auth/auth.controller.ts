@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Delete, Req, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Delete, Req, Patch,Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from '../DTOS/register.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -60,6 +60,13 @@ export class AuthController {
     }
 
 
+
+@UseGuards(AuthGuard("jwt"), RolesGuard)
+@Roles(Role.ADMIN)
+@Get('user/:id')
+async getOneUser(@Param('id') id: string) {
+  return this.authService.getOneUser(id);
+}
 
 
 

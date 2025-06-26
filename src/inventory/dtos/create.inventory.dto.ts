@@ -34,4 +34,9 @@ projectId?: string;
 
   @IsString()
   geo: string;
+
+  @IsOptional()
+@IsString({ each: true })
+base64Images?: string[];
+
 }

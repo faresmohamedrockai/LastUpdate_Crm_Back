@@ -48,7 +48,7 @@ export class ProjectsService {
       ...project,
       inventories: project.inventories.map(inv => ({
         ...inv,
-        images: JSON.parse(inv.images), 
+        images: inv.images? JSON.parse(inv.images) : [], 
       })),
     }));
   }
@@ -66,16 +66,17 @@ async getProjectById(id: string) {
     throw new NotFoundException('Project not found');
   }
 
-  return {
-    status: 200,
-    data: {
-      ...project,
-      inventories: project.inventories.map(inv => ({
-        ...inv,
-        images: JSON.parse(inv.images), 
-      })),
-    },
-  };
+return {
+  status: 200,
+  data: {
+    ...project,
+    inventories: project.inventories.map((inv) => ({
+      ...inv,
+      images: inv.images ? JSON.parse(inv.images) : [],
+    })),
+  },
+};
+
 }
 
 

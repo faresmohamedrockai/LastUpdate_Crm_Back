@@ -7,12 +7,12 @@ cloudinary.config({
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET,
 });
-
 @Injectable()
 export class CloudinaryService {
-  uploadImage(file: Express.Multer.File): Promise<string> {
+  uploadImageFromBase64(base64: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const upload = cloudinary.uploader.upload_stream(
+      cloudinary.uploader.upload(
+        base64,
         { folder: 'inventory' },
         (error, result) => {
           if (error) return reject(error);
@@ -20,7 +20,6 @@ export class CloudinaryService {
           resolve(result.secure_url);
         },
       );
-      toStream(file.buffer).pipe(upload);
     });
   }
 }

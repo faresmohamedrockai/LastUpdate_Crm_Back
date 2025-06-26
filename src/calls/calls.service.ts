@@ -21,6 +21,7 @@ constructor(private prisma:PrismaService){}
         duration: dto.duration,
         notes: dto.notes,
         leadId: dto.leadId,
+        projectId:dto.ProjectId
       },
     });
 

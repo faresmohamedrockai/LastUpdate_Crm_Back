@@ -17,4 +17,10 @@ export class CreateCallDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+
+  
+  @IsOptional()
+  @IsUUID()
+  ProjectId:string
 }

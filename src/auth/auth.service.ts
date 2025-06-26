@@ -13,28 +13,43 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService
   ) { }
+async register(userData: RegisterDto) {
+  const { email, password, role, name, teamLeaderId } = userData;
 
-  async register(userData: RegisterDto) {
-    const { email, password, role,name } = userData;
-    const existingUser = await this.prisma.user.findUnique({ where: { email } });
-
-
-
-    if (existingUser) throw new HttpException('User already exists. Please login.', HttpStatus.CONFLICT);
-
-
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-        role: role as any // Cast string to Role type; replace 'any' with 'Role' if imported
-      },
-    });
-    return user;
+  const existingUser = await this.prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    throw new HttpException('User already exists. Please login.', HttpStatus.CONFLICT);
   }
+
+  if (role === 'sales_rep') {
+    if (!teamLeaderId) {
+      throw new HttpException('Team leader ID is required for sales representatives.', HttpStatus.BAD_REQUEST);
+    }
+
+    const teamLeader = await this.prisma.user.findUnique({
+      where: { id: teamLeaderId },
+    });
+
+    if (!teamLeader || teamLeader.role !== 'team_leader') {
+      throw new HttpException('Team leader not found or invalid role.', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await this.prisma.user.create({
+    data: {
+      email,
+      name,
+      password: hashedPassword,
+      role: role as any,
+      teamLeaderId: role === 'sales_rep' ? teamLeaderId : undefined,
+    },
+  });
+
+  return user;
+}
+
 
   async login(loginData: { email: string; password: string; role: string }) {
     const { email, password } = loginData;
@@ -116,6 +131,67 @@ export class AuthService {
   }
 
 
+async getOneUser(id: string) {
+  const user = await this.prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  // 👇 هنا حدد النوع صراحةً
+  let teamMembers: { id: string; name: string; email: string }[] = [];
+
+  if (user.role === 'team_leader') {
+    teamMembers = await this.prisma.user.findMany({
+      where: { teamLeaderId: user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+  }
+
+  return {
+    status: 200,
+    message: 'User found',
+    user: {
+      ...user,
+      teamMembers,
+    },
+  };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // For Delete User Just admin can do it
   async deleteUser(id: string) {
@@ -176,7 +252,7 @@ export class AuthService {
     };
     const access_token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
-      expiresIn: '15m',
+      expiresIn: '15d',
     });
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('SECERT_JWT_REFRESH'),

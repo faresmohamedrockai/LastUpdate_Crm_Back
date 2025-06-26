@@ -40,4 +40,9 @@ export class UpdateInventoryDto {
   @IsOptional()
   @IsString()
   geo?: string;
+  
+  @IsOptional()
+@IsString({ each: true })
+base64Images?: string[];
+
 }

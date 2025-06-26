@@ -67,7 +67,7 @@ model Inventory {
   parking     Boolean
   amenities   String
   geo         String
-  images      String
+  images      String?
   project     Project?  @relation(fields: [projectId], references: [id])
   projectId   String?   
   leads       Lead[]
@@ -76,13 +76,17 @@ model Inventory {
 }
 
 model Project {
-  id         String      @id @default(uuid())
-  name       String
-  location   String
+  id          String      @id @default(uuid())
+  name        String
+  location    String
   description String?
+
   inventories Inventory[] // One-to-Many: Project → Inventories
-  createdAt  DateTime    @default(now())
+  calls       Call[]      // One-to-Many: Project → Calls (العلاقة العكسية)
+
+  createdAt   DateTime    @default(now())
 }
+
 
 model Visit {
   id          String     @id @default(uuid())
@@ -102,6 +106,8 @@ model Call {
   date     DateTime
   outcome  String
   duration Int
+  project  Project? @relation(fields: [projectId],references: [id])
+  projectId  String?
   notes    String?
   lead     Lead     @relation(fields: [leadId], references: [id])
   leadId   String
