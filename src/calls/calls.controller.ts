@@ -11,12 +11,36 @@ import { Role } from '../auth/roles.enum';
 export class CallsController {
   constructor(private readonly callsService: CallsService) {}
 
+
+
+
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Post()
   async createCall(@Body() dto: CreateCallDto, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.callsService.createCall(dto, userId, userName, userRole);
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
@@ -25,12 +49,27 @@ export class CallsController {
     return this.callsService.getAllCalls(userId, userName, userRole);
   }
 
+
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get('lead/:leadId')
   async getCallsByLead(@Param('leadId') leadId: string, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.callsService.getCallsByLead(leadId, userId, userName, userRole);
   }
+
+
+
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get('project/:projectId')
@@ -39,12 +78,25 @@ export class CallsController {
     return this.callsService.getCallsByProject(projectId, userId, userName, userRole);
   }
 
+
+
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get(':id')
   async getCallById(@Param('id') id: string, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.callsService.getCallById(id, userId, userName, userRole);
   }
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Patch(':id')
@@ -57,10 +109,20 @@ export class CallsController {
     return this.callsService.updateCall(id, dto, userId, userName, userRole);
   }
 
+
+
+
+
+  
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteCall(@Param('id') id: string, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.callsService.deleteCall(id, userId, userName, userRole);
   }
+
+
+
+
+
 }
