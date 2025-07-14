@@ -4,7 +4,9 @@ import {
   MinLength,
   ValidateIf,
   IsUUID,
+  IsOptional,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RegisterDto {
   @IsEmail({}, { message: 'Invalid email format' })
@@ -19,8 +21,10 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Role is required' })
   role: string;
 
-  // ✅ مطلوب فقط لو role = sales_rep
   @ValidateIf((obj) => obj.role === 'sales_rep')
+
   @IsUUID('4', { message: 'Team leader ID must be a valid UUID' })
   teamLeaderId?: string;
+
+
 }

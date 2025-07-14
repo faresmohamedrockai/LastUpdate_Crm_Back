@@ -2,26 +2,38 @@ import { Injectable, NotFoundException, UnauthorizedException, HttpException, Ht
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from '../DTOS/register.dto';
 import * as bcrypt from 'bcrypt';
+import * as sharp from "sharp"
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UpdateUserDto } from 'src/DTOS/update.user.dto';
-
+import { LogsService } from '../logs/logs.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service'; // عدل المسار حسب مكان الملف
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private readonly logsService: LogsService,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
-async register(userData: RegisterDto) {
+
+
+
+ 
+
+
+async register(userData: RegisterDto, file?: Express.Multer.File) {
   const { email, password, role, name, teamLeaderId } = userData;
 
+  // 🔍 تحقق من البريد
   const existingUser = await this.prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     throw new HttpException('User already exists. Please login.', HttpStatus.CONFLICT);
   }
 
-  if (role === 'sales_rep') {
+  // 🔍 تحقق من الـ teamLeader لو المستخدم sales_rep
+  if (role === 'SALES_REP') {
     if (!teamLeaderId) {
       throw new HttpException('Team leader ID is required for sales representatives.', HttpStatus.BAD_REQUEST);
     }
@@ -35,24 +47,55 @@ async register(userData: RegisterDto) {
     }
   }
 
+  // 📸 ضغط الصورة ورفعها لـ Cloudinary
+  let imageUrl: string | undefined;
+  if (file) {
+    console.log('✅ Received file:', file.originalname);
+
+    const compressedBuffer = await sharp(file.buffer)
+      .resize({ width: 300 }) // Resize اختياري
+      .jpeg({ quality: 70 })  // ضغط الجودة
+      .toBuffer();
+
+    imageUrl = await this.cloudinaryService.uploadBuffer(compressedBuffer, 'users');
+
+    console.log('✅ Image uploaded to Cloudinary:', imageUrl);
+  } else {
+    console.log('⚠️ No image uploaded');
+  }
+
+  // 🔐 هاش كلمة السر
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // 📝 إنشاء المستخدم
   const user = await this.prisma.user.create({
     data: {
       email,
       name,
       password: hashedPassword,
       role: role as any,
-      teamLeaderId: role === 'sales_rep' ? teamLeaderId : undefined,
+      teamLeaderId: role === 'SALES_REP' ? teamLeaderId : undefined,
+      image: imageUrl,
     },
+  });
+
+  // 🧾 تسجيل العملية في اللوج
+  await this.logsService.createLog({
+    userId: user.id,
+    action: 'register',
+    description: `User ${user.email} registered`,
+    userName: user.name,
+    userRole: user.role,
+    ip: (userData as any).ip,
+    userAgent: (userData as any).userAgent,
   });
 
   return user;
 }
 
 
-  async login(loginData: { email: string; password: string; role: string }) {
-    const { email, password } = loginData;
+  async login(loginData: { email: string; password: string; role?: string; ip?: string; userAgent?: string }) {
+    const { email, password, ip, userAgent } = loginData;
     // 1. Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -71,15 +114,19 @@ async register(userData: RegisterDto) {
       email: existingUser.email,
       role: existingUser.role,
     });
-    // Save Refresh Token after hashing
-    const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, 10);
-    await this.prisma.user.update({
-      where: { id: existingUser.id },
-      data: { refreshToken: hashedRefreshToken },
-    });
-    // 4. Successful login
-    return {
 
+    // 4. Successful login
+    await this.logsService.createLog({
+      userId: existingUser.id,
+      action: 'login',
+      description: `User ${existingUser.email} logged in`,
+      ip,
+      userAgent,
+      userName: existingUser.name,
+      userRole: existingUser.role,
+    });
+
+    return {
       tokens,
       message: 'Login successful',
       status: 200,
@@ -92,7 +139,6 @@ async register(userData: RegisterDto) {
     };
   }
 
-
   async refreshToken(refreshToken: string) {
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken, {
@@ -103,13 +149,8 @@ async register(userData: RegisterDto) {
         where: { id: payload.sub },
       });
 
-      if (!user || !user.refreshToken) {
+      if (!user) {
         throw new ForbiddenException('user not found');
-      }
-
-      const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
-      if (!isMatch) {
-        throw new ForbiddenException('Invalid refresh token');
       }
 
       const access_token = await this.jwtService.signAsync(
@@ -131,44 +172,44 @@ async register(userData: RegisterDto) {
   }
 
 
-async getOneUser(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-    },
-  });
-
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-
-  // 👇 هنا حدد النوع صراحةً
-  let teamMembers: { id: string; name: string; email: string }[] = [];
-
-  if (user.role === 'team_leader') {
-    teamMembers = await this.prisma.user.findMany({
-      where: { teamLeaderId: user.id },
+  async getOneUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
       select: {
         id: true,
         name: true,
         email: true,
+        role: true,
       },
     });
-  }
 
-  return {
-    status: 200,
-    message: 'User found',
-    user: {
-      ...user,
-      teamMembers,
-    },
-  };
-}
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // 👇 هنا حدد النوع صراحةً
+    let teamMembers: { id: string; name: string; email: string }[] = [];
+
+    if (user.role === 'team_leader') {
+      teamMembers = await this.prisma.user.findMany({
+        where: { teamLeaderId: user.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+    }
+
+    return {
+      status: 200,
+      message: 'User found',
+      user: {
+        ...user,
+        teamMembers,
+      },
+    };
+  }
 
 
 
@@ -198,7 +239,24 @@ async getOneUser(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException("User not found");
 
-    await this.prisma.user.delete({ where: { id } });
+    // حذف البيانات المرتبطة أولاً
+    await this.prisma.$transaction(async (tx) => {
+      // حذف الـ logs المرتبطة بالمستخدم
+      await tx.log.deleteMany({ where: { userId: id } });
+      
+      // حذف الـ leads المرتبطة بالمستخدم
+      await tx.lead.deleteMany({ where: { ownerId: id } });
+      
+      // حذف الـ calls المرتبطة بالمستخدم (لو كان هناك relation)
+      // await tx.call.deleteMany({ where: { userId: id } });
+      
+      // حذف الـ visits المرتبطة بالمستخدم (لو كان هناك relation)
+      // await tx.visit.deleteMany({ where: { userId: id } });
+      
+      // حذف المستخدم نفسه
+      await tx.user.delete({ where: { id } });
+    });
+
     return {
       status: 200,
       message: "User deleted successfully"
@@ -210,33 +268,51 @@ async getOneUser(id: string) {
   //Update User Data Just Admin
   //
 
- async updateUser(data: UpdateUserDto) {
-  const { id, ...updateData } = data;
+  async updateUser(id: string, data: UpdateUserDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id },
+    });
 
-  const existingUser = await this.prisma.user.findUnique({
-    where: { id },
-  });
+    if (!existingUser) {
+      throw new NotFoundException("User not found");
+    }
 
-  if (!existingUser) {
-    throw new NotFoundException("User not found");
+    // التحقق من أن الـ email الجديد غير مستخدم من قبل مستخدم آخر
+    if (data.email && data.email !== existingUser.email) {
+      const emailExists = await this.prisma.user.findUnique({
+        where: { email: data.email },
+      });
+      if (emailExists) {
+        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      }
+    }
+
+
+
+
+
+
+
+
+
+    // إذا فيه password محتاجة تتعمل لها hash
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+
+    const { role, ...updateData } = data;
+    
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      status: 200,
+      message: "User updated successfully",
+      user: updatedUser,
+    };
   }
-
-  // إذا فيه password محتاجة تتعمل لها hash
-  if (updateData.password) {
-    updateData.password = await bcrypt.hash(updateData.password, 10);
-  }
-
-  const updatedUser = await this.prisma.user.update({
-    where: { id },
-    data: updateData,
-  });
-
-  return {
-    status: 200,
-    message: "User updated successfully",
-    user: updatedUser,
-  };
-}
 
 
 
@@ -252,7 +328,7 @@ async getOneUser(id: string) {
     };
     const access_token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
-      expiresIn: '15m',
+      expiresIn: '15d',
     });
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('SECERT_JWT_REFRESH'),

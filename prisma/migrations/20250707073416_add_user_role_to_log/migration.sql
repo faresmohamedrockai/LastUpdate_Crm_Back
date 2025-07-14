@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `log` ADD COLUMN `userName` VARCHAR(191) NULL,
+    ADD COLUMN `userRole` VARCHAR(191) NULL;

@@ -1,0 +1,111 @@
+
+    <!DOCTYPE html>
+    <div class="mermaid">
+      erDiagram
+User {
+	String id
+	String email
+	String name
+	String password
+	Role role
+	String refreshToken
+	DateTime createdAt
+	String image
+	Lead leads
+	String teamLeaderId
+	User teamMembers
+	Log logs
+}
+User }o--o| User : teamLeader
+Lead {
+	String id
+	String name
+	String contact
+	Float budget
+	String leadSource
+	LeadStatus status
+	String notes
+	DateTime lastCall
+	DateTime lastVisit
+	String ownerId
+	String inventoryInterestId
+	Call calls
+	Visit visits
+	DateTime createdAt
+	Log logs
+}
+Lead }o--|| User : owner
+Lead }o--o| Inventory : inventoryInterest
+Inventory {
+	String id
+	String title
+	String type
+	Float price
+	String location
+	Float area
+	Int bedrooms
+	Int bathrooms
+	Boolean parking
+	String amenities
+	String geo
+	String images
+	String projectId
+	Lead leads
+	Visit visits
+	DateTime createdAt
+}
+Inventory }o--o| Project : project
+Project {
+	String id
+	String name
+	String location
+	String description
+	String images
+	Inventory inventories
+	Call calls
+	DateTime createdAt
+}
+Visit {
+	String id
+	DateTime date
+	String status
+	String notes
+	String leadId
+	String inventoryId
+	DateTime createdAt
+}
+Visit }o--|| Lead : lead
+Visit }o--|| Inventory : inventory
+Call {
+	String id
+	DateTime date
+	String outcome
+	Int duration
+	String projectId
+	String notes
+	String leadId
+	DateTime createdAt
+}
+Call }o--o| Project : project
+Call }o--|| Lead : lead
+Log {
+	Int id
+	String action
+	String description
+	String userId
+	String userName
+	String userRole
+	String leadId
+	String ip
+	String userAgent
+	DateTime createdAt
+}
+Log }o--|| User : user
+Log }o--o| Lead : lead
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+  

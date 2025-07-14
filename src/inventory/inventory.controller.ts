@@ -1,62 +1,114 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryDto } from './dtos/create.inventory.dto';
 import { UpdateInventoryDto } from './dtos/update.inventory';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from 'src/auth/roles.gaurd';
-import { Role } from 'src/auth/roles.enum';
-import { Roles } from 'src/auth/Role.decorator';
+import { RolesGuard } from '../auth/roles.gaurd';
+import { Roles } from '../auth/Role.decorator';
+import { Role } from '../auth/roles.enum';
+
+
+
+
+
+
+
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
-  // ✅ إنشاء وحدة
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
-  @Post('create')
-  create(@Body() dto: CreateInventoryDto) {
-    return this.inventoryService.createInventory(dto);
+  @Post()
+  async createInventory(@Body() dto: CreateInventoryDto, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.createInventory(dto, userId, userName, userRole);
   }
 
-  // ✅ عرض كل الوحدات
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.SALES_REP, Role.TEAM_LEADER)
-  @Get('get-all')
-  list() {
-    return this.inventoryService.listInventory();
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get()
+  async getAllInventories(@Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.getAllInventories(userId, userName, userRole);
   }
 
-  // ✅ تحديث وحدة
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.SALES_REP, Role.TEAM_LEADER)
-  @Patch('update/:id')
-  update(
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get('project/:projectId')
+  async getInventoriesByProject(@Param('projectId') projectId: string, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.getInventoriesByProject(projectId, userId, userName, userRole);
+  }
+
+
+
+
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get('developer/:developerId')
+  async getInventoriesByDeveloper(@Param('developerId') developerId: string, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.getInventoriesByDeveloper(developerId, userId, userName, userRole);
+  }
+   
+
+
+
+
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get('zone/:zoneId')
+  async getInventoriesByZone(@Param('zoneId') zoneId: string, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.getInventoriesByZone(zoneId, userId, userName, userRole);
+  }
+
+
+
+
+
+
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get('status/:status')
+  async getInventoriesByStatus(@Param('status') status: string, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.getInventoriesByStatus(status, userId, userName, userRole);
+  }
+
+
+
+
+
+
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get(':id')
+  async getInventoryById(@Param('id') id: string, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.getInventoryById(id, userId, userName, userRole);
+  }
+
+
+
+
+
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
+  @Patch(':id')
+  async updateInventory(
     @Param('id') id: string,
     @Body() dto: UpdateInventoryDto,
+    @Req() req
   ) {
-    return this.inventoryService.updateInventory(id, dto);
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.updateInventory(id, dto, userId, userName, userRole);
   }
 
-  // ✅ حذف وحدة
+
+
+
+
+  
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
-  @Delete('delete/:id')
-  delete(@Param('id') id: string) {
-    return this.inventoryService.deleteInventory(id);
-  }
-
-  // ✅ فلترة
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.SALES_REP, Role.TEAM_LEADER)
-  @Get('filter')
-  filter(@Query() query: any) {
-    return this.inventoryService.filterInventory(query);
+  @Delete(':id')
+  async deleteInventory(@Param('id') id: string, @Req() req) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.inventoryService.deleteInventory(id, userId, userName, userRole);
   }
 }
