@@ -1,8 +1,15 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class CreatePaymentPlanDto {
+export enum InstallmentPeriodEnum {
+  MONTHLY = 'monthly',
+  QUARTERLY = 'quarterly',
+  YEARLY = 'yearly',
+  CUSTOM = 'custom',
+}
+
+export class NestedPaymentPlanDto {
   @IsNumber()
-  downPayment: number; // ✅ بدل downpayment
+  downPayment: number;
 
   @IsNumber()
   installment: number;
@@ -21,12 +28,9 @@ export class CreatePaymentPlanDto {
   @IsNumber()
   yearsToPay?: number;
 
-  @IsNumber()
-  installmentPeriod: number;
+  @IsEnum(InstallmentPeriodEnum)
+  installmentPeriod: InstallmentPeriodEnum;
 
   @IsNumber()
   installmentEvery: number;
-
-  @IsString()
-  projectId: string;
 }

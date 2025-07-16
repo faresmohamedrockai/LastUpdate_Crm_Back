@@ -13,6 +13,14 @@ enum Role {
   team_leader
   sales_rep
 }
+enum InstallmentPeriod {
+  monthly
+  quarterly
+  yearly
+  custom
+}
+
+
 
 enum LeadStatus {
   fresh_lead
@@ -88,7 +96,7 @@ model Inventory {
   bathrooms    Int
   unitNumber   String?
   floor        Int?
-  images       String? // ←  حقل JSON string (مثلاً: '["url1", "url2"]') عشان mysql مش بيدعم الفكرة بتاعت array of String
+  images       String[]         // ✅ هذا الآن array of strings
   status       InventoryStatus  @default(available)
   project      Project?         @relation(fields: [projectId], references: [id])
   projectId    String?
@@ -98,8 +106,9 @@ model Inventory {
   visits       Visit[]
   createdAt    DateTime         @default(now())
   Contract     Contract[]
-  meetings     Meeting[]        // Back-relation to Meeting
+  meetings     Meeting[]
 }
+
 
 model Project {
   id           String        @id @default(uuid())
@@ -108,7 +117,7 @@ model Project {
   location     String
   type         String
   description  String?       // <- Optional
-  images       String?       // <- Optional
+  images        String[]      // <- Optional
 
   developer    Developer?    @relation(fields: [developerId], references: [id])
   developerId  String?       // <- Optional
@@ -125,7 +134,23 @@ model Project {
   createdAt    DateTime @default(now())
 }
 
+model PaymentPlan {
+  id                 String             @id @default(uuid())
+  downpayment        Float
+  installment        Float
+  delivery           Float
+  schedule           Json
+  description        String?
+  yearsToPay         Int?
+  installmentPeriod  InstallmentPeriod  // ✅ enum بدل Int
+  installmentEvery   Int
 
+  project   Project   @relation(fields: [projectId], references: [id])
+  projectId String
+
+  inventories        Inventory[]
+  createdAt          DateTime    @default(now())
+}
 model Visit {
   id          String    @id @default(uuid())
   date        DateTime
@@ -188,26 +213,7 @@ model Developer {
   projects    Project[]
 }
 
-model PaymentPlan {
-  id                 String      @id @default(uuid())
-  downpayment        Float
-  installment        Float
-  delivery           Float
-  schedule           Json
-  description        String?
-  yearsToPay         Int?
-  installmentPeriod  Int
-  installmentEvery   Int
 
- project   Project   @relation(fields: [projectId], references: [id])
-projectId String
-
-
-  inventories        Inventory[]
-  createdAt          DateTime    @default(now())
-
-
-}
 model Contract {
   id           String     @id @default(uuid())
   lead         Lead       @relation(fields: [leadId], references: [id])

@@ -33,57 +33,27 @@ export class InventoryController {
     return this.inventoryService.getAllInventories(userId, userName, userRole);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('project/:projectId')
-  async getInventoriesByProject(@Param('projectId') projectId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.getInventoriesByProject(projectId, userId, userName, userRole);
-  }
 
 
 
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('developer/:developerId')
-  async getInventoriesByDeveloper(@Param('developerId') developerId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.getInventoriesByDeveloper(developerId, userId, userName, userRole);
-  }
+
    
 
 
 
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('zone/:zoneId')
-  async getInventoriesByZone(@Param('zoneId') zoneId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.getInventoriesByZone(zoneId, userId, userName, userRole);
-  }
 
 
 
 
 
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('status/:status')
-  async getInventoriesByStatus(@Param('status') status: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.getInventoriesByStatus(status, userId, userName, userRole);
-  }
 
 
 
 
 
-
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getInventoryById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.getInventoryById(id, userId, userName, userRole);
-  }
 
 
 

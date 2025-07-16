@@ -10,7 +10,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { ProjectsModule } from './projects/projects.module';
 import { DevelopersModule } from './developers/developers.module';
 import { ZonesModule } from './zones/zones.module';
-import { PaymentPlansModule } from './payment-plans/payment-plans.module';
+// import { PaymentPlansModule } from './payment-plans/payment-plans.module';
 import { LogsModule } from './logs/logs.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { ContractsModule } from './contracts/contracts.module';
@@ -26,7 +26,7 @@ import { MulterModule } from '@nestjs/platform-express';
     ProjectsModule,
     DevelopersModule,
     ZonesModule,
-    PaymentPlansModule,
+    
     LogsModule,
     MeetingsModule,
     ContractsModule,

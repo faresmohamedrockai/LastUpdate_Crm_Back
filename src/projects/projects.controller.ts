@@ -15,8 +15,8 @@ export class ProjectsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Post()
   async createProject(@Body() dto: CreateProjectDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.projectsService.createProject(dto, userId, userName, userRole);
+    const {  userId, email,  role } = req.user;
+    return this.projectsService.createProject(dto, userId, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
@@ -26,26 +26,10 @@ export class ProjectsController {
     return this.projectsService.getAllProjects(userId, userName, userRole);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('developer/:developerId')
-  async getProjectsByDeveloper(@Param('developerId') developerId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.projectsService.getProjectsByDeveloper(developerId, userId, userName, userRole);
-  }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('zone/:zoneId')
-  async getProjectsByZone(@Param('zoneId') zoneId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.projectsService.getProjectsByZone(zoneId, userId, userName, userRole);
-  }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getProjectById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.projectsService.getProjectById(id, userId, userName, userRole);
-  }
+
+  
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Patch(':id')
@@ -54,8 +38,8 @@ export class ProjectsController {
     @Body() dto: UpdateProjectDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.projectsService.updateProject(id, dto, userId, userName, userRole);
+    const {  userId, email, role } = req.user;
+    return this.projectsService.updateProject(id, dto, userId, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
