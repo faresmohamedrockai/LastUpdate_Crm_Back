@@ -15,15 +15,15 @@ export class ProjectsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Post()
   async createProject(@Body() dto: CreateProjectDto, @Req() req) {
-    const {  userId, email,  role } = req.user;
-    return this.projectsService.createProject(dto, userId, email, role);
+    const {   email,  role } = req.user;
+    return this.projectsService.createProject(dto, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getAllProjects(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.projectsService.getAllProjects(userId, userName, userRole);
+    const { } = req.user;
+    return this.projectsService.getAllProjects();
   }
 
 

@@ -13,14 +13,13 @@ enum Role {
   team_leader
   sales_rep
 }
+
 enum InstallmentPeriod {
   monthly
   quarterly
   yearly
   custom
 }
-
-
 
 enum LeadStatus {
   fresh_lead
@@ -29,7 +28,8 @@ enum LeadStatus {
   open_deal
   cancellation
 }
-enum installmentPeriod{
+
+enum installmentPeriod {
   monthly
   quarterly
   yearly
@@ -58,14 +58,14 @@ model User {
   teamMembers  User[]     @relation("TeamMembers")
   logs         Log[]
   Contract     Contract[]
-  meetings     Meeting[]  // Back-relation to Meeting
+  meetings     Meeting[] // Back-relation to Meeting
 }
 
 model Lead {
   id                  String     @id @default(uuid())
-  name                 String
-  nameAr                String
-  nameEn                String
+  name                String
+  nameAr              String
+  nameEn              String
   contact             String     @unique
   budget              String
   leadSource          String
@@ -82,48 +82,46 @@ model Lead {
   createdAt           DateTime   @default(now())
   logs                Log[]
   Contract            Contract[]
-  meetings Meeting[]
-
+  meetings            Meeting[]
 }
 
 model Inventory {
-  id           String           @id @default(uuid())
-  title        String
-  description  String?
-  price        Float
-  area         Float
-  bedrooms     Int
-  bathrooms    Int
-  unitNumber   String?
-  floor        Int?
-  images       String[]         // ✅ هذا الآن array of strings
-  status       InventoryStatus  @default(available)
-  project      Project?         @relation(fields: [projectId], references: [id])
-  projectId    String?
-  paymentPlan  PaymentPlan?     @relation(fields: [paymentPlanId], references: [id])
+  id            String          @id @default(uuid())
+  title         String
+  description   String?
+  price         Float
+  area          Float
+  bedrooms      Int
+  bathrooms     Int
+  unitNumber    String?
+  floor         Int?
+  images        String[] // ✅ هذا الآن array of strings
+  status        InventoryStatus @default(available)
+  project       Project?        @relation(fields: [projectId], references: [id])
+  projectId     String?
+  paymentPlan   PaymentPlan?    @relation(fields: [paymentPlanId], references: [id])
   paymentPlanId String?
-  leads        Lead[]
-  visits       Visit[]
-  createdAt    DateTime         @default(now())
-  Contract     Contract[]
-  meetings     Meeting[]
+  leads         Lead[]
+  visits        Visit[]
+  createdAt     DateTime        @default(now())
+  Contract      Contract[]
+  meetings      Meeting[]
 }
 
-
 model Project {
-  id           String        @id @default(uuid())
-  nameEn       String
-  nameAr       String?       // <- Optional
-  location     String
-  type         String
-  description  String?       // <- Optional
-  images        String[]      // <- Optional
+  id          String   @id @default(uuid())
+  nameEn      String
+  nameAr      String? // <- Optional
+  location    String
+  type        String
+  description String? // <- Optional
+  images      String[] // <- Optional
 
-  developer    Developer?    @relation(fields: [developerId], references: [id])
-  developerId  String?       // <- Optional
+  developer   Developer? @relation(fields: [developerId], references: [id])
+  developerId String? // <- Optional
 
-  zone         Zone?         @relation(fields: [zoneId], references: [id])
-  zoneId       String?       // <- Optional
+  zone   Zone?   @relation(fields: [zoneId], references: [id])
+  zoneId String? // <- Optional
 
   paymentPlans PaymentPlan[]
   inventories  Inventory[]
@@ -131,26 +129,27 @@ model Project {
   Contract     Contract[]
   meetings     Meeting[]
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model PaymentPlan {
-  id                 String             @id @default(uuid())
-  downpayment        Float
-  installment        Float
-  delivery           Float
-  schedule           Json
-  description        String?
-  yearsToPay         Int?
-  installmentPeriod  InstallmentPeriod  // ✅ enum بدل Int
-  installmentEvery   Int
+  id                String            @id @default(uuid())
+  downpayment       Float
+  installment       Float
+  delivery          Float
+  schedule          Json
+  description       String?
+  yearsToPay        Int?
+  installmentPeriod InstallmentPeriod // ✅ enum بدل Int
+  installmentEvery  Int
 
-  project   Project   @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
   projectId String
 
-  inventories        Inventory[]
-  createdAt          DateTime    @default(now())
+  inventories Inventory[]
+  createdAt   DateTime    @default(now())
 }
+
 model Visit {
   id          String    @id @default(uuid())
   date        DateTime
@@ -195,8 +194,8 @@ model Log {
 
 model Zone {
   id          String    @id @default(uuid())
-  nameEn        String
-  nameAr        String?
+  nameEn      String
+  nameAr      String?
   description String?
   latitude    Float
   longitude   Float
@@ -205,53 +204,51 @@ model Zone {
 
 model Developer {
   id          String    @id @default(uuid())
-  nameEn        String
- location      String
- established   String
- nameAr        String
+  nameEn      String
+  location    String
+  established String
+  nameAr      String
   logo        String?
   projects    Project[]
 }
 
-
 model Contract {
-  id           String     @id @default(uuid())
-  lead         Lead       @relation(fields: [leadId], references: [id])
-  leadId       String
-  inventory    Inventory? @relation(fields: [inventoryId], references: [id])
-  inventoryId  String?
-  project      Project?   @relation(fields: [projectId], references: [id])
-  projectId    String?
+  id          String     @id @default(uuid())
+  lead        Lead       @relation(fields: [leadId], references: [id])
+  leadId      String
+  inventory   Inventory? @relation(fields: [inventoryId], references: [id])
+  inventoryId String?
+  project     Project?   @relation(fields: [projectId], references: [id])
+  projectId   String?
 
-  
   dealValue    Float
   contractDate DateTime
   status       String // e.g., "pending", "signed", "cancelled"
-  createdBy    User       @relation(fields: [createdById], references: [id])
+  createdBy    User     @relation(fields: [createdById], references: [id])
   createdById  String
   notes        String?
-  createdAt    DateTime   @default(now())
+  createdAt    DateTime @default(now())
 }
 
 model Meeting {
-  id          String    @id @default(uuid())
-  date        DateTime
-  status      String    // e.g. "scheduled", "completed", "cancelled", "rescheduled"
-  notes       String?
-  objections  String?
-  location    String?   // optional, like "office", "site", or custom address
+  id         String   @id @default(uuid())
+  date       DateTime
+  status     String // e.g. "scheduled", "completed", "cancelled", "rescheduled"
+  notes      String?
+  objections String?
+  location   String? // optional, like "office", "site", or custom address
 
-  lead        Lead      @relation(fields: [leadId], references: [id])
-  leadId      String
+  lead   Lead   @relation(fields: [leadId], references: [id])
+  leadId String
 
-  createdBy   User      @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
 
   inventory   Inventory? @relation(fields: [inventoryId], references: [id])
   inventoryId String?
 
-  project     Project?   @relation(fields: [projectId], references: [id])
-  projectId   String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
 
-  createdAt   DateTime  @default(now())
+  createdAt DateTime @default(now())
 }

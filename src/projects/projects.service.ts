@@ -13,7 +13,7 @@ export class ProjectsService {
 
 async createProject(
   dto: CreateProjectDto,
-  userId: string,
+
   email: string,
   userRole: string,
 ) {
@@ -87,15 +87,7 @@ async createProject(
     }
   }
 
-  // 6. لوج العملية
-  await this.logsService.createLog({
-    userId,
-    email,
-    userRole,
-    action: 'create_project',
-    description: `Created project: name=${project.nameEn}, location=${project.location}`,
-  });
-
+ 
   return {
     status: 201,
     message: 'Project created successfully',
@@ -109,7 +101,7 @@ async createProject(
 
 
 //  async getAllProjects(userId: string, userName: string, userRole: string) {
-  async getAllProjects(userId: string, email: string, userRole: string) {
+  async getAllProjects() {
   const data = await this.prisma.project.findMany({
     include: {
       developer: true,
@@ -125,13 +117,7 @@ async createProject(
     orderBy: { createdAt: 'desc' },
   });
 
-  await this.logsService.createLog({
-    userId,
-    email,
-    userRole,
-    action: 'get_all_projects',
-    description: `Retrieved ${data.length} projects`,
-  });
+
 
   return {
     status: 200,
