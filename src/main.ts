@@ -3,27 +3,32 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import * as morgan from 'morgan';
+import { json, urlencoded } from 'express';
+
 async function bootstrap() {
-  
   const app = await NestFactory.create(AppModule);
- app.use(cookieParser());
- app.use(morgan("dev"))
+
+  // ✅ دعم body أكبر (مفيد لرفع الصور base64 أو ملفات form-data)
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
+
+  app.use(cookieParser());
+  app.use(morgan('dev'));
+
   app.enableCors({
-    origin: true,             
-    credentials: true,        
+    origin: true,
+    credentials: true,
     methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
     allowedHeaders: 'Content-Type,Authorization',
   });
 
-  
   app.setGlobalPrefix('api');
 
- 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,             
-      forbidNonWhitelisted: false, 
-      transform: true,             
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      transform: true,
     }),
   );
 

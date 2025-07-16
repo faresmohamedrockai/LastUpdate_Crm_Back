@@ -10,22 +10,28 @@ cloudinary.config({
 
 @Injectable()
 export class CloudinaryService {
-  // رفع صورة مباشرة من base64
-  uploadImageFromBase64(base64: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      cloudinary.uploader.upload(
-        base64,
-        { folder: 'inventory' },
-        (error, result) => {
-          if (error) return reject(error);
-          if (!result) return reject(new Error('No result returned from Cloudinary'));
-          resolve(result.secure_url);
+  // ✅ رفع صورة مباشرة من base64
+  async uploadImageFromBase64(base64: string, folder = 'images', publicId?: string): Promise<string> {
+    try {
+      const result = await cloudinary.uploader.upload(
+       base64,
+        {
+          folder,
+          public_id: publicId,
+          use_filename: true,
+          quality: 'auto:good',
+          fetch_format: 'auto',
         },
       );
-    });
+
+      if (!result) throw new Error('No result returned from Cloudinary');
+      return result.secure_url;
+    } catch (error) {
+      throw new Error(`Cloudinary upload failed: ${error.message}`);
+    }
   }
 
-  // ✅ رفع صورة من buffer (مثل sharp buffer المضغوط)
+  // ✅ رفع صورة من buffer (مثلاً لو جايه من form-data أو sharp)
   uploadBuffer(buffer: Buffer, folder: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(

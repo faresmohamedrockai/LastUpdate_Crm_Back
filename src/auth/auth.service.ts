@@ -23,8 +23,8 @@ export class AuthService {
 
 
 
-  async register(userData: RegisterDto, file?: Express.Multer.File) {
-    const { email, password, role, name, teamLeaderId } = userData;
+  async register(userData: RegisterDto) {
+    const { email, password, role, name, teamLeaderId, imageBase64 } = userData;
 
     // 🔍 تحقق من البريد
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
@@ -47,18 +47,10 @@ export class AuthService {
       }
     }
 
-    // 📸 ضغط الصورة ورفعها لـ Cloudinary
+    // 📸 رفع الصورة لو موجودة
     let imageUrl: string | undefined;
-    if (file) {
-      console.log('✅ Received file:', file.originalname);
-
-      const compressedBuffer = await sharp(file.buffer)
-        .resize({ width: 300 }) // Resize اختياري
-        .jpeg({ quality: 70 })  // ضغط الجودة
-        .toBuffer();
-
-      imageUrl = await this.cloudinaryService.uploadBuffer(compressedBuffer, 'users');
-
+    if (imageBase64) {
+      imageUrl = await this.cloudinaryService.uploadImageFromBase64(imageBase64);
       console.log('✅ Image uploaded to Cloudinary:', imageUrl);
     } else {
       console.log('⚠️ No image uploaded');
@@ -79,7 +71,7 @@ export class AuthService {
       },
     });
 
-    // 🧾 تسجيل العملية في اللوج
+    // 🧾 تسجيل اللوج
     await this.logsService.createLog({
       userId: user.id,
       action: 'register',
@@ -92,6 +84,19 @@ export class AuthService {
 
     return user;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   async login(loginData: { email: string; password: string; role?: string; ip?: string; userAgent?: string }) {
@@ -108,12 +113,20 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
     }
+
+
+
     // 3. Generate Tokens
     const tokens = await this.generateTokens({
       id: existingUser.id,
       email: existingUser.email,
       role: existingUser.role,
     });
+
+
+
+
+
 
     // 4. Successful login
     await this.logsService.createLog({
@@ -125,6 +138,14 @@ export class AuthService {
       userName: existingUser.name,
       userRole: existingUser.role,
     });
+
+
+
+
+
+
+
+
 
     return {
       tokens,
@@ -144,38 +165,78 @@ export class AuthService {
 
 
 
-
- async refreshToken(refreshToken: string) {
-  try {
-    const payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.configService.get<string>("SECERT_JWT_REFRESH"),
-    });
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-    });
-
-    if (!user) {
-      throw new ForbiddenException('User not found');
+  async GetUsers(role: string, userId?: string) {
+    if (role === 'admin') {
+      return this.prisma.user.findMany({});
     }
 
-    const access_token = await this.jwtService.signAsync(
-      {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      {
-        secret: this.configService.get<string>("SECERT_JWT_ACCESS"),
-        expiresIn: '15m',
-      }
-    );
+    if (role === 'sales_admin') {
+      return this.prisma.user.findMany({
+        where: {
+          OR: [
+            { role: 'sales_rep' },
+            { role: 'team_leader' },
+          ],
+        },
+      });
+    }
 
-    return { access_token };
-  } catch (error) {
-    throw new ForbiddenException('Access Denied');
+    if (role === 'team_leader') {
+      return this.prisma.user.findMany({
+        where: {
+          teamLeaderId: userId, // ✅ يعرض الفريق الخاص فقط
+        },
+      });
+    }
+
+    throw new ForbiddenException('Unauthorized');
   }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>("SECERT_JWT_REFRESH"),
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        throw new ForbiddenException('User not found');
+      }
+
+      const access_token = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        {
+          secret: this.configService.get<string>("SECERT_JWT_ACCESS"),
+          expiresIn: '15m',
+        }
+      );
+
+      return { access_token };
+    } catch (error) {
+      throw new ForbiddenException('Access Denied');
+    }
+  }
 
 
 
@@ -194,7 +255,7 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-  
+
     let teamMembers: { id: string; name: string; email: string }[] = [];
 
     if (user.role === 'team_leader') {
@@ -275,51 +336,62 @@ export class AuthService {
   //Update User Data Just Admin
   //
 
-  async updateUser(id: string, data: UpdateUserDto) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { id },
-    });
+ async updateUser(id: string, data: UpdateUserDto) {
+  const existingUser = await this.prisma.user.findUnique({
+    where: { id },
+  });
 
-    if (!existingUser) {
-      throw new NotFoundException("User not found");
-    }
-
-    // التحقق من أن الـ email الجديد غير مستخدم من قبل مستخدم آخر
-    if (data.email && data.email !== existingUser.email) {
-      const emailExists = await this.prisma.user.findUnique({
-        where: { email: data.email },
-      });
-      if (emailExists) {
-        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
-      }
-    }
-
-
-
-
-
-
-
-
-
-    // إذا فيه password محتاجة تتعمل لها hash
-    if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
-    }
-
-    const { role, ...updateData } = data;
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return {
-      status: 200,
-      message: "User updated successfully",
-      user: updatedUser,
-    };
+  if (!existingUser) {
+    throw new NotFoundException("User not found");
   }
+
+  if (data.email && data.email !== existingUser.email) {
+    const emailExists = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (emailExists) {
+      throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+    }
+  }
+
+  if (data.password) {
+    data.password = await bcrypt.hash(data.password, 10);
+  }
+
+  if (data.imageBase64) {
+    const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(data.imageBase64);
+    data.image = uploadedImage;
+  }
+
+  const { role, imageBase64, ...updateData } = data;
+
+  // ✅ حذف المفاتيح الفارغة من البيانات
+  Object.keys(updateData).forEach((key) => {
+    if (
+      updateData[key] === undefined ||
+      updateData[key] === null ||
+      (typeof updateData[key] === 'string' && updateData[key].trim() === '')
+    ) {
+      delete updateData[key];
+    }
+  });
+
+
+
+
+  
+  const updatedUser = await this.prisma.user.update({
+    where: { id },
+    data: updateData,
+  });
+
+  return {
+    status: 200,
+    message: "User updated successfully",
+    user: updatedUser,
+  };
+}
+
 
 
 

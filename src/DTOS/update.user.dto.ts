@@ -18,4 +18,12 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+
+
+@IsOptional()
+  imageBase64?: string; 
+@IsOptional()
+  image?: string; 
+
+
 }

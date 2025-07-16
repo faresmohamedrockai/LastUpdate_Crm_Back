@@ -13,18 +13,39 @@ export class DevelopersController {
   constructor(private readonly developersService: DevelopersService) {}
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
-  @Post()
+  @Post("create")
   async createDeveloper(@Body() dto: CreateDeveloperDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.developersService.createDeveloper(dto, userId, userName, userRole);
+    const {  userId,  email, userRole } = req.user;
+ 
+    //     {
+    //   userId: '14157eb6-2cea-4a27-a6ba-69d3080fa24c',
+    //   email: 'fares@gmail.com',
+    //   role: 'admin'
+    // }
+    return this.developersService.createDeveloper(dto, userId, email, userRole);
   }
+
+
+
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getAllDevelopers(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.developersService.getAllDevelopers(userId, userName, userRole);
+    const { userId, email, role } = req.user;
+   
+    
+    return this.developersService.getAllDevelopers(userId, email, role);
   }
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get('stats')
@@ -33,12 +54,27 @@ export class DevelopersController {
     return this.developersService.getDevelopersWithStats(userId, userName, userRole);
   }
 
+
+
+
+
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get(':id')
   async getDeveloperById(@Param('id') id: string, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.developersService.getDeveloperById(id, userId, userName, userRole);
   }
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Patch(':id')
@@ -47,14 +83,14 @@ export class DevelopersController {
     @Body() dto: UpdateDeveloperDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.developersService.updateDeveloper(id, dto, userId, userName, userRole);
+    const { userId, email,  userRole } = req.user;
+    return this.developersService.updateDeveloper(id, dto, userId, email, userRole);
   }
 
   @Roles(Role.ADMIN)
   @Delete(':id')
   async deleteDeveloper(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.developersService.deleteDeveloper(id, userId, userName, userRole);
+    const {  userId, email,  userRole } = req.user;
+    return this.developersService.deleteDeveloper(id, userId, email, userRole);
   }
 } 

@@ -1,26 +1,26 @@
-import { IsString, IsOptional, IsEmail, IsUrl } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class CreateDeveloperDto {
   @IsString()
-  name: string;
+  nameEn: string;
+  @IsOptional()
+  @IsString()
+  nameAr?: string;
 
   @IsOptional()
   @IsString()
-  description?: string;
+  established?: string;
 
   @IsOptional()
   @IsString()
-  contact?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
-  @IsUrl()
-  website?: string;
+  location?: string; 
 
   @IsOptional()
   @IsString()
-  logo?: string;
-} 
+  email?: string; 
+
+
+  @IsOptional()
+  @IsString()
+  image?: string;
+}

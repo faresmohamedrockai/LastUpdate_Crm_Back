@@ -21,12 +21,19 @@ export class LeadsService {
 
   async create(dto: CreateLeadDto, userId: string, userName?: string, userRole?: string, ip?: string, userAgent?: string) {
     const existingLead = await this.prisma.lead.findUnique({
+      
       where: { contact: dto.contact },
     });
+
+
+
 
     if (existingLead) {
       throw new ConflictException('Lead with this contact already exists');
     }
+
+
+
 
     if (dto.inventoryInterestId) {
       const inventory = await this.prisma.inventory.findUnique({
@@ -39,8 +46,10 @@ export class LeadsService {
 
     const leadData: any = {
       name: dto.name,
+      nameEn: dto.nameEn,
+      nameAr: dto.nameAr,
       contact: dto.contact,
-      budget: dto.budget,
+      budget: typeof dto.budget === 'number' ? String(dto.budget) : dto.budget, // Handle both number and string
       leadSource: dto.leadSource,
       status: dto.status,
       owner: {
@@ -51,25 +60,34 @@ export class LeadsService {
     if (dto.lastCall) {
       leadData.lastCall = new Date(dto.lastCall);
     }
+
+
+
     if (dto.lastVisit) {
       leadData.lastVisit = new Date(dto.lastVisit);
     }
+
+
+
     if (dto.inventoryInterestId) {
       leadData.inventoryInterestId = dto.inventoryInterestId;
     }
 
+
+
+
     const lead = await this.prisma.lead.create({ data: leadData });
 
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'create_lead',
-      leadId: lead.id,
-      description: `Created lead: name=${lead.name}, contact=${lead.contact}, budget=${lead.budget}, leadSource=${lead.leadSource}, status=${lead.status}, ownerId=${lead.ownerId}, inventoryInterestId=${lead.inventoryInterestId || 'none'}`,
-      ip,
-      userAgent,
-    });
+    // await this.logsService.createLog({
+    //   userId,
+    //   userName,
+    //   userRole,
+    //   action: 'create_lead',
+    //   leadId: lead.id,
+    //   description: `Created lead: name=${lead.name}, contact=${lead.contact}, budget=${lead.budget}, leadSource=${lead.leadSource}, status=${lead.status}, ownerId=${lead.ownerId}, inventoryInterestId=${lead.inventoryInterestId || 'none'}`,
+    //   ip,
+    //   userAgent,
+    // });
 
     return {
       status: 201,

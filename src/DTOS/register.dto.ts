@@ -25,6 +25,6 @@ export class RegisterDto {
 
   @IsUUID('4', { message: 'Team leader ID must be a valid UUID' })
   teamLeaderId?: string;
-
-
+@IsOptional()
+ imageBase64?: string; // ✅ أضف هذا الحقل
 }

@@ -13,39 +13,34 @@ export class ZonesController {
   constructor(private readonly zonesService: ZonesService) {}
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
-  @Post()
+  @Post("create")
   async createZone(@Body() dto: CreateZoneDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.createZone(dto, userId, userName, userRole);
+    const {userId,  email, userRole } = req.user;
+    return this.zonesService.createZone(dto, userId, email, userRole);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getAllZones(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.getAllZones(userId, userName, userRole);
+    const {  userId, email, role } = req.user;
+    return this.zonesService.getAllZones(userId, email, role);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('stats')
-  async getZonesWithStats(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.getZonesWithStats(userId, userName, userRole);
-  }
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  // @Get('stats')
+  // async getZonesWithStats(@Req() req) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.zonesService.getZonesWithStats(userId, userName, userRole);
+  // }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('city/:city')
-  async getZonesByCity(@Param('city') city: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.getZonesByCity(city, userId, userName, userRole);
-  }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getZoneById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.getZoneById(id, userId, userName, userRole);
-  }
+
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  // @Get(':id')
+  // async getZoneById(@Param('id') id: string, @Req() req) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.zonesService.getZoneById(id, userId, userName, userRole);
+  // }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Patch(':id')
@@ -54,14 +49,14 @@ export class ZonesController {
     @Body() dto: UpdateZoneDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.updateZone(id, dto, userId, userName, userRole);
+    const { userId, email,role } = req.user;
+    return this.zonesService.updateZone(id, dto, userId, email, role);
   }
 
   @Roles(Role.ADMIN)
   @Delete(':id')
   async deleteZone(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.zonesService.deleteZone(id, userId, userName, userRole);
+    const {  userId, email, role } = req.user;
+    return this.zonesService.deleteZone(id, userId, email, role);
   }
 } 

@@ -19,12 +19,24 @@ export class PaymentPlansController {
     return this.paymentPlansService.createPaymentPlan(dto, userId, userName, userRole);
   }
 
+
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getAllPaymentPlans(@Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.paymentPlansService.getAllPaymentPlans(userId, userName, userRole);
   }
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get('stats')
@@ -33,6 +45,11 @@ export class PaymentPlansController {
     return this.paymentPlansService.getPaymentPlansWithStats(userId, userName, userRole);
   }
 
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get('duration/:duration')
   async getPaymentPlansByDuration(@Param('duration') duration: string, @Req() req) {
@@ -40,12 +57,23 @@ export class PaymentPlansController {
     return this.paymentPlansService.getPaymentPlansByDuration(duration, userId, userName, userRole);
   }
 
+
+
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get(':id')
   async getPaymentPlanById(@Param('id') id: string, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.paymentPlansService.getPaymentPlanById(id, userId, userName, userRole);
   }
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Patch(':id')
@@ -58,6 +86,10 @@ export class PaymentPlansController {
     return this.paymentPlansService.updatePaymentPlan(id, dto, userId, userName, userRole);
   }
 
+
+
+
+  
   @Roles(Role.ADMIN)
   @Delete(':id')
   async deletePaymentPlan(@Param('id') id: string, @Req() req) {

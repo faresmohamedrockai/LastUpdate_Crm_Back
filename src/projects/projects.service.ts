@@ -64,7 +64,7 @@ export class ProjectsService {
       userName,
       userRole,
       action: 'create_project',
-      description: `Created project: name=${project.name}, location=${project.location}, developer=${project.developer?.name || 'none'}, zone=${project.zone?.name || 'none'}`,
+      description: `Created project: name=${project.name}, location=${project.location}, developer=${project.developer?.nameEn || 'none'}, zone=${project.zone?.nameEn || 'none'}`,
     });
 
     return { 

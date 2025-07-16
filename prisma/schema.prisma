@@ -21,6 +21,12 @@ enum LeadStatus {
   open_deal
   cancellation
 }
+enum installmentPeriod{
+  monthly
+  quarterly
+  yearly
+  custom
+}
 
 enum InventoryStatus {
   available
@@ -49,9 +55,11 @@ model User {
 
 model Lead {
   id                  String     @id @default(uuid())
-  name                String
+  name                 String
+  nameAr                String
+  nameEn                String
   contact             String     @unique
-  budget              Float
+  budget              String
   leadSource          String
   status              LeadStatus
   notes               String?
@@ -94,25 +102,29 @@ model Inventory {
 }
 
 model Project {
-  id          String      @id @default(uuid())
-  name        String
-  location    String
-  description String?
-  images      String? // ← نفس الشيء هنا
-  inventories Inventory[]
-  calls       Call[]
-  developer   Developer?   @relation(fields: [developerId], references: [id])
-  developerId String?
+  id           String        @id @default(uuid())
+  nameEn       String
+  nameAr       String
+  location     String
+  type         String
+  description  String?
+  images       String?
 
-  zone   Zone?   @relation(fields: [zoneId], references: [id])
-  zoneId String?
+  inventories  Inventory[]         // ✅ One-to-Many
+  calls        Call[]
+  developer    Developer? @relation(fields: [developerId], references: [id])
+  developerId  String?
 
-  paymentPlan PaymentPlan?
+  zone         Zone?      @relation(fields: [zoneId], references: [id])
+  zoneId       String?
 
-  createdAt DateTime   @default(now())
-  Contract  Contract[]
-  meetings  Meeting[]  // Back-relation to Meeting
+ paymentPlans PaymentPlan[]      // ✅ الآن أصبحت One-to-Many
+
+  createdAt    DateTime   @default(now())
+  Contract     Contract[]
+  meetings     Meeting[]
 }
+
 
 model Visit {
   id          String    @id @default(uuid())
@@ -145,6 +157,7 @@ model Log {
   description String?
   userId      String
   userName    String?
+  email       String?
   userRole    String?
   leadId      String?
   ip          String?
@@ -157,7 +170,8 @@ model Log {
 
 model Zone {
   id          String    @id @default(uuid())
-  name        String
+  nameEn        String
+  nameAr        String?
   description String?
   latitude    Float
   longitude   Float
@@ -166,26 +180,34 @@ model Zone {
 
 model Developer {
   id          String    @id @default(uuid())
-  name        String
-  description String?
-  contact     String?
-  website     String?
+  nameEn        String
+ location      String
+ established   String
+ nameAr        String
   logo        String?
   projects    Project[]
 }
 
 model PaymentPlan {
-  id          String   @id @default(uuid())
-  downpayment Float
-  installment Float
-  delivery    Float
-  schedule    String // JSON string (MVP format)
-  project     Project @relation(fields: [projectId], references: [id])
-  projectId   String  @unique
-  inventories Inventory[]
-  createdAt   DateTime @default(now())
-}
+  id                 String      @id @default(uuid())
+  downpayment        Float
+  installment        Float
+  delivery           Float
+  schedule           Json
+  description        String?
+  yearsToPay         Int?
+  installmentPeriod  Int
+  installmentEvery   Int
 
+ project   Project   @relation(fields: [projectId], references: [id])
+projectId String
+
+
+  inventories        Inventory[]
+  createdAt          DateTime    @default(now())
+
+
+}
 model Contract {
   id           String     @id @default(uuid())
   lead         Lead       @relation(fields: [leadId], references: [id])
@@ -194,6 +216,8 @@ model Contract {
   inventoryId  String?
   project      Project?   @relation(fields: [projectId], references: [id])
   projectId    String?
+
+  
   dealValue    Float
   contractDate DateTime
   status       String // e.g., "pending", "signed", "cancelled"

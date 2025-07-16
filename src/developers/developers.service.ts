@@ -4,42 +4,56 @@ import { LogsService } from '../logs/logs.service';
 import { CreateDeveloperDto } from './dto/create-developer.dto';
 import { UpdateDeveloperDto } from './dto/update-developer.dto';
 import { Role } from '@prisma/client';
-
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 @Injectable()
 export class DevelopersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logsService: LogsService,
-  ) {}
+    private readonly cloudinaryService: CloudinaryService
+  ) { }
 
-  async createDeveloper(dto: CreateDeveloperDto, userId: string, userName: string, userRole: string) {
-    // Check if developer with same name already exists
+
+
+
+
+
+
+  // هنا انا ب عمل ديفيلوبر من جديد
+  async createDeveloper(dto: CreateDeveloperDto, userId: string, email: string, userRole: string) {
+    // Check if developer with same nameEn already exists
     const existingDeveloper = await this.prisma.developer.findFirst({
-      where: { name: dto.name },
+      where: { nameEn: dto.nameEn },
     });
 
     if (existingDeveloper) {
-      throw new ConflictException('Developer with this name already exists');
+      throw new ConflictException('Developer with this English name already exists');
+    }
+
+    if (dto.image) {
+      const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(dto.image);
+      dto.image = uploadedImage;
     }
 
     try {
       const developer = await this.prisma.developer.create({
         data: {
-          name: dto.name,
-          description: dto.description,
-          contact: dto.contact,
-          website: dto.website,
-          logo: dto.logo,
+          nameEn: dto.nameEn,
+          nameAr: dto.nameAr || '',
+          logo: dto.image,
+          established: dto.established || '',
+          location: dto.location || '',
         },
       });
 
       await this.logsService.createLog({
         action: 'CREATE',
         userId,
-        userName,
+        email: email,
         userRole,
-        description: `Created developer: name=${developer.name}, contact=${developer.contact}`,
+        description: `Created developer: nameEn=${developer.nameEn}, established=${developer.established}`,
       });
+
 
       return developer;
     } catch (error) {
@@ -47,7 +61,8 @@ export class DevelopersService {
     }
   }
 
-  async findAll(userId: string, userName: string, userRole: string) {
+
+  async findAll(userId: string, email: string, userRole: string) {
     try {
       const developers = await this.prisma.developer.findMany({
         orderBy: { id: 'desc' },
@@ -68,7 +83,7 @@ export class DevelopersService {
       await this.logsService.createLog({
         action: 'READ',
         userId,
-        userName,
+        email,
         userRole,
         description: `Retrieved all developers: count=${developers.length}`,
       });
@@ -79,7 +94,7 @@ export class DevelopersService {
     }
   }
 
-  async getDeveloperById(id: string, userId: string, userName: string, userRole: string) {
+  async getDeveloperById(id: string, userId: string, email: string, userRole: string) {
     const developer = await this.prisma.developer.findUnique({
       where: { id },
       include: {
@@ -104,39 +119,52 @@ export class DevelopersService {
     // Log developer retrieval
     await this.logsService.createLog({
       userId,
-      userName,
+      email,
       userRole,
       action: 'get_developer_by_id',
-      description: `Retrieved developer: id=${id}, name=${developer.name}`,
+      description: `Retrieved developer: id=${id}, name=${developer.nameEn}`,
     });
 
     return developer;
   }
 
-  async updateDeveloper(id: string, dto: UpdateDeveloperDto, userId: string, userName: string, userRole: string) {
+  async updateDeveloper(
+    id: string,
+    dto: UpdateDeveloperDto,
+    userId: string,
+    userName: string,
+    userRole: string
+  ) {
     const existingDeveloper = await this.prisma.developer.findUnique({ where: { id } });
     if (!existingDeveloper) {
       throw new NotFoundException('Developer not found');
     }
 
-    // Check if name is being changed and if it conflicts with another developer
-    if (dto.name && dto.name !== existingDeveloper.name) {
+    // تحقق من الاسم الجديد لو موجود
+    if (dto.nameEn && dto.nameEn !== existingDeveloper.nameEn) {
       const nameExists = await this.prisma.developer.findFirst({
-        where: { name: dto.name, id: { not: id } },
+        where: { nameEn: dto.nameEn, id: { not: id } },
       });
       if (nameExists) {
-        throw new ConflictException('Developer with this name already exists');
+        throw new ConflictException('Developer with this English name already exists');
       }
+    }
+
+    // رفع صورة جديدة لو تم إرسالها
+    if (dto.image) {
+      const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(dto.image);
+      dto.image = uploadedImage;
     }
 
     const updatedDeveloper = await this.prisma.developer.update({
       where: { id },
       data: {
-        ...(dto.name && { name: dto.name }),
-        ...(dto.description && { description: dto.description }),
-        ...(dto.contact && { contact: dto.contact }),
-        ...(dto.website && { website: dto.website }),
-        ...(dto.logo && { logo: dto.logo }),
+        ...(dto.nameEn && { nameEn: dto.nameEn }),
+        ...(dto.nameAr && { nameAr: dto.nameAr }),
+        ...(dto.established && { established: dto.established }),
+        ...(dto.location && { location: dto.location }),
+        ...(dto.email && { email: dto.email }),
+        ...(dto.image && { logo: dto.image }),
       },
       include: {
         projects: {
@@ -147,13 +175,12 @@ export class DevelopersService {
       },
     });
 
-    // Log developer update
     await this.logsService.createLog({
       userId,
       userName,
       userRole,
       action: 'update_developer',
-      description: `Updated developer: id=${id}, name=${updatedDeveloper.name}`,
+      description: `Updated developer: id=${id}, nameEn=${updatedDeveloper.nameEn}`,
     });
 
     return {
@@ -163,7 +190,8 @@ export class DevelopersService {
     };
   }
 
-  async deleteDeveloper(id: string, userId: string, userName: string, userRole: string) {
+
+  async deleteDeveloper(id: string, userId: string, email: string, userRole: string) {
     const existingDeveloper = await this.prisma.developer.findUnique({
       where: { id },
       include: {
@@ -174,7 +202,7 @@ export class DevelopersService {
         },
       },
     });
-    
+
     if (!existingDeveloper) {
       throw new NotFoundException('Developer not found');
     }
@@ -190,10 +218,10 @@ export class DevelopersService {
     // Log developer deletion
     await this.logsService.createLog({
       userId,
-      userName,
+      email,
       userRole,
       action: 'delete_developer',
-      description: `Deleted developer: id=${id}, name=${existingDeveloper.name}`,
+      description: `Deleted developer: id=${id}, name=${existingDeveloper.nameEn}`,
     });
 
     return {
@@ -222,9 +250,9 @@ export class DevelopersService {
     const developersWithStats = developers.map(developer => {
       const totalProjects = developer.projects.length;
       const totalInventories = developer.projects.reduce((sum, project) => sum + project.inventories.length, 0);
-      const totalLeads = developer.projects.reduce((sum, project) => 
+      const totalLeads = developer.projects.reduce((sum, project) =>
         sum + project.inventories.reduce((invSum, inv) => invSum + inv.leads.length, 0), 0);
-      const totalVisits = developer.projects.reduce((sum, project) => 
+      const totalVisits = developer.projects.reduce((sum, project) =>
         sum + project.inventories.reduce((invSum, inv) => invSum + inv.visits.length, 0), 0);
 
       return {
@@ -250,7 +278,7 @@ export class DevelopersService {
     return developersWithStats;
   }
 
-  async getAllDevelopers(userId: string, userName: string, userRole: Role) {
+  async getAllDevelopers(userId: string, email: string, userRole: Role) {
     try {
       const developers = await this.prisma.developer.findMany({
         orderBy: { id: 'desc' },
@@ -268,13 +296,19 @@ export class DevelopersService {
         },
       });
 
+
+
+
+
+
       await this.logsService.createLog({
         action: 'READ',
         userId,
-        userName,
+
         userRole,
         description: `Retrieved all developers: count=${developers.length}`,
       });
+
 
       return developers;
     } catch (error) {

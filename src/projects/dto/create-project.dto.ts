@@ -2,7 +2,12 @@ import { IsString, IsOptional, IsArray, IsUUID } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
-  name: string;
+  nameEn: string;
+
+
+  @IsOptional()
+  @IsString()
+  nameAr: string;
 
   @IsString()
   location: string;

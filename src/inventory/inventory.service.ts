@@ -11,6 +11,10 @@ export class InventoryService {
     private readonly logsService: LogsService,
   ) {}
 
+
+
+
+
   async createInventory(dto: CreateInventoryDto, userId: string, userName: string, userRole: string) {
     // Validate project exists if provided
     if (dto.projectId) {
@@ -75,13 +79,13 @@ export class InventoryService {
     });
 
     // Log inventory creation
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'create_inventory',
-      description: `Created inventory: title=${inventory.title}, price=${inventory.price}, project=${inventory.project?.name || 'none'}, developer=${inventory.project?.developer?.name || 'none'}`,
-    });
+    // await this.logsService.createLog({
+    //   userId,
+    //   userName,
+    //   userRole,
+    //   action: 'create_inventory',
+    //   description: `Created inventory: title=${inventory.title}, price=${inventory.price}, project=${inventory.project?.name || 'none'}, developer=${inventory.project?.developer?.name || 'none'}`,
+    // });
 
     return {
       status: 201,
@@ -93,7 +97,14 @@ export class InventoryService {
     };
   }
 
+
+
+
+  
   async getAllInventories(userId: string, userName: string, userRole: string) {
+
+
+    
     const inventories = await this.prisma.inventory.findMany({
       include: {
         project: {
@@ -110,13 +121,13 @@ export class InventoryService {
     });
 
     // Log inventories retrieval
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_all_inventories',
-      description: `Retrieved ${inventories.length} inventories`,
-    });
+    // await this.logsService.createLog({
+    //   userId,
+    //   userName,
+    //   userRole,
+    //   action: 'get_all_inventories',
+    //   description: `Retrieved ${inventories.length} inventories`,
+    // });
 
     return inventories.map(inventory => ({
       ...inventory,

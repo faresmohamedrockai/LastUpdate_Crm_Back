@@ -13,13 +13,23 @@ export class CreateLeadDto {
   @IsString()
   name: string;
 
+
+  
+  @IsString()
+  nameAr: string;
+
+
+
+  @IsString()
+  nameEn: string;
+
   @IsString()
   contact: string;
 
-  @IsNumber()
-  budget: number;
+  @IsString()
+  budget: string;
 
-  @IsEnum(LeadStatus)
+  @IsString()
   leadSource: string;
 
   @IsString()
@@ -34,4 +44,8 @@ export class CreateLeadDto {
   @IsOptional()
   @IsUUID()
   inventoryInterestId?: string;
+
+
+
+
 }

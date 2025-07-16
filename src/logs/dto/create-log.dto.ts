@@ -30,4 +30,8 @@ export class CreateLogDto {
   @IsOptional()
   @IsString()
   userRole?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
 } 

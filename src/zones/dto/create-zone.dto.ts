@@ -2,7 +2,11 @@ import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateZoneDto {
   @IsString()
-  name: string;
+  nameEn: string;
+
+  @IsOptional()
+  @IsString()
+  nameAr?: string;
 
   @IsOptional()
   @IsString()

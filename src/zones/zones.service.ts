@@ -3,40 +3,53 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
 import { CreateZoneDto } from './dto/create-zone.dto';
 import { UpdateZoneDto } from './dto/update-zone.dto';
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 
 @Injectable()
 export class ZonesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logsService: LogsService,
-  ) {}
+  ) { }
 
-  async createZone(dto: CreateZoneDto, userId: string, userName: string, userRole: string) {
-    try {
-      const zone = await this.prisma.zone.create({
-        data: {
-          name: dto.name,
-          description: dto.description,
-          latitude: dto.latitude,
-          longitude: dto.longitude,
-        },
-      });
+  
+async createZone(dto: CreateZoneDto, userId: string, userName: string, userRole: string) {
+  try {
+    const zoneExists = await this.prisma.zone.findFirst({
+      where: {
+        nameEn: dto.nameEn,
+      },
+    });
 
-      await this.logsService.createLog({
-        action: 'CREATE',
-        userId,
-        userName,
-        userRole,
-        description: `Created zone: name=${zone.name}, latitude=${zone.latitude}, longitude=${zone.longitude}`,
-      });
-
-      return zone;
-    } catch (error) {
-      throw new HttpException('Failed to create zone', HttpStatus.INTERNAL_SERVER_ERROR);
+    if (zoneExists) {
+      throw new ConflictException('Zone already exists');
     }
-  }
 
-  async getAllZones(userId: string, userName: string, userRole: string) {
+    const zone = await this.prisma.zone.create({
+      data: {
+        nameEn: dto.nameEn,
+        nameAr: dto.nameAr || '',
+        description: dto.description || '',
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+      },
+    });
+
+    await this.logsService.createLog({
+      action: 'CREATE',
+      userId,
+      userName,
+      userRole,
+      description: `Created zone: nameEn=${zone.nameEn}, lat=${zone.latitude}, lng=${zone.longitude}`,
+    });
+
+    return zone;
+  } catch (error) {
+    throw new HttpException('Failed to create zone', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+}
+
+  async getAllZones(userId: string, email: string, userRole: string) {
     const zones = await this.prisma.zone.findMany({
       include: {
         projects: {
@@ -51,7 +64,7 @@ export class ZonesService {
     // Log zones retrieval
     await this.logsService.createLog({
       userId,
-      userName,
+      email,
       userRole,
       action: 'get_all_zones',
       description: `Retrieved ${zones.length} zones`,
@@ -88,35 +101,43 @@ export class ZonesService {
       userName,
       userRole,
       action: 'get_zone_by_id',
-      description: `Retrieved zone: id=${id}, name=${zone.name}`,
+      description: `Retrieved zone: id=${id}, name=${zone.nameEn}`,
     });
 
     return zone;
   }
 
-  async updateZone(id: string, dto: UpdateZoneDto, userId: string, userName: string, userRole: string) {
+
+
+
+
+
+
+  async updateZone(id: string, dto: UpdateZoneDto, userId: string, email: string, userRole: string) {
     const existingZone = await this.prisma.zone.findUnique({ where: { id } });
     if (!existingZone) {
       throw new NotFoundException('Zone not found');
     }
 
     // Check if name is being changed and if it conflicts with another zone
-    if (dto.name && dto.name !== existingZone.name) {
+    if (dto.nameEn && dto.nameEn !== existingZone.nameEn) {
       const nameExists = await this.prisma.zone.findFirst({
-        where: { name: dto.name, id: { not: id } },
+        where: { nameEn: dto.nameEn, id: { not: id } },
       });
       if (nameExists) {
-        throw new ConflictException('Zone with this name already exists');
+        throw new ConflictException('Zone with this English name already exists');
       }
     }
 
     const updatedZone = await this.prisma.zone.update({
       where: { id },
       data: {
-        ...(dto.name && { name: dto.name }),
+        ...(dto.nameEn && { nameEn: dto.nameEn }),
+        ...(dto.nameAr && { nameAr: dto.nameAr }),
         ...(dto.description && { description: dto.description }),
-        ...(dto.city && { city: dto.city }),
-        ...(dto.area && { area: dto.area }),
+        ...(dto.latitude !== undefined && { latitude: dto.latitude }),
+        ...(dto.longitude !== undefined && { longitude: dto.longitude }),
+        
       },
       include: {
         projects: {
@@ -130,10 +151,10 @@ export class ZonesService {
     // Log zone update
     await this.logsService.createLog({
       userId,
-      userName,
+      email,
       userRole,
       action: 'update_zone',
-      description: `Updated zone: id=${id}, name=${updatedZone.name}`,
+      description: `Updated zone: id=${id}, nameEn=${updatedZone.nameEn}`,
     });
 
     return {
@@ -143,7 +164,8 @@ export class ZonesService {
     };
   }
 
-  async deleteZone(id: string, userId: string, userName: string, userRole: string) {
+
+  async deleteZone(id: string, userId: string, email: string, userRole: string) {
     const existingZone = await this.prisma.zone.findUnique({
       where: { id },
       include: {
@@ -154,7 +176,7 @@ export class ZonesService {
         },
       },
     });
-    
+
     if (!existingZone) {
       throw new NotFoundException('Zone not found');
     }
@@ -170,10 +192,10 @@ export class ZonesService {
     // Log zone deletion
     await this.logsService.createLog({
       userId,
-      userName,
+      email,
       userRole,
       action: 'delete_zone',
-      description: `Deleted zone: id=${id}, name=${existingZone.name}`,
+      description: `Deleted zone: id=${id}, name=${existingZone.nameEn} with user:${email}`,
     });
 
     return {
@@ -182,81 +204,5 @@ export class ZonesService {
     };
   }
 
-  async getZonesWithStats(userId: string, userName: string, userRole: string) {
-    const zones = await this.prisma.zone.findMany({
-      include: {
-        projects: {
-          include: {
-            inventories: {
-              include: {
-                leads: true,
-                visits: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { id: 'desc' },
-    });
 
-    const zonesWithStats = zones.map(zone => {
-      const totalProjects = zone.projects.length;
-      const totalInventories = zone.projects.reduce((sum, project) => sum + project.inventories.length, 0);
-      const totalLeads = zone.projects.reduce((sum, project) =>
-        sum + project.inventories.reduce((sum, inv) => sum + inv.leads.length, 0), 0);
-      const totalVisits = zone.projects.reduce((sum, project) =>
-        sum + project.inventories.reduce((sum, inv) => sum + inv.visits.length, 0), 0);
-
-      return {
-        ...zone,
-        stats: {
-          totalProjects,
-          totalInventories,
-          totalLeads,
-          totalVisits,
-        },
-      };
-    });
-
-    // Log zones stats retrieval
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_zones_with_stats',
-      description: `Retrieved ${zonesWithStats.length} zones with statistics`,
-    });
-
-    return zonesWithStats;
-  }
-
-  async getZonesByCity(city: string, userId: string, userName: string, userRole: string) {
-    const zones = await this.prisma.zone.findMany({
-      where: { name: { contains: city.toLowerCase() } },
-      include: {
-        projects: {
-          include: {
-            inventories: {
-              include: {
-                leads: true,
-                visits: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { id: 'desc' },
-    });
-
-    // Log zones retrieval by city
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_zones_by_city',
-      description: `Retrieved ${zones.length} zones for city: ${city}`,
-    });
-
-    return zones;
-  }
 } 

@@ -1,19 +1,25 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class UpdateZoneDto {
   @IsOptional()
   @IsString()
-  name?: string;
+  nameEn?: string;
+
+  @IsOptional()
+  @IsString()
+  nameAr?: string;
 
   @IsOptional()
   @IsString()
   description?: string;
 
   @IsOptional()
-  @IsString()
-  city?: string;
+  @IsNumber()
+  latitude?: number;
 
   @IsOptional()
-  @IsString()
-  area?: string;
-} 
+  @IsNumber()
+  longitude?: number;
+
+
+}

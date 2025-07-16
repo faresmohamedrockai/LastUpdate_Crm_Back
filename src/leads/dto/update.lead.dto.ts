@@ -12,7 +12,7 @@ export class UpdateLeadDto {
 
   @IsOptional()
   @IsNumber()
-  budget?: number;
+  budget?: string;
 
   @IsOptional()
   @IsString()
