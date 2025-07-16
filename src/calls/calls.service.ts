@@ -48,7 +48,7 @@ export class CallsService {
       userRole,
       action: 'create_call',
       leadId: dto.leadId,
-      description: `Created call: lead=${lead.name}, outcome=${dto.outcome}, duration=${dto.duration}min, project=${call.project?.name || 'none'}, notes=${dto.notes || 'none'}`,
+      description: `Created call: lead=${lead.nameEn}, outcome=${dto.outcome}, duration=${dto.duration}min, project=${call.project?.nameEn || 'none'}, notes=${dto.notes || 'none'}`,
       ip,
       userAgent,
     });
@@ -104,7 +104,7 @@ export class CallsService {
       userRole,
       action: 'get_call_by_id',
       leadId: call.leadId,
-      description: `Retrieved call: id=${id}, lead=${call.lead.name}, outcome=${call.outcome}`,
+      description: `Retrieved call: id=${id}, lead=${call.lead.nameEn}, outcome=${call.outcome}`,
     });
 
     return {
@@ -132,7 +132,7 @@ export class CallsService {
       userRole,
       action: 'get_calls_by_lead',
       leadId: leadId,
-      description: `Retrieved ${calls.length} calls for lead: ${lead.name}`,
+      description: `Retrieved ${calls.length} calls for lead: ${lead.nameEn}`,
     });
 
     return {
@@ -159,7 +159,7 @@ export class CallsService {
       userName,
       userRole,
       action: 'get_calls_by_project',
-      description: `Retrieved ${calls.length} calls for project: ${project.name}`,
+      description: `Retrieved ${calls.length} calls for project: ${project.nameEn}`,
     });
 
     return {
@@ -210,7 +210,7 @@ export class CallsService {
       userRole,
       action: 'update_call',
       leadId: existingCall.leadId,
-      description: `Updated call: id=${id}, lead=${existingCall.lead.name}, outcome=${dto.outcome}, duration=${dto.duration}min`,
+      description: `Updated call: id=${id}, lead=${existingCall.lead.nameEn}, outcome=${dto.outcome}, duration=${dto.duration}min`,
     });
 
     return {
@@ -239,7 +239,7 @@ export class CallsService {
       userRole,
       action: 'delete_call',
       leadId: existingCall.leadId,
-      description: `Deleted call: id=${id}, lead=${existingCall.lead.name}, outcome=${existingCall.outcome}`,
+      description: `Deleted call: id=${id}, lead=${existingCall.lead.nameEn}, outcome=${existingCall.outcome}`,
     });
 
     return {

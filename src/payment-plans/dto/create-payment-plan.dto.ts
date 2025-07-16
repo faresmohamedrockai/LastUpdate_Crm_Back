@@ -1,8 +1,8 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePaymentPlanDto {
   @IsNumber()
-  downPayment: number;
+  downPayment: number; // ✅ بدل downpayment
 
   @IsNumber()
   installment: number;
@@ -10,9 +10,23 @@ export class CreatePaymentPlanDto {
   @IsNumber()
   delivery: number;
 
+  @IsOptional()
+  schedule: any;
+
+  @IsOptional()
   @IsString()
-  schedule: string;
+  description?: string;
+
+  @IsOptional()
+  @IsNumber()
+  yearsToPay?: number;
+
+  @IsNumber()
+  installmentPeriod: number;
+
+  @IsNumber()
+  installmentEvery: number;
 
   @IsString()
   projectId: string;
-} 
+}

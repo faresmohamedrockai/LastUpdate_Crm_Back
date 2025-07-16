@@ -1,28 +1,11 @@
 import { IsString, IsOptional, IsArray, IsUUID } from 'class-validator';
 
 export class UpdateProjectDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
+  nameEn?: string;
+  nameAr?: string;
   location?: string;
-
-  @IsOptional()
-  @IsString()
   description?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  images?: string[];
-
-  @IsOptional()
-  @IsUUID()
+  images?: string | null;
   developerId?: string;
-
-  @IsOptional()
-  @IsUUID()
   zoneId?: string;
 }

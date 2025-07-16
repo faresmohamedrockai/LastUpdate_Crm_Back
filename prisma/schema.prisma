@@ -104,25 +104,25 @@ model Inventory {
 model Project {
   id           String        @id @default(uuid())
   nameEn       String
-  nameAr       String
+  nameAr       String?       // <- Optional
   location     String
   type         String
-  description  String?
-  images       String?
+  description  String?       // <- Optional
+  images       String?       // <- Optional
 
-  inventories  Inventory[]         // ✅ One-to-Many
+  developer    Developer?    @relation(fields: [developerId], references: [id])
+  developerId  String?       // <- Optional
+
+  zone         Zone?         @relation(fields: [zoneId], references: [id])
+  zoneId       String?       // <- Optional
+
+  paymentPlans PaymentPlan[]
+  inventories  Inventory[]
   calls        Call[]
-  developer    Developer? @relation(fields: [developerId], references: [id])
-  developerId  String?
-
-  zone         Zone?      @relation(fields: [zoneId], references: [id])
-  zoneId       String?
-
- paymentPlans PaymentPlan[]      // ✅ الآن أصبحت One-to-Many
-
-  createdAt    DateTime   @default(now())
   Contract     Contract[]
   meetings     Meeting[]
+
+  createdAt    DateTime @default(now())
 }
 
 

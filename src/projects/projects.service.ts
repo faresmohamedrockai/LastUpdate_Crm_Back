@@ -34,29 +34,35 @@ export class ProjectsService {
 
     // Check if project with same name already exists
     const existingProject = await this.prisma.project.findFirst({
-      where: { name: dto.name },
+      where: { nameEn: dto.nameEn },
     });
 
     if (existingProject) {
       throw new ConflictException('Project with this name already exists');
     }
 
-    const project = await this.prisma.project.create({
-      data: {
-        name: dto.name,
-        location: dto.location,
-        description: dto.description,
-        images: dto.images ? JSON.stringify(dto.images) : null,
-        developerId: dto.developerId,
-        zoneId: dto.zoneId,
-      },
-      include: {
-        developer: true,
-        zone: true,
-        inventories: true,
-        paymentPlan: true,
-      },
-    });
+const project = await this.prisma.project.create({
+  data: {
+    nameEn: dto.nameEn,
+    nameAr: dto.nameAr ?? null, // null إذا undefined
+    location: dto.location,
+    description: dto.description ?? null,
+    images: dto.images ? JSON.stringify(dto.images) : null,
+    developerId: dto.developerId ?? null,
+    zoneId: dto.zoneId ?? null,
+    type: 'residential', // أو أي قيمة افتراضية عندك لـ type
+  },
+  include: {
+    developer: true,
+    zone: true,
+    inventories: true,
+    paymentPlans: true,
+  },
+});
+
+
+
+
 
     // Log project creation
     await this.logsService.createLog({
@@ -64,7 +70,7 @@ export class ProjectsService {
       userName,
       userRole,
       action: 'create_project',
-      description: `Created project: name=${project.name}, location=${project.location}, developer=${project.developer?.nameEn || 'none'}, zone=${project.zone?.nameEn || 'none'}`,
+      description: `Created project: name=${project.nameEn}, location=${project.location}, `,
     });
 
     return { 
@@ -83,7 +89,7 @@ export class ProjectsService {
         inventories: true,
         developer: true,
         zone: true,
-        paymentPlan: true,
+        paymentPlans : true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -119,7 +125,7 @@ export class ProjectsService {
         },
         developer: true,
         zone: true,
-        paymentPlan: true,
+        paymentPlans : true,
         calls: true,
         meetings: true,
       },
@@ -135,7 +141,7 @@ export class ProjectsService {
       userName,
       userRole,
       action: 'get_project_by_id',
-      description: `Retrieved project: id=${id}, name=${project.name}, location=${project.location}`,
+      description: `Retrieved project: id=${id}, name=${project.nameEn}, location=${project.location}`,
     });
 
     return {
@@ -176,9 +182,9 @@ export class ProjectsService {
     }
 
     // Check if name is being changed and if it conflicts with another project
-    if (dto.name && dto.name !== exists.name) {
+    if (dto.nameEn && dto.nameEn !== exists.nameEn) {
       const nameExists = await this.prisma.project.findFirst({
-        where: { name: dto.name, id: { not: id } },
+        where: { nameEn: dto.nameEn, id: { not: id } },
       });
       if (nameExists) {
         throw new ConflictException('Project with this name already exists');
@@ -188,7 +194,8 @@ export class ProjectsService {
     const updated = await this.prisma.project.update({
       where: { id },
       data: {
-        ...(dto.name && { name: dto.name }),
+        ...(dto.nameEn && { nameEn: dto.nameEn }),
+        ...(dto.nameAr && { nameAr: dto.nameAr }),
         ...(dto.location && { location: dto.location }),
         ...(dto.description && { description: dto.description }),
         ...(dto.images && { images: JSON.stringify(dto.images) }),
@@ -199,7 +206,7 @@ export class ProjectsService {
         developer: true,
         zone: true,
         inventories: true,
-        paymentPlan: true,
+        paymentPlans : true,
       },
     });
 
@@ -209,7 +216,7 @@ export class ProjectsService {
       userName,
       userRole,
       action: 'update_project',
-      description: `Updated project: id=${id}, name=${updated.name}, location=${updated.location}`,
+      description: `Updated project: id=${id}, name=${updated.nameEn}, location=${updated.location}`,
     });
 
     return { 
@@ -242,7 +249,7 @@ export class ProjectsService {
       userName,
       userRole,
       action: 'delete_project',
-      description: `Deleted project: id=${id}, name=${exists.name}`,
+      description: `Deleted project: id=${id}, name=${exists.nameEn}`,
     });
 
     return { 
@@ -257,7 +264,7 @@ export class ProjectsService {
       include: {
         inventories: true,
         zone: true,
-        paymentPlan: true,
+        paymentPlans : true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -287,7 +294,7 @@ export class ProjectsService {
       include: {
         inventories: true,
         developer: true,
-        paymentPlan: true,
+        paymentPlans : true,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -30,4 +30,4 @@ ALTER TABLE `project` DROP COLUMN `name`,
     ADD COLUMN `type` VARCHAR(191) NOT NULL;
 
 -- AddForeignKey
-ALTER TABLE `Contract` ADD CONSTRAINT `Contract_projectId_fkey` FOREIGN KEY (`projectId`) REFERENCES `Project`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+

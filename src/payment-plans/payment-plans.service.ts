@@ -14,7 +14,7 @@ export class PaymentPlansService {
   async createPaymentPlan(dto: CreatePaymentPlanDto, userId: string, userName: string, userRole: string) {
     try {
       // Check if payment plan already exists for this project
-      const existingPaymentPlan = await this.prisma.paymentPlan.findUnique({
+      const existingPaymentPlan = await this.prisma.paymentPlan.findFirst({
         where: { projectId: dto.projectId },
       });
 
@@ -29,6 +29,8 @@ export class PaymentPlansService {
           delivery: dto.delivery,
           schedule: dto.schedule,
           projectId: dto.projectId,
+          installmentPeriod: dto.installmentPeriod,
+          installmentEvery: dto.installmentEvery,
         },
         include: {
           project: {
@@ -267,19 +269,10 @@ export class PaymentPlansService {
   }
 
   async getPaymentPlansByDuration(duration: string, userId: string, userName: string, userRole: string) {
-    const paymentPlans = await this.prisma.paymentPlan.findMany({
-      where: { schedule: { contains: duration } },
+  const allPaymentPlans = await this.prisma.paymentPlan.findMany({
+  include: {
+    project: {
       include: {
-        project: {
-          include: {
-            inventories: {
-              include: {
-                leads: true,
-                visits: true,
-              },
-            },
-          },
-        },
         inventories: {
           include: {
             leads: true,
@@ -287,8 +280,33 @@ export class PaymentPlansService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    },
+    inventories: {
+      include: {
+        leads: true,
+        visits: true,
+      },
+    },
+  },
+  orderBy: { createdAt: 'desc' },
+});
+
+// فلترة النتائج حسب `duration` في الـ schedule (كـ string)
+const filteredPlans = allPaymentPlans.filter(plan =>
+  JSON.stringify(plan.schedule).includes(duration),
+);
+
+// Log payment plans retrieval by duration
+await this.logsService.createLog({
+  userId,
+  userName,
+  userRole,
+  action: 'get_payment_plans_by_duration',
+  description: `Retrieved ${filteredPlans.length} payment plans with duration: ${duration}`,
+});
+
+
+
 
     // Log payment plans retrieval by duration
     await this.logsService.createLog({
@@ -296,9 +314,9 @@ export class PaymentPlansService {
       userName,
       userRole,
       action: 'get_payment_plans_by_duration',
-      description: `Retrieved ${paymentPlans.length} payment plans with duration: ${duration}`,
+      description: `Retrieved ${filteredPlans.length} payment plans with duration: ${duration}`,
     });
-
-    return paymentPlans;
+return filteredPlans;
+   
   }
 } 

@@ -40,7 +40,7 @@ export class DevelopersController {
     const { userId, email, role } = req.user;
    
     
-    return this.developersService.getAllDevelopers(userId, email, role);
+    return this.developersService.findAll();
   }
 
 

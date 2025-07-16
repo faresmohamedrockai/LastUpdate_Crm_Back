@@ -66,7 +66,7 @@ export class ContractsService {
       userRole,
       action: 'create_contract',
       leadId: dto.leadId,
-      description: `Created contract: lead=${lead.name}, dealValue=${dto.dealValue}, status=${dto.status}, inventory=${contract.inventory?.title || 'none'}, project=${contract.project?.name || 'none'}`,
+      description: `Created contract: lead=${lead.nameEn}, dealValue=${dto.dealValue}, status=${dto.status}, inventory=${contract.inventory?.title || 'none'}, project=${contract.project?.nameEn || 'none'}`,
     });
 
     return {
@@ -121,7 +121,7 @@ export class ContractsService {
       userRole,
       action: 'get_contract_by_id',
       leadId: contract.leadId,
-      description: `Retrieved contract: id=${id}, lead=${contract.lead.name}, dealValue=${contract.dealValue}`,
+      description: `Retrieved contract: id=${id}, lead=${contract.lead.nameEn}, dealValue=${contract.dealValue}`,
     });
 
     return contract;
@@ -150,7 +150,7 @@ export class ContractsService {
       userRole,
       action: 'get_contracts_by_lead',
       leadId: leadId,
-      description: `Retrieved ${contracts.length} contracts for lead: ${lead.name}`,
+      description: `Retrieved ${contracts.length} contracts for lead: ${lead.nameEn}`,
     });
 
     return contracts;
@@ -214,7 +214,7 @@ export class ContractsService {
       userRole,
       action: 'update_contract',
       leadId: existingContract.leadId,
-      description: `Updated contract: id=${id}, lead=${existingContract.lead.name}, dealValue=${dto.dealValue || existingContract.dealValue}, status=${dto.status || existingContract.status}`,
+      description: `Updated contract: id=${id}, lead=${existingContract.lead.nameEn}, dealValue=${dto.dealValue || existingContract.dealValue}, status=${dto.status || existingContract.status}`,
     });
 
     return {
@@ -246,7 +246,7 @@ export class ContractsService {
       userRole,
       action: 'delete_contract',
       leadId: existingContract.leadId,
-      description: `Deleted contract: id=${id}, lead=${existingContract.lead.name}, dealValue=${existingContract.dealValue}`,
+      description: `Deleted contract: id=${id}, lead=${existingContract.lead.nameEn}, dealValue=${existingContract.dealValue}`,
     });
 
     return {

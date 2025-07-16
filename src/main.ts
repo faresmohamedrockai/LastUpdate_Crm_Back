@@ -15,12 +15,12 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(morgan('dev'));
 
-  app.enableCors({
-    origin: true,
-    credentials: true,
-    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
-    allowedHeaders: 'Content-Type,Authorization',
-  });
+ app.enableCors({
+  origin: '*',
+  credentials: true,
+  methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+  allowedHeaders: 'Content-Type,Authorization,ngrok-skip-browser-warning', // ✅ أضف هذا
+});
 
   app.setGlobalPrefix('api');
 

@@ -62,7 +62,7 @@ export class DevelopersService {
   }
 
 
-  async findAll(userId: string, email: string, userRole: string) {
+  async findAll() {
     try {
       const developers = await this.prisma.developer.findMany({
         orderBy: { id: 'desc' },
@@ -79,20 +79,16 @@ export class DevelopersService {
           },
         },
       });
+console.log(developers);
 
-      await this.logsService.createLog({
-        action: 'READ',
-        userId,
-        email,
-        userRole,
-        description: `Retrieved all developers: count=${developers.length}`,
-      });
-
-      return developers;
+      return {
+        developers:developers,
+      };
     } catch (error) {
       throw new HttpException('Failed to retrieve developers', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
 
   async getDeveloperById(id: string, userId: string, email: string, userRole: string) {
     const developer = await this.prisma.developer.findUnique({

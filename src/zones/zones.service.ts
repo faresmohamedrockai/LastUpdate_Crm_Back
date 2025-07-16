@@ -61,16 +61,18 @@ async createZone(dto: CreateZoneDto, userId: string, userName: string, userRole:
       orderBy: { id: 'desc' },
     });
 
-    // Log zones retrieval
-    await this.logsService.createLog({
-      userId,
-      email,
-      userRole,
-      action: 'get_all_zones',
-      description: `Retrieved ${zones.length} zones`,
-    });
+    // // Log zones retrieval
+    // await this.logsService.createLog({
+    //   userId,
+    //   email,
+    //   userRole,
+    //   action: 'get_all_zones',
+    //   description: `Retrieved ${zones.length} zones`,
+    // });
 
-    return zones;
+    return {
+      zones:zones
+    };
   }
 
   async getZoneById(id: string, userId: string, userName: string, userRole: string) {
