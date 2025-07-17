@@ -26,21 +26,7 @@ export class ZonesController {
     return this.zonesService.getAllZones(userId, email, role);
   }
 
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  // @Get('stats')
-  // async getZonesWithStats(@Req() req) {
-  //   const { id: userId, name: userName, role: userRole } = req.user;
-  //   return this.zonesService.getZonesWithStats(userId, userName, userRole);
-  // }
 
-
-
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  // @Get(':id')
-  // async getZoneById(@Param('id') id: string, @Req() req) {
-  //   const { id: userId, name: userName, role: userRole } = req.user;
-  //   return this.zonesService.getZoneById(id, userId, userName, userRole);
-  // }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Patch(':id')

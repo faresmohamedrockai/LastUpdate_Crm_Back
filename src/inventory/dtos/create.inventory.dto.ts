@@ -1,39 +1,48 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsUUID, IsEnum } from 'class-validator';
-
-export enum InventoryStatus {
-  AVAILABLE = 'available',
-  RESERVED = 'reserved',
-  SOLD = 'sold',
-  UNDER_CONSTRUCTION = 'under_construction',
-}
+import { IsString, IsNumber, IsOptional, IsArray, IsUUID } from 'class-validator';
 
 export class CreateInventoryDto {
+  @IsOptional()
   @IsString()
-  title: string;
+  title?: string;
 
   @IsOptional()
   @IsString()
-  description?: string;
-
-  @IsNumber()
-  price: number;
-
-  @IsNumber()
-  area: number;
-
-  @IsNumber()
-  bedrooms: number;
-
-  @IsNumber()
-  bathrooms: number;
+  titleEn?: string;
 
   @IsOptional()
   @IsString()
-  unitNumber?: string;
+  titleAr?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 
   @IsOptional()
   @IsNumber()
-  floor?: number;
+  price?: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsNumber()
+  area?: number;
+
+  @IsOptional()
+  @IsNumber()
+  bedrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  bathrooms?: number;
+
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  amenities?: string[];
+
 
   @IsOptional()
   @IsArray()
@@ -41,13 +50,41 @@ export class CreateInventoryDto {
   images?: string[];
 
   @IsOptional()
-  @IsEnum(InventoryStatus)
-  status?: InventoryStatus;
+  @IsString()
+  typeOther?: string;
 
   @IsOptional()
-  @IsUUID()
-  projectId?: string;
+  @IsString()
+  amenitiesOther?: string;
 
+  
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+
+  
+ @IsOptional()
+  @IsString()
+  zoneId!: string;  // required field
+
+ @IsOptional()
+  @IsString()
+  projectId!: string; // required field
+
+ @IsOptional()
+  @IsString()
+  developerId!: string; // required field
+
+
+ @IsOptional()
+  @IsString()
+  parking?: string;
+
+
+
+ @IsOptional()
   @IsOptional()
   @IsUUID()
   paymentPlanId?: string;

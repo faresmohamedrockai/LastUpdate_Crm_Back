@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
+import {UpdateProjectDto} from './dto/update-project.dto'
 import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
-
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 @Injectable()
 export class ProjectsService {
   constructor(
     private prisma: PrismaService,
+    private cloudinaryservice: CloudinaryService,
     private readonly logsService: LogsService,
   ) { }
 
@@ -44,15 +45,25 @@ async createProject(
   if (existingProject) {
     throw new ConflictException('Project with this name already exists');
   }
+// 4. رفع الصور من base64 إلى Cloudinary (لو موجودة)
+let uploadedImages: string[] = [];
+
+if (dto.images && dto.images.length > 0) {
+  uploadedImages = await Promise.all(
+    dto.images.map((base64, index) =>
+      this.cloudinaryservice.uploadImageFromBase64(base64, 'projects', `project_${Date.now()}_${index}`)
+    ),
+  );
+}
 
   // 4. إنشاء المشروع
   const project = await this.prisma.project.create({
     data: {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr ?? null,
-      location: dto.location,
+     
       description: dto.description ?? null,
-      images: dto.images ?? [],
+      images:  uploadedImages ?? [],
       developerId: dto.developerId ?? null,
       zoneId: dto.zoneId ?? null,
       type: dto.type ?? 'residential',
@@ -68,24 +79,28 @@ async createProject(
     },
   });
 
-  // 5. إضافة payment plans (لو موجودة)
-  if (dto.paymentPlans && dto.paymentPlans.length > 0) {
-    for (const plan of dto.paymentPlans) {
-      await this.prisma.paymentPlan.create({
-        data: {
-          downpayment: plan.downPayment,
-          installment: plan.installment,
-          delivery: plan.delivery,
-          schedule: plan.schedule,
-          description: plan.description,
-          yearsToPay: plan.yearsToPay,
-          installmentPeriod: plan.installmentPeriod,
-          installmentEvery: plan.installmentEvery,
-          projectId: project.id,
-        },
-      });
-    }
+ 
+if (dto.paymentPlans && dto.paymentPlans.length > 0) {
+  for (const plan of dto.paymentPlans) {
+    await this.prisma.paymentPlan.create({
+  data: {
+    downpayment: plan.downpayment,
+    installment: 100 - plan.downpayment - plan.delivery,
+    delivery: plan.delivery,
+    schedule: plan.schedule,
+    description: plan.description,
+    yearsToPay: plan.yearsToPay,
+    installmentPeriod: plan.installmentPeriod,
+    installmentMonthsCount: plan.installmentMonthsCount,
+    firstInstallmentDate: plan.firstInstallmentDate ? new Date(plan.firstInstallmentDate) : null,
+    deliveryDate: plan.deliveryDate ? new Date(plan.deliveryDate) : null,
+    
+    projectId: project.id,
+  },
+});
+
   }
+}
 
  
   return {
@@ -146,57 +161,52 @@ async createProject(
   userRole: string,
 ) {
   // 1. تحقق من وجود المشروع
-  const exists = await this.prisma.project.findUnique({
+  const existingProject = await this.prisma.project.findUnique({
     where: { id },
-    include: { paymentPlans: true }, // لجلب الخطط القديمة
+    include: { paymentPlans: true },
   });
-  if (!exists) throw new NotFoundException('Project not found');
+  if (!existingProject) throw new NotFoundException('Project not found');
 
-  // 2. تحقق من وجود المطور (إن وُجد)
+  // 2. تحقق من وجود المطور
   if (dto.developerId) {
     const developer = await this.prisma.developer.findUnique({
       where: { id: dto.developerId },
     });
-    if (!developer) {
-      throw new NotFoundException('Developer not found');
-    }
+    if (!developer) throw new NotFoundException('Developer not found');
   }
 
-  // 3. تحقق من وجود المنطقة (إن وُجدت)
+  // 3. تحقق من وجود المنطقة
   if (dto.zoneId) {
     const zone = await this.prisma.zone.findUnique({
       where: { id: dto.zoneId },
     });
-    if (!zone) {
-      throw new NotFoundException('Zone not found');
-    }
+    if (!zone) throw new NotFoundException('Zone not found');
   }
 
-  // 4. تحقق من عدم تكرار الاسم
-  if (dto.nameEn && dto.nameEn !== exists.nameEn) {
-    const nameExists = await this.prisma.project.findFirst({
+  // 4. تحقق من عدم تكرار الاسم الإنجليزي
+  if (dto.nameEn && dto.nameEn !== existingProject.nameEn) {
+    const duplicate = await this.prisma.project.findFirst({
       where: {
         nameEn: dto.nameEn,
         id: { not: id },
       },
     });
-    if (nameExists) {
-      throw new ConflictException('Project with this name already exists');
-    }
+    if (duplicate) throw new ConflictException('Project with this English name already exists');
   }
 
-  // 5. تحديث بيانات المشروع
+  // 5. جهز بيانات التحديث
+  const dataToUpdate: any = {};
+  if (dto.nameEn !== undefined) dataToUpdate.nameEn = dto.nameEn;
+  if (dto.nameAr !== undefined) dataToUpdate.nameAr = dto.nameAr;
+  if (dto.description !== undefined) dataToUpdate.description = dto.description;
+  if (dto.images !== undefined) dataToUpdate.images = dto.images;
+  if (dto.developerId !== undefined) dataToUpdate.developerId = dto.developerId;
+  if (dto.zoneId !== undefined) dataToUpdate.zoneId = dto.zoneId;
+
+  // 6. تحديث المشروع
   const updatedProject = await this.prisma.project.update({
     where: { id },
-    data: {
-      ...(dto.nameEn && { nameEn: dto.nameEn }),
-      ...(dto.nameAr && { nameAr: dto.nameAr }),
-      ...(dto.location && { location: dto.location }),
-      ...(dto.description && { description: dto.description }),
-      ...(dto.images && { images: dto.images }),
-      ...(dto.developerId && { developerId: dto.developerId }),
-      ...(dto.zoneId && { zoneId: dto.zoneId }),
-    },
+    data: dataToUpdate,
     include: {
       developer: true,
       zone: true,
@@ -205,35 +215,38 @@ async createProject(
     },
   });
 
-  // 6. تحديث خطط الدفع (اختياري)
-  if (dto.paymentPlans && dto.paymentPlans.length > 0) {
-    // حذف الخطط القديمة (اختياري حسب احتياجك)
-    await this.prisma.paymentPlan.deleteMany({
-      where: { projectId: id },
-    });
+  // 7. حذف خطط الدفع القديمة
+  await this.prisma.paymentPlan.deleteMany({
+    where: { projectId: id },
+  });
 
-    // إنشاء الخطط الجديدة
+
+  // 8. إضافة الخطط الجديدة
+  if (dto.paymentPlans && dto.paymentPlans.length > 0) {
     for (const plan of dto.paymentPlans) {
       await this.prisma.paymentPlan.create({
         data: {
-          ...plan,
-          downpayment: plan.downPayment, // تأكد من تطابق الاسم مع Prisma schema
+          downpayment: plan.downpayment,
+           installment: 100 - plan.downpayment - plan.delivery,
+          delivery: plan.delivery,
+          schedule: plan.schedule,
+          description: plan.description,
+          yearsToPay: plan.yearsToPay,
+          installmentPeriod: plan.installmentPeriod,
+          installmentMonthsCount: plan.installmentMonthsCount,
+          firstInstallmentDate: plan.firstInstallmentDate
+            ? new Date(plan.firstInstallmentDate)
+            : null,
+          deliveryDate: plan.deliveryDate
+            ? new Date(plan.deliveryDate)
+            : null,
           projectId: id,
         },
       });
     }
   }
 
-  // 7. تسجيل اللوج
-  await this.logsService.createLog({
-    userId,
-    email,
-    userRole,
-    action: 'update_project',
-    description: `Updated project: id=${id}, name=${updatedProject.nameEn}, location=${updatedProject.location}`,
-  });
-
-  // 8. الاستجابة
+  // 9. إعادة المشروع المحدّث
   return {
     status: 200,
     message: 'Project updated successfully',
@@ -245,34 +258,54 @@ async createProject(
 }
 
 
-  async deleteProject(id: string, userId: string, userName: string, userRole: string) {
-    const exists = await this.prisma.project.findUnique({
-      where: { id },
-      include: { inventories: true }
-    });
-    if (!exists) throw new NotFoundException('Project not found');
+  
 
-    // Check if project has inventories
-    if (exists.inventories.length > 0) {
-      throw new ConflictException('Cannot delete project with existing inventories');
-    }
 
-    await this.prisma.project.delete({ where: { id } });
+ 
 
-    // Log project deletion
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'delete_project',
-      description: `Deleted project: id=${id}, name=${exists.nameEn}`,
-    });
 
-    return {
-      status: 200,
-      message: 'Project deleted successfully'
-    };
+
+ async deleteProject(id: string, userId: string, userName: string, userRole: string) {
+  const exists = await this.prisma.project.findUnique({
+    where: { id },
+    include: {
+      inventories: true,
+      paymentPlans: true,
+    },
+  });
+
+  if (!exists) throw new NotFoundException('Project not found');
+
+  // تأكد أنه لا توجد وحدات مرتبطة بالمشروع
+  if (exists.inventories.length > 0) {
+    throw new ConflictException('Cannot delete project with existing inventories');
   }
+
+  // حذف جميع خطط الدفع المرتبطة بالمشروع
+  await this.prisma.paymentPlan.deleteMany({
+    where: { projectId: id },
+  });
+
+  // حذف المشروع
+  await this.prisma.project.delete({
+    where: { id },
+  });
+
+  // تسجيل العملية (يمكنك تفعيل السطر لو أردت تسجيل اللوج)
+  // await this.logsService.createLog({
+  //   userId,
+  //   userName,
+  //   userRole,
+  //   action: 'delete_project',
+  //   description: `Deleted project: id=${id}, name=${exists.nameEn}`,
+  // });
+
+  return {
+    status: 200,
+    message: 'Project deleted successfully',
+  };
+}
+
 
  
 }

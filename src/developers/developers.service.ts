@@ -79,7 +79,7 @@ export class DevelopersService {
           },
         },
       });
-console.log(developers);
+
 
       return {
         developers:developers,

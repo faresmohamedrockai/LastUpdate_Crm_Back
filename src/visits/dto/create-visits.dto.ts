@@ -1,5 +1,11 @@
 // src/visit/dto/create-visit.dto.ts
-import { IsDateString, IsString, IsUUID, IsOptional } from 'class-validator';
+
+import {
+  IsDateString,
+  IsString,
+  IsUUID,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateVisitDto {
   @IsDateString()
@@ -8,11 +14,13 @@ export class CreateVisitDto {
   @IsString()
   status: string;
 
-  @IsUUID()
-  leadId: string;
-
-  @IsUUID()
+@IsOptional()
+  @IsString()
   inventoryId: string;
+
+  @IsOptional()
+  @IsString()
+  objections?: string;
 
   @IsOptional()
   @IsString()

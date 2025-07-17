@@ -13,41 +13,38 @@ export class VisitsController {
   constructor(private readonly visitsService: VisitsService) {}
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Post()
+  @Post("create/:id")
   async createVisit(@Body() dto: CreateVisitDto, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
-    return this.visitsService.createVisit(dto, userId, userName, userRole);
+    const {id}=req.params
+    return this.visitsService.createVisit(dto, userId, userName, userRole,id);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get()
+  @Get(":id")
   async getAllVisits(@Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
-    return this.visitsService.getAllVisits(userId, userName, userRole);
+    const {id}=req.params
+    return this.visitsService.getAllVisits(userId, userName, userRole,id);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getVisitById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.visitsService.getVisitById(id, userId, userName, userRole);
-  }
+  
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
-  @Patch(':id')
-  async updateVisit(
-    @Param('id') id: string,
-    @Body() dto: CreateVisitDto,
-    @Req() req
-  ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.visitsService.updateVisit(id, dto, userId, userName, userRole);
-  }
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
+  // @Patch(':id')
+  // async updateVisit(
+  //   @Param('id') id: string,
+  //   @Body() dto: CreateVisitDto,
+  //   @Req() req
+  // ) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.visitsService.updateVisit(id, dto, userId, userName, userRole);
+  // }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN)
-  @Delete(':id')
-  async deleteVisit(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.visitsService.deleteVisit(id, userId, userName, userRole);
-  }
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN)
+  // @Delete(':id')
+  // async deleteVisit(@Param('id') id: string, @Req() req) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.visitsService.deleteVisit(id, userId, userName, userRole);
+  // }
 }

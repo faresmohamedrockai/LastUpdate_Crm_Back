@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,43 +18,36 @@ export class LeadsService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private readonly logsService: LogsService,
-  ) {}
+  ) { }
 
-  async create(dto: CreateLeadDto, userId: string, userName?: string, userRole?: string, ip?: string, userAgent?: string) {
+  async create(dto: CreateLeadDto, userId: string, email?: string, userRole?: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required to create a lead');
+    }
+    console.log(dto);
+
+
     const existingLead = await this.prisma.lead.findUnique({
-      
       where: { contact: dto.contact },
     });
-
-
-
 
     if (existingLead) {
       throw new ConflictException('Lead with this contact already exists');
     }
 
 
-
-
-    if (dto.inventoryInterestId) {
-      const inventory = await this.prisma.inventory.findUnique({
-        where: { id: dto.inventoryInterestId },
-      });
-      if (!inventory) {
-        throw new NotFoundException('Inventory item not found');
-      }
-    }
-
     const leadData: any = {
-      name: dto.name,
+
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
       contact: dto.contact,
-      budget: typeof dto.budget === 'number' ? String(dto.budget) : dto.budget, // Handle both number and string
-      leadSource: dto.leadSource,
+      notes: dto.notes,
+      budget: typeof dto.budget === 'number' ? String(dto.budget) : dto.budget,
+      source: dto.source,
       status: dto.status,
+
       owner: {
-        connect: { id: userId },
+        connect: { id: dto.assignedTo },
       },
     };
 
@@ -61,40 +55,40 @@ export class LeadsService {
       leadData.lastCall = new Date(dto.lastCall);
     }
 
-
-
     if (dto.lastVisit) {
       leadData.lastVisit = new Date(dto.lastVisit);
     }
-
-
-
     if (dto.inventoryInterestId) {
-      leadData.inventoryInterestId = dto.inventoryInterestId;
+      const inventory = await this.prisma.inventory.findUnique({
+        where: { id: dto.inventoryInterestId },
+      });
+      if (!inventory) {
+        throw new NotFoundException('Inventory item not found');
+      }
+
+      leadData.inventoryInterest = {
+        connect: { id: dto.inventoryInterestId },
+      };
     }
 
-
-
-
-    const lead = await this.prisma.lead.create({ data: leadData });
-
-    // await this.logsService.createLog({
-    //   userId,
-    //   userName,
-    //   userRole,
-    //   action: 'create_lead',
-    //   leadId: lead.id,
-    //   description: `Created lead: name=${lead.name}, contact=${lead.contact}, budget=${lead.budget}, leadSource=${lead.leadSource}, status=${lead.status}, ownerId=${lead.ownerId}, inventoryInterestId=${lead.inventoryInterestId || 'none'}`,
-    //   ip,
-    //   userAgent,
-    // });
+    const lead = await this.prisma.lead.create({
+      data: leadData,
+      include: {
+        inventoryInterest: true,
+      },
+    });
 
     return {
       status: 201,
       message: 'Lead created successfully',
-      data: lead,
+      data: {
+        ...lead,
+        inventory: lead.inventoryInterest ?? null,
+        properties: [], // ⬅️ نجهزها لاحقًا أو تفضل فاضية
+      },
     };
   }
+
 
   async getLeads(user: { id: string; role: Role }, userName?: string, userRole?: string) {
     let leads;
@@ -137,41 +131,20 @@ export class LeadsService {
     }
 
     // Log leads retrieval
-    await this.logsService.createLog({
-      userId: user.id,
-      userName,
-      userRole,
-      action: 'get_leads',
-      description,
-    });
+    // await this.logsService.createLog({
+    //   userId: user.id,
+    //   userName,
+    //   userRole,
+    //   action: 'get_leads',
+    //   description,
+    // });
 
-    return leads;
+    return { leads };
   }
 
-  async getLeadById(leadId: string, userId: string, userName: string, userRole: string) {
-    const lead = await this.prisma.lead.findUnique({
-      where: { id: leadId },
-      include: { owner: true },
-    });
 
-    if (!lead) {
-      throw new NotFoundException('Lead not found');
-    }
 
-    // Log lead retrieval
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_lead_by_id',
-      leadId: leadId,
-      description: `Retrieved lead: id=${leadId}, name=${lead.name}, contact=${lead.contact}`,
-    });
-
-    return lead;
-  }
-
-  async updateLead(leadId: string, dto: UpdateLeadDto, user: { id: string; role: Role }, userName?: string, userRole?: string) {
+  async updateLead(leadId: string, dto: UpdateLeadDto, user: { id: string; role: Role }, email?: string, userRole?: string) {
     const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
 
     if (!lead) throw new NotFoundException('Lead not found');
@@ -184,10 +157,13 @@ export class LeadsService {
         throw new ForbiddenException('You can only edit your own leads');
       }
 
+      // Sales Rep limited update
       const limitedUpdate = {
         ...(dto.status && { status: dto.status }),
-        ...(dto.notes && { notes: dto.notes }),
+        ...(dto.notes && { notes: [dto.notes] }),
       };
+
+
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },
@@ -197,7 +173,7 @@ export class LeadsService {
       // Log limited lead update
       await this.logsService.createLog({
         userId,
-        userName,
+        email,
         userRole,
         action: 'update_lead_limited',
         leadId: leadId,
@@ -210,27 +186,30 @@ export class LeadsService {
     // Admin/Sales Admin/Team Leader: يعدل كل الحقول
     const updatedLead = await this.prisma.lead.update({
       where: { id: leadId },
+      // Full update for admins
       data: {
-        name: dto.name,
+        nameAr: dto.nameAr,
+        nameEn: dto.nameEn,
         contact: dto.contact,
         budget: dto.budget,
-        leadSource: dto.leadSource,
+        source: dto.source,
         status: dto.status,
-        notes: dto.notes,
+        notes: dto.notes ? [dto.notes] : undefined,
         lastCall: dto.lastCall,
         lastVisit: dto.lastVisit,
         inventoryInterestId: dto.inventoryInterestId,
-      },
+      }
+
     });
 
     // Log full lead update
     await this.logsService.createLog({
       userId,
-      userName,
+      email,
       userRole,
       action: 'update_lead_full',
-      leadId: leadId,
-      description: `Updated lead: id=${leadId}, name=${dto.name}, contact=${dto.contact}, status=${dto.status}`,
+      // leadId: leadId,
+      description: `Updated lead: id=${leadId}, name=${dto.nameEn}, contact=${dto.contact}, status=${dto.status}`,
     });
 
     return updatedLead;
@@ -260,7 +239,7 @@ export class LeadsService {
       userRole,
       action: 'delete_lead',
       leadId: leadId,
-      description: `Deleted lead: id=${leadId}, name=${existingLead.name}, contact=${existingLead.contact}`,
+      description: `Deleted lead: id=${leadId}, name=${existingLead.nameEn}, contact=${existingLead.contact}`,
     });
 
     return {

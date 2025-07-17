@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "PaymentPlan" ALTER COLUMN "schedule" DROP NOT NULL,
+ALTER COLUMN "schedule" SET DATA TYPE TEXT;

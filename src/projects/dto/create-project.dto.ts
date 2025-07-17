@@ -10,8 +10,7 @@ export class CreateProjectDto {
   @IsString()
   nameAr?: string;
 
-  @IsString()
-  location: string;
+ 
 
   @IsOptional()
   @IsString()
@@ -43,7 +42,7 @@ export class CreateProjectDto {
   @IsUUID()
   zoneId?: string;
 
-  // ✅ إضافة هذا السطر
+ 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

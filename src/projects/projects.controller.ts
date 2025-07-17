@@ -13,7 +13,7 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
-  @Post()
+  @Post("create")
   async createProject(@Body() dto: CreateProjectDto, @Req() req) {
     const {   email,  role } = req.user;
     return this.projectsService.createProject(dto, email, role);
@@ -28,19 +28,26 @@ export class ProjectsController {
 
 
 
-
-  
-
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Patch(':id')
   async updateProject(
     @Param('id') id: string,
-    @Body() dto: UpdateProjectDto,
+    @Body() dto:UpdateProjectDto ,
     @Req() req
   ) {
     const {  userId, email, role } = req.user;
     return this.projectsService.updateProject(id, dto, userId, email, role);
   }
+
+
+
+
+
+
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')

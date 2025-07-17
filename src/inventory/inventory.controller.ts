@@ -15,12 +15,12 @@ import { Role } from '../auth/roles.enum';
 
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Controller('inventory')
+@Controller('properties')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
-  @Post()
+  @Post("create")
   async createInventory(@Body() dto: CreateInventoryDto, @Req() req) {
     const { id: userId, name: userName, role: userRole } = req.user;
     return this.inventoryService.createInventory(dto, userId, userName, userRole);

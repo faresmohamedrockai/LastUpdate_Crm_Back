@@ -1,5 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsUUID, IsEnum } from 'class-validator';
-import { InventoryStatus } from './create.inventory.dto';
+import { IsOptional, IsString, IsNumber, IsArray, IsUUID } from 'class-validator';
 
 export class UpdateInventoryDto {
   @IsOptional()
@@ -8,11 +7,23 @@ export class UpdateInventoryDto {
 
   @IsOptional()
   @IsString()
-  description?: string;
+  titleEn?: string;
+
+  @IsOptional()
+  @IsString()
+  titleAr?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 
   @IsOptional()
   @IsNumber()
   price?: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 
   @IsOptional()
   @IsNumber()
@@ -28,11 +39,20 @@ export class UpdateInventoryDto {
 
   @IsOptional()
   @IsString()
-  unitNumber?: string;
+  parking?: string;
 
   @IsOptional()
-  @IsNumber()
-  floor?: number;
+  @IsArray()
+  @IsString({ each: true })
+  amenities?: string[];
+
+  @IsOptional()
+  @IsString()
+  typeOther?: string;
+
+  @IsOptional()
+  @IsString()
+  amenitiesOther?: string;
 
   @IsOptional()
   @IsArray()
@@ -40,14 +60,30 @@ export class UpdateInventoryDto {
   images?: string[];
 
   @IsOptional()
-  @IsEnum(InventoryStatus)
-  status?: InventoryStatus;
+  @IsString()
+  status?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  zoneId?: string;
+
+  @IsOptional()
+  @IsString()
   projectId?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  developerId?: string;
+
+  @IsOptional()
+  @IsString()
   paymentPlanId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  downPayment?: number;
+
+  @IsOptional()
+  @IsNumber()
+  deliveryPayment?: number;
 }

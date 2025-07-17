@@ -1,39 +1,55 @@
-// leads/dto/create-lead.dto.ts
-import { IsString, IsNumber, IsOptional, IsUUID, IsEnum } from 'class-validator';
-// src/common/enums/lead-status.enum.ts
+import { IsString, IsOptional, IsUUID, IsEnum } from 'class-validator';
+
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
   FOLLOW_UP = 'follow_up',
   SCHEDULED_VISIT = 'scheduled_visit',
   OPEN_DEAL = 'open_deal',
   CANCELLATION = 'cancellation',
+  CLOSED_DEAL = 'closed_deal',
+  NO_ANSWER = 'no_answer',
+  NOT_INTERSTED_NOW = 'not_intersted_now',
 }
-
 export class CreateLeadDto {
+  @IsOptional()
   @IsString()
-  name: string;
+  name?: string;
 
-
-  
+  @IsOptional()
   @IsString()
-  nameAr: string;
+  nameAr?: string;
 
-
-
+  @IsOptional()
   @IsString()
-  nameEn: string;
+  nameEn?: string;
 
+  @IsOptional()
   @IsString()
-  contact: string;
+  contact?: string;
 
-  @IsString()
-  budget: string;
 
+  @IsOptional()
   @IsString()
-  leadSource: string;
+  assignedTo?: string;
 
+  @IsOptional()
   @IsString()
-  status: LeadStatus; 
+  budget?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+
+
+
+
+  @IsOptional()
+  @IsEnum(LeadStatus)
+  status?: LeadStatus;
 
   @IsOptional()
   lastCall?: Date;
@@ -44,8 +60,4 @@ export class CreateLeadDto {
   @IsOptional()
   @IsUUID()
   inventoryInterestId?: string;
-
-
-
-
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update.lead.dto';
@@ -17,27 +17,32 @@ import { Role } from '../auth/roles.enum';
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Post()
-  async createLead(@Body() dto: CreateLeadDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    const ip = req.ip;
-    const userAgent = req.headers['user-agent'];
-    return this.leadsService.create(dto, userId, userName, userRole, ip, userAgent);
+  @Post("create")
+@Post('create')
+@Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+async createLead(@Body() dto: CreateLeadDto, @Req() req) {
+  const { userId, email, role } = req.user;
+
+  if (!userId) {
+    throw new BadRequestException('User ID not found in request');
   }
+
+  return this.leadsService.create(dto, userId, email, role);
+}
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getLeads(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.leadsService.getLeads({ id: userId, role: userRole }, userName, userRole);
+    const { id: userId, email:email, role: userRole } = req.user;
+    return this.leadsService.getLeads({ id: userId, role: userRole }, email, userRole);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getLeadById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.leadsService.getLeadById(id, userId, userName, userRole);
-  }
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  // @Get(':id')
+  // async getLeadById(@Param('id') id: string, @Req() req) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.leadsService.getLeadById(id, userId, userName, userRole);
+  // }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Patch(':id')

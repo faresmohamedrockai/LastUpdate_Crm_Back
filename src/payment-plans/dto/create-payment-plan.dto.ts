@@ -1,4 +1,5 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, IsDateString } from 'class-validator';
 
 export enum InstallmentPeriodEnum {
   MONTHLY = 'monthly',
@@ -8,8 +9,12 @@ export enum InstallmentPeriodEnum {
 }
 
 export class NestedPaymentPlanDto {
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @IsNumber()
-  downPayment: number;
+  downpayment: number;
 
   @IsNumber()
   installment: number;
@@ -17,20 +22,25 @@ export class NestedPaymentPlanDto {
   @IsNumber()
   delivery: number;
 
-  @IsOptional()
-  schedule: any;
-
-  @IsOptional()
   @IsString()
-  description?: string;
+  schedule: string;
 
-  @IsOptional()
   @IsNumber()
-  yearsToPay?: number;
+  yearsToPay: number;
 
   @IsEnum(InstallmentPeriodEnum)
   installmentPeriod: InstallmentPeriodEnum;
 
   @IsNumber()
-  installmentEvery: number;
+  installmentMonthsCount: number;
+
+  @IsDateString()
+  firstInstallmentDate: string;
+
+  @IsDateString()
+  deliveryDate: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
