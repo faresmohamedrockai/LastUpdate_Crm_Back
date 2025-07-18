@@ -143,6 +143,8 @@ async refreshToken(
   @Req() req: RequestWithCookies,
   @Res() res: Response
 ) {
+  
+ 
   const refreshToken = req.cookies?.refresh_token;
   if (!refreshToken) {
     throw new ForbiddenException('No refresh token provided');
@@ -150,6 +152,11 @@ async refreshToken(
 
   const { access_token } = await this.authService.refreshToken(refreshToken);
 
+res.cookie('access_token',access_token , {
+  httpOnly: true,
+  secure: true,
+  maxAge: 900000, // 1 ساعة
+});
 
   return res.json({ access_token });
 }
