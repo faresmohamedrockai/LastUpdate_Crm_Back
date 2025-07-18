@@ -133,7 +133,7 @@ export class AuthService {
       userId: existingUser.id,
       action: 'login',
       description: `User ${existingUser.email} logged in`,
-     
+
       userName: existingUser.name,
       userRole: existingUser.role,
     });
@@ -198,23 +198,29 @@ export class AuthService {
 
 
 
-async checkAuth(access_token: string) {
-  try {
-    const payload = await this.jwtService.verifyAsync(access_token, {
-      secret: this.configService.get<string>('SECERT_JWT_ACCESS') || 'default_secret',
-    });
+  async checkAuth(access_token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(access_token, {
+        secret: this.configService.get<string>('SECERT_JWT_ACCESS') || 'default_secret',
+      });
 
-    return {
-      ok: true,
-      status:200,
-      message: 'Valid token',
-     
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      status:401,
-      message: 'Invalid or expired token ❌',
+      return {
+        user: {
+          ok: true,
+          status: 200,
+          message: 'Valid token'
+        }
+
+
+      };
+    } catch (error) {
+      return {
+        user:{
+        ok: false,
+          status: 401,
+            message: 'Invalid or expired token',
+}
+
     };
   }
 }
@@ -226,77 +232,77 @@ async checkAuth(access_token: string) {
 
 
   async refreshToken(refreshToken: string) {
-    try {
-      const payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get<string>("SECERT_JWT_REFRESH"),
-      });
+  try {
+    const payload = await this.jwtService.verifyAsync(refreshToken, {
+      secret: this.configService.get<string>("SECERT_JWT_REFRESH"),
+    });
 
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
 
-      if (!user) {
-        throw new ForbiddenException('User not found');
-      }
-
-      const access_token = await this.jwtService.signAsync(
-        {
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        },
-        {
-          secret: this.configService.get<string>("SECERT_JWT_ACCESS"),
-          expiresIn: '15m',
-        }
-      );
-
-      return { access_token };
-    } catch (error) {
-      throw new ForbiddenException('Access Denied');
+    if (!user) {
+      throw new ForbiddenException('User not found');
     }
+
+    const access_token = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      {
+        secret: this.configService.get<string>("SECERT_JWT_ACCESS"),
+        expiresIn: '15m',
+      }
+    );
+
+    return { access_token };
+  } catch (error) {
+    throw new ForbiddenException('Access Denied');
   }
+}
 
 
 
   async getOneUser(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+  const user = await this.prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+
+  let teamMembers: { id: string; name: string; email: string }[] = [];
+
+  if (user.role === 'team_leader') {
+    teamMembers = await this.prisma.user.findMany({
+      where: { teamLeaderId: user.id },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
       },
     });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-
-    let teamMembers: { id: string; name: string; email: string }[] = [];
-
-    if (user.role === 'team_leader') {
-      teamMembers = await this.prisma.user.findMany({
-        where: { teamLeaderId: user.id },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      });
-    }
-
-    return {
-      status: 200,
-      message: 'User found',
-      user: {
-        ...user,
-        teamMembers,
-      },
-    };
   }
+
+  return {
+    status: 200,
+    message: 'User found',
+    user: {
+      ...user,
+      teamMembers,
+    },
+  };
+}
 
 
 
@@ -323,32 +329,32 @@ async checkAuth(access_token: string) {
 
   // For Delete User Just admin can do it
   async deleteUser(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException("User not found");
+  const user = await this.prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundException("User not found");
 
-    // حذف البيانات المرتبطة أولاً
-    await this.prisma.$transaction(async (tx) => {
-      // حذف الـ logs المرتبطة بالمستخدم
-      await tx.log.deleteMany({ where: { userId: id } });
+  // حذف البيانات المرتبطة أولاً
+  await this.prisma.$transaction(async (tx) => {
+    // حذف الـ logs المرتبطة بالمستخدم
+    await tx.log.deleteMany({ where: { userId: id } });
 
-      // حذف الـ leads المرتبطة بالمستخدم
-      await tx.lead.deleteMany({ where: { ownerId: id } });
+    // حذف الـ leads المرتبطة بالمستخدم
+    await tx.lead.deleteMany({ where: { ownerId: id } });
 
-      // حذف الـ calls المرتبطة بالمستخدم (لو كان هناك relation)
-      // await tx.call.deleteMany({ where: { userId: id } });
+    // حذف الـ calls المرتبطة بالمستخدم (لو كان هناك relation)
+    // await tx.call.deleteMany({ where: { userId: id } });
 
-      // حذف الـ visits المرتبطة بالمستخدم (لو كان هناك relation)
-      // await tx.visit.deleteMany({ where: { userId: id } });
+    // حذف الـ visits المرتبطة بالمستخدم (لو كان هناك relation)
+    // await tx.visit.deleteMany({ where: { userId: id } });
 
-      // حذف المستخدم نفسه
-      await tx.user.delete({ where: { id } });
-    });
+    // حذف المستخدم نفسه
+    await tx.user.delete({ where: { id } });
+  });
 
-    return {
-      status: 200,
-      message: "User deleted successfully"
-    };
-  }
+  return {
+    status: 200,
+    message: "User deleted successfully"
+  };
+}
 
 
 
@@ -398,7 +404,7 @@ async checkAuth(access_token: string) {
 
 
 
-  
+
   const updatedUser = await this.prisma.user.update({
     where: { id },
     data: updateData,
@@ -419,27 +425,27 @@ async checkAuth(access_token: string) {
 
   //This Function For generat access token and refresh token
   async generateTokens(userData: { id: string; email: string; role: string }) {
-    const payload = {
-      sub: userData.id,
-      email: userData.email,
-      role: userData.role,
-    };
-    const access_token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
-      expiresIn: '15m',
-    });
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('SECERT_JWT_REFRESH'),
-      expiresIn: '30d',
-    });
-    return {
-      access_token,
-      refreshToken,
-    };
+  const payload = {
+    sub: userData.id,
+    email: userData.email,
+    role: userData.role,
+  };
+  const access_token = await this.jwtService.signAsync(payload, {
+    secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
+    expiresIn: '15m',
+  });
+  const refreshToken = await this.jwtService.signAsync(payload, {
+    secret: this.configService.get<string>('SECERT_JWT_REFRESH'),
+    expiresIn: '30d',
+  });
+  return {
+    access_token,
+    refreshToken,
+  };
 
 
 
-  }
+}
 
 
 
