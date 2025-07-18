@@ -59,6 +59,10 @@ export class CreateMeetingDto {
   @IsOptional()
   @IsString()
   projectId?: string;
+  
+  @IsOptional()
+  @IsString()
+  locationType?: string;
 
   @IsOptional()
   @IsString()

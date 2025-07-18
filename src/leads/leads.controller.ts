@@ -51,8 +51,8 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
     @Body() dto: UpdateLeadDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.leadsService.updateLead(id, dto, { id: userId, role: userRole }, userName, userRole);
+    const {userId,email,role} = req.user
+    return this.leadsService.updateLead(id, dto, { id: userId, role: role }, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)

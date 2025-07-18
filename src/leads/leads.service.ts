@@ -160,8 +160,13 @@ export class LeadsService {
       // Sales Rep limited update
       const limitedUpdate = {
         ...(dto.status && { status: dto.status }),
-        ...(dto.notes && { notes: [dto.notes] }),
-      };
+        ...(dto.notes && {
+    notes: {
+      push: dto.notes, // هذا يضيف الملاحظة الجديدة للمصفوفة الموجودة
+    },
+  }),
+};
+      
 
 
 
@@ -194,7 +199,7 @@ export class LeadsService {
         budget: dto.budget,
         source: dto.source,
         status: dto.status,
-        notes: dto.notes ? [dto.notes] : undefined,
+       notes: dto.notes ? { push: dto.notes } : undefined,
         lastCall: dto.lastCall,
         lastVisit: dto.lastVisit,
         inventoryInterestId: dto.inventoryInterestId,

@@ -234,10 +234,11 @@ model Meeting {
   time          String?
   duration      String?
   type          String?
-  status        String?     // يمكنك لاحقاً تغييره لـ enum لو تحب
+  status        String?
+  location      String?     // ✅ احتفظ بهذا فقط
+  locationType  String?
   notes         String?
   objections    String?
-  location      String?
   leadId        String?
   inventoryId   String?
   projectId     String?
@@ -245,7 +246,6 @@ model Meeting {
   assignedToId  String?
   createdAt     DateTime   @default(now())
 
-  // العلاقات
   createdBy     User?       @relation("CreatedMeetings", fields: [createdById], references: [id])
   assignedTo    User?       @relation("AssignedMeetings", fields: [assignedToId], references: [id])
   inventory     Inventory? @relation(fields: [inventoryId], references: [id])

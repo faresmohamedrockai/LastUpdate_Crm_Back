@@ -19,7 +19,7 @@ export class VisitsController {
    
     
     const {id}=req.params
-    return this.visitsService.createVisit(dto,userId,id);
+    return this.visitsService.createVisit(dto,userId,id,email,role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)

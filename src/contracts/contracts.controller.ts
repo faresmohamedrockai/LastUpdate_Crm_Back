@@ -18,8 +18,8 @@ export class ContractsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Post()
   async createContract(@Body() dto: CreateContractDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.contractsService.createContract(dto, userId, userName, userRole);
+    const { userId,email, role } = req.user;
+    return this.contractsService.createContract(dto, userId, email, role);
   }
 
 
@@ -34,23 +34,10 @@ export class ContractsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getAllContracts(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.contractsService.getAllContracts(userId, userName, userRole);
+    const { userId,email, role } = req.user;
+    return this.contractsService.getAllContracts(userId, email, role);
   }
 
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  // @Get(':id')
-  // async getContractById(@Param('id') id: string, @Req() req) {
-  //   const { id: userId, name: userName, role: userRole } = req.user;
-  //   return this.contractsService.getContractById(id, userId, userName, userRole);
-  // }
-
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  // @Get('lead/:leadId')
-  // async getContractsByLead(@Param('leadId') leadId: string, @Req() req) {
-  //   const { id: userId, name: userName, role: userRole } = req.user;
-  //   return this.contractsService.getContractsByLead(leadId, userId, userName, userRole);
-  // }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Patch(':id')
@@ -59,14 +46,14 @@ export class ContractsController {
     @Body() dto: UpdateContractDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.contractsService.updateContract(id, dto, userId, userName, userRole);
+    const { userId,email, role } = req.user;
+    return this.contractsService.updateContract(id, dto, userId, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteContract(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.contractsService.deleteContract(id, userId, userName, userRole);
+    const { userId,email, role } = req.user;
+    return this.contractsService.deleteContract(id, userId, email, role);
   }
 } 

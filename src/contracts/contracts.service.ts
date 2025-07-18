@@ -18,8 +18,8 @@ export class ContractsService {
   async createContract(
   dto: CreateContractDto,
   userId: string,
-  userName: string,
-  userRole: string,
+  email: string,
+  role: string,
 ) {
   // تحقق من وجود الـ Inventory (اختياري)
   if (dto.inventoryId) {
@@ -57,10 +57,10 @@ export class ContractsService {
   // Log
   // await this.logsService.createLog({
   //   userId,
-  //   userName,
-  //   userRole,
+  //   email,
+  //   userRole:role,
   //   action: 'create_contract',
-  //   leadId: contract.leadId,
+  //   leadId: contract.leadId || null,
   //   description: `Created contract: id=${contract.id}, dealValue=${contract.dealValue}, status=${contract.status}`,
   // });
 
@@ -72,7 +72,7 @@ export class ContractsService {
 }
 
 
-  async getAllContracts(userId: string, userName: string, userRole: string) {
+  async getAllContracts(userId: string, email: string, role) {
     const contracts = await this.prisma.contract.findMany({
       include: {
         lead: true,
@@ -84,8 +84,8 @@ export class ContractsService {
 
     await this.logsService.createLog({
       userId,
-      userName,
-      userRole,
+      email,
+      userRole:role,
       action: 'get_all_contracts',
       description: `Retrieved ${contracts.length} contracts`,
     });
@@ -102,8 +102,8 @@ export class ContractsService {
     id: string,
     dto: UpdateContractDto,
     userId: string,
-    userName: string,
-    userRole: string,
+    email: string,
+    role: string,
   ) {
     const existingContract = await this.prisma.contract.findUnique({
       where: { id },
@@ -141,6 +141,17 @@ export class ContractsService {
 });
 
 
+await this.logsService.createLog({
+      userId,
+      email,
+      userRole:role,
+      action: 'Update Contratc',
+      description: `Update contracts`,
+    });
+
+
+
+
     return {
       status: 200,
       message: 'Contract updated successfully',
@@ -151,8 +162,8 @@ export class ContractsService {
   async deleteContract(
     id: string,
     userId: string,
-    userName: string,
-    userRole: string,
+    email: string,
+    role: string,
   ) {
     const existingContract = await this.prisma.contract.findUnique({
       where: { id },
@@ -166,17 +177,18 @@ export class ContractsService {
       throw new NotFoundException('Contract not found');
     }
 
+     await this.logsService.createLog({
+      userId,
+      email,
+      userRole:role,
+      action: 'delete_contract',
+      
+      description: `Deleted contract: id=${id}, dealValue=${existingContract.dealValue}`,
+    });
+
     await this.prisma.contract.delete({ where: { id } });
 
-    // await this.logsService.createLog({
-    //   userId,
-    //   userName,
-    //   userRole,
-    //   action: 'delete_contract',
-    //   leadId: existingContract.leadId,
-    //   description: `Deleted contract: id=${id}, dealValue=${existingContract.dealValue}`,
-    // });
-
+   
     return {
       status: 200,
       message: 'Contract deleted successfully',

@@ -60,6 +60,16 @@ export class UpdateMeetingDto {
   @IsString()
   projectId?: string;
 
+
+
+
+
+  @IsOptional()
+  @IsString()
+  locationType?: string;
+
+
+
   @IsOptional()
   @IsString()
   assignedToId?: string;

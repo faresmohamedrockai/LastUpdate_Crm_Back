@@ -10,10 +10,9 @@ export class VisitsService {
     private readonly logsService: LogsService,
   ) {}
 
-async createVisit(dto: CreateVisitDto, userId:string,leadId: string) {
+async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: string, role: string) {
   if (!userId || !leadId) {
     throw new BadRequestException('Missing required fields');
-
   }
 
   const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
@@ -35,9 +34,28 @@ async createVisit(dto: CreateVisitDto, userId:string,leadId: string) {
     },
   });
 
+  // ⬇️ Create corresponding Meeting using shared visit info
+  await this.prisma.meeting.create({
+    data: {
+      title: `Meeting for visit on ${dto.date}`,
+      client: lead.nameEn || lead.nameAr || 'Unnamed Lead',
+      date: dto.date,
+      notes: dto.notes,
+      objections: dto.objections,
+      leadId: leadId,
+      inventoryId: dto.inventoryId?.trim() || undefined,
+      createdById: userId,
+      status: 'Scheduled',
+      location: 'Client Location',
+      locationType: 'visit',
+    },
+  });
+
+  // Log creation
   await this.logsService.createLog({
     userId,
-    
+    email,
+    userRole: role,
     action: 'create_visit',
     description: `Visit for lead: name=${lead.nameEn}, contact=${lead.contact}, budget=${lead.budget}, status=${lead.status}, notes=${visit.notes || 'none'}, objections=${visit.objections || 'none'}`,
   });

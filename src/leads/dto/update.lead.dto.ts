@@ -40,8 +40,8 @@ export class UpdateLeadDto {
   lastCall?: Date;
  
 @IsOptional()
-  @IsString()
-  notes?: string;
+
+  notes?: string[];
 
 
   @IsOptional()
