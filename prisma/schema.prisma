@@ -21,11 +21,15 @@ model User {
   leads        Lead[]
   logs         Log[]
   visit        Visit[]
-  meetings     Meeting[]
+
+  // 👇 الحقول المطلوبة
+  createdMeetings  Meeting[] @relation("CreatedMeetings")
+  assignedMeetings Meeting[] @relation("AssignedMeetings")
+
+  // العلاقة القديمة للفريق
   teamLeader   User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id])
   teamMembers  User[]     @relation("TeamMembers")
 }
-
 
 
 model Lead {
@@ -36,7 +40,7 @@ model Lead {
   email               String?
   budget              String
   inventoryInterestId String?
-  source          String?
+  source              String?
   status              LeadStatus
   lastCall            DateTime?
   lastVisit           DateTime?
@@ -44,22 +48,18 @@ model Lead {
   createdAt           DateTime   @default(now())
 
   // العلاقات (ما اتغيرتش)
-  notes               String[]
-  calls               Call[]
-  Contract            Contract[]
-  inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id])
-  owner               User       @relation(fields: [ownerId], references: [id])
-  logs                Log[]
-  meetings            Meeting[]
-  visits              Visit[]
+  notes             String[]
+  calls             Call[]
+  Contract          Contract[]
+  inventoryInterest Inventory? @relation(fields: [inventoryInterestId], references: [id])
+  owner             User       @relation(fields: [ownerId], references: [id])
+  logs              Log[]
+  meetings          Meeting[]
+  visits            Visit[]
 }
 
-
-
-
-
 model Inventory {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   title          String?
   titleEn        String?
   titleAr        String?
@@ -79,15 +79,15 @@ model Inventory {
   projectId      String
   developerId    String
   paymentPlanId  String?
-  createdAt      DateTime @default(now())
-  project     Project      @relation(fields: [projectId], references: [id])
-  paymentPlan PaymentPlan? @relation(fields: [paymentPlanId], references: [id])
-  developer   Developer    @relation(fields: [developerId], references: [id])
-  zone        Zone         @relation(fields: [zoneId], references: [id])
-  Contract    Contract[]
-  leads       Lead[]
-  meetings    Meeting[]
-  visits      Visit[]
+  createdAt      DateTime     @default(now())
+  project        Project      @relation(fields: [projectId], references: [id])
+  paymentPlan    PaymentPlan? @relation(fields: [paymentPlanId], references: [id])
+  developer      Developer    @relation(fields: [developerId], references: [id])
+  zone           Zone         @relation(fields: [zoneId], references: [id])
+  Contract       Contract[]
+  leads          Lead[]
+  meetings       Meeting[]
+  visits         Visit[]
 }
 
 model Project {
@@ -101,7 +101,7 @@ model Project {
   zoneId       String?
   createdAt    DateTime      @default(now())
   calls        Call[]
-  Contract     Contract[]
+  
   inventories  Inventory[]
   meetings     Meeting[]
   paymentPlans PaymentPlan[]
@@ -128,36 +128,40 @@ model PaymentPlan {
 }
 
 model Visit {
-  id          String     @id @default(uuid())
-  date        String?    // أو ممكن تغييره إلى DateTime لو تحب
-  status      String?
-  objections  String?
-  notes       String?
+  id         String  @id @default(uuid())
+  date       String? // أو ممكن تغييره إلى DateTime لو تحب
+  status     String?
+  objections String?
+  notes      String?
 
   // العلاقات
   leadId      String
-  inventoryId String
+  inventoryId String?
   createdById String
 
-  createdAt   DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   // علاقات Prisma
-  lead        Lead       @relation(fields: [leadId], references: [id])
-  inventory   Inventory  @relation(fields: [inventoryId], references: [id])
-  createdBy   User       @relation(fields: [createdById], references: [id])
+  lead      Lead       @relation(fields: [leadId], references: [id])
+  inventory Inventory? @relation(fields: [inventoryId], references: [id])
+  createdBy User       @relation(fields: [createdById], references: [id])
 }
 
 model Call {
   id        String   @id @default(uuid())
-  date      DateTime
-  outcome   String
-  duration  Int
-  projectId String?
+  date      String?
+  outcome   String?
+  duration  String?
+  project   String?
   notes     String?
-  leadId    String
+  leadId    String?
+  createdBy String?
   createdAt DateTime @default(now())
-  lead      Lead     @relation(fields: [leadId], references: [id])
-  project   Project? @relation(fields: [projectId], references: [id])
+
+  lead      Lead?     @relation(fields: [leadId], references: [id])
+  // لا يوجد علاقة واضحة مع Project، لذلك أزلناها
+  Project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
 }
 
 model Log {
@@ -200,38 +204,55 @@ model Developer {
 
 model Contract {
   id           String     @id @default(uuid())
-  leadId       String
+  leadId       String?
   inventoryId  String?
-  projectId    String?
-  dealValue    Float
-  contractDate DateTime
-  status       String
-  createdById  String
+  dealValue    Float?
+  contractDate String?
+  status       ContractStatus?
+  createdById  String?
   notes        String?
   createdAt    DateTime   @default(now())
-  createdBy    User       @relation(fields: [createdById], references: [id])
-  inventory    Inventory? @relation(fields: [inventoryId], references: [id])
-  lead         Lead       @relation(fields: [leadId], references: [id])
-  project      Project?   @relation(fields: [projectId], references: [id])
+
+  // Relations
+  createdBy    User?       @relation(fields: [createdById], references: [id])
+  inventory    Inventory?  @relation(fields: [inventoryId], references: [id])
+  lead         Lead?       @relation(fields: [leadId], references: [id])
 }
 
-model Meeting {
-  id          String     @id @default(uuid())
-  date        DateTime
-  status      String
-  notes       String?
-  objections  String?
-  location    String?
-  leadId      String
-  createdById String
-  inventoryId String?
-  projectId   String?
-  createdAt   DateTime   @default(now())
-  createdBy   User       @relation(fields: [createdById], references: [id])
-  inventory   Inventory? @relation(fields: [inventoryId], references: [id])
-  lead        Lead       @relation(fields: [leadId], references: [id])
-  project     Project?   @relation(fields: [projectId], references: [id])
+enum ContractStatus {
+  Pending
+  Signed
+  Cancelled
 }
+
+
+model Meeting {
+  id            String     @id @default(uuid())
+  title         String?
+  client        String?
+  date          String?
+  time          String?
+  duration      String?
+  type          String?
+  status        String?     // يمكنك لاحقاً تغييره لـ enum لو تحب
+  notes         String?
+  objections    String?
+  location      String?
+  leadId        String?
+  inventoryId   String?
+  projectId     String?
+  createdById   String?
+  assignedToId  String?
+  createdAt     DateTime   @default(now())
+
+  // العلاقات
+  createdBy     User?       @relation("CreatedMeetings", fields: [createdById], references: [id])
+  assignedTo    User?       @relation("AssignedMeetings", fields: [assignedToId], references: [id])
+  inventory     Inventory? @relation(fields: [inventoryId], references: [id])
+  lead          Lead?      @relation(fields: [leadId], references: [id])
+  project       Project?   @relation(fields: [projectId], references: [id])
+}
+
 
 enum Role {
   admin

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
 import { CreateVisitDto } from './dto/create-visits.dto';
@@ -10,44 +10,41 @@ export class VisitsService {
     private readonly logsService: LogsService,
   ) {}
 
-  async createVisit(
-  
-  dto: CreateVisitDto,
-  userId: string,
-  userName: string,
-  userRole: string,
-  leadId: string,
-) {
+async createVisit(dto: CreateVisitDto, userId:string,leadId: string) {
+  if (!userId || !leadId) {
+    throw new BadRequestException('Missing required fields');
+
+  }
+
   const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
   if (!lead) throw new NotFoundException('Lead not found');
 
-const visit = await this.prisma.visit.create({
-  data: {
-    date: dto.date,
-    status: dto.status,
-    notes: dto.notes,
-    objections: dto.objections,
-    createdById: userId,
-    leadId: leadId,
-    inventoryId: dto.inventoryId,
-  },
-  include: {
-    lead: true,
-    inventory: true,
-  },
-});
-
+  const visit = await this.prisma.visit.create({
+    data: {
+      date: dto.date,
+      status: dto.status,
+      notes: dto.notes,
+      objections: dto.objections,
+      createdById: userId,
+      leadId,
+      inventoryId: dto.inventoryId?.trim() || undefined,
+    },
+    include: {
+      lead: true,
+      inventory: true,
+    },
+  });
 
   await this.logsService.createLog({
     userId,
-    userName,
-    userRole,
+    
     action: 'create_visit',
-    description: `Visit for lead: name=${lead?.nameEn}, contact=${lead?.contact}, budget=${lead?.budget}, status=${lead?.status}, notes=${visit.notes || 'none'}, objections=${visit.objections || 'none'} `,
+    description: `Visit for lead: name=${lead.nameEn}, contact=${lead.contact}, budget=${lead.budget}, status=${lead.status}, notes=${visit.notes || 'none'}, objections=${visit.objections || 'none'}`,
   });
 
   return { message: 'Visit created', data: visit };
 }
+
 
 
  async getAllVisits(userId: string, userName: string, userRole: string, id: string) {

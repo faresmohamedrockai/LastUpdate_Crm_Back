@@ -1,12 +1,39 @@
-import { IsString, IsOptional, IsDateString, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsUUID,
+  IsIn,
+} from 'class-validator';
 
 export class UpdateMeetingDto {
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  client?: string;
+
   @IsOptional()
   @IsDateString()
   date?: string;
 
   @IsOptional()
   @IsString()
+  time?: string;
+
+  @IsOptional()
+  @IsString()
+  duration?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['Scheduled', 'Completed', 'Cancelled'])
   status?: string;
 
   @IsOptional()
@@ -22,10 +49,18 @@ export class UpdateMeetingDto {
   location?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  leadId?: string;
+
+  @IsOptional()
+  @IsString()
   inventoryId?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   projectId?: string;
-} 
+
+  @IsOptional()
+  @IsString()
+  assignedToId?: string;
+}

@@ -15,9 +15,11 @@ export class VisitsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Post("create/:id")
   async createVisit(@Body() dto: CreateVisitDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
+    const {userId,email,role}= req.user;
+   
+    
     const {id}=req.params
-    return this.visitsService.createVisit(dto, userId, userName, userRole,id);
+    return this.visitsService.createVisit(dto,userId,id);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)

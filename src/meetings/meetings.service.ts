@@ -11,42 +11,78 @@ export class MeetingsService {
     private readonly logsService: LogsService,
   ) { }
 
-  async createMeeting(dto: CreateMeetingDto, userId: string, userName: string, userRole: string) {
-    const meeting = await this.prisma.meeting.create({
-      data: {
-        date: new Date(dto.date),
-        status: dto.status,
-        notes: dto.notes,
-        objections: dto.objections,
-        location: dto.location,
-        lead: { connect: { id: dto.leadId } },
-        createdBy: { connect: { id: userId } },
-        ...(dto.inventoryId && { inventory: { connect: { id: dto.inventoryId } } }),
-        ...(dto.projectId && { project: { connect: { id: dto.projectId } } }),
-      },
-      include: {
-        lead: true,
-        inventory: true,
-        project: true,
-      },
-    });
+  async createMeeting(
+  dto: CreateMeetingDto,
+  userId: string,
+  email: string,
+  role: string,
+) {
+  const meeting = await this.prisma.meeting.create({
+    data: {
+      // الحقول الأساسية
+      title: dto.title,
+      client: dto.client,
+      date: dto.date ? dto.date : null,
+      time: dto.time,
+      duration: dto.duration,
+      type: dto.type,
+      status: dto.status,
+      notes: dto.notes,
+      objections: dto.objections,
+      location: dto.location,
 
-    // Log meeting creation
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'create_meeting',
-      leadId: dto.leadId,
-      description: `Created meeting for lead ${dto.leadId}: status=${meeting.status}, date=${meeting.date}`,
-    });
+      // علاقات
+      ...(dto.leadId && {
+        lead: {
+          connect: { id: dto.leadId },
+        },
+      }),
+      ...(dto.inventoryId && {
+        inventory: {
+          connect: { id: dto.inventoryId },
+        },
+      }),
+      ...(dto.projectId && {
+        project: {
+          connect: { id: dto.projectId },
+        },
+      }),
+      ...(dto.assignedToId && {
+        assignedTo: {
+          connect: { id: dto.assignedToId },
+        },
+      }),
 
-    return {
-      status: 201,
-      message: 'Meeting created successfully',
-      data: meeting,
-    };
-  }
+      // المستخدم المنشئ
+      createdBy: {
+        connect: { id: userId },
+      },
+    },
+    include: {
+      lead: true,
+      inventory: true,
+      project: true,
+      assignedTo: true,
+      createdBy: true,
+    },
+  });
+
+  // سجل عملية الإنشاء
+  await this.logsService.createLog({
+    userId,
+    email,
+    userRole:role,
+    leadId: dto.leadId,
+    action: 'create_meeting',
+    description: `Created meeting: ${dto.title || ''} for lead ${dto.leadId || 'N/A'}`,
+  });
+
+  return {
+    status: 201,
+    message: 'Meeting created successfully',
+    meetings: meeting,
+  };
+}
 
 
 
@@ -56,119 +92,127 @@ export class MeetingsService {
 
 
   
-  async getAllMeetings(userId: string, userName: string, userRole: string) {
-    const meetings = await this.prisma.meeting.findMany({
-      include: {
-        lead: true,
-        inventory: true,
-        project: true,
-        createdBy: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+async getAllMeetings(
+  userId: string,
+  email: string,
+  role: string,
+) {
+  const meetings = await this.prisma.meeting.findMany({
+    include: {
+      lead: true,
+      inventory: true,
+      project: true,
+      createdBy: true,
+      assignedTo: true, // ✅ إضافة الحقل الجديد
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_all_meetings',
-      description: `Retrieved ${meetings.length} meetings`,
-    });
-    return meetings;
+
+  return {
+    status: 200,
+    message: 'Meetings retrieved successfully',
+    meetings: meetings,
+  };
+}
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ async updateMeeting(
+  id: string,
+  dto: UpdateMeetingDto,
+  userId: string,
+  email: string,
+  role: string,
+
+) {
+  const existingMeeting = await this.prisma.meeting.findUnique({
+    where: { id },
+  });
+
+  if (!existingMeeting) {
+    throw new NotFoundException('Meeting not found');
   }
 
+  const updatedMeeting = await this.prisma.meeting.update({
+    where: { id },
+    data: {
+      ...(dto.title && { title: dto.title }),
+      ...(dto.client && { client: dto.client }),
+      ...(dto.date && { date: dto.date }),
+      ...(dto.time && { time: dto.time }),
+      ...(dto.duration && { duration: dto.duration }),
+      ...(dto.type && { type: dto.type }),
+      ...(dto.status && { status: dto.status }),
+      ...(dto.notes && { notes: dto.notes }),
+      ...(dto.objections && { objections: dto.objections }),
+      ...(dto.location && { location: dto.location }),
 
+      ...(dto.leadId && {
+        lead: { connect: { id: dto.leadId } },
+      }),
+      ...(dto.inventoryId && {
+        inventory: { connect: { id: dto.inventoryId } },
+      }),
+      ...(dto.projectId && {
+        project: { connect: { id: dto.projectId } },
+      }),
+      ...(dto.assignedToId && {
+        assignedTo: { connect: { id: dto.assignedToId } },
+      }),
+    },
+    include: {
+      lead: true,
+      inventory: true,
+      project: true,
+      createdBy: true,
+      assignedTo: true,
+    },
+  });
 
+  // Log the update
+  await this.logsService.createLog({
+    userId,
+    userRole:role,
+    email,
+    
+leadId: (dto.leadId || existingMeeting.leadId) ?? undefined,
 
+    action: 'update_meeting',
+    description: `Updated meeting ${id}: status=${updatedMeeting.status}, date=${updatedMeeting.date}`,
+  });
 
-
-
-  async getMeetingById(id: string, userId: string, userName: string, userRole: string) {
-
-
-
-
-    const meeting = await this.prisma.meeting.findUnique({
-      where: { id },
-      include: {
-        lead: true,
-        inventory: true,
-        project: true,
-        createdBy: true,
-      },
-    });
-
-    if (!meeting) {
-      throw new NotFoundException('Meeting not found');
-    }
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_meeting_by_id',
-      leadId: meeting.leadId,
-      description: `Retrieved meeting: id=${id}, lead=${meeting.leadId}, status=${meeting.status}`,
-    });
-    return meeting;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  async updateMeeting(id: string, dto: UpdateMeetingDto, userId: string, userName: string, userRole: string) {
-    const existingMeeting = await this.prisma.meeting.findUnique({ where: { id } });
-    if (!existingMeeting) {
-      throw new NotFoundException('Meeting not found');
-    }
-
-    const updatedMeeting = await this.prisma.meeting.update({
-      where: { id },
-      data: {
-        ...(dto.date && { date: new Date(dto.date) }),
-        ...(dto.status && { status: dto.status }),
-        ...(dto.notes && { notes: dto.notes }),
-        ...(dto.objections && { objections: dto.objections }),
-        ...(dto.location && { location: dto.location }),
-        ...(dto.inventoryId && { inventory: { connect: { id: dto.inventoryId } } }),
-        ...(dto.projectId && { project: { connect: { id: dto.projectId } } }),
-      },
-      include: {
-        lead: true,
-        inventory: true,
-        project: true,
-        createdBy: true,
-      },
-    });
-
-    // Log meeting update
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'update_meeting',
-      leadId: existingMeeting.leadId,
-      description: `Updated meeting ${id}: status=${updatedMeeting.status}, date=${updatedMeeting.date}`,
-    });
-
-    return {
-      status: 200,
-      message: 'Meeting updated successfully',
-      data: updatedMeeting,
-    };
-  }
+  return {
+    status: 200,
+    message: 'Meeting updated successfully',
+    meetings: updatedMeeting,
+  };
+}
 
 
 
@@ -179,7 +223,8 @@ export class MeetingsService {
 
 
 
-  async deleteMeeting(id: string, userId: string, userName: string, userRole: string) {
+
+  async deleteMeeting(id: string, userId: string, email: string, role: string) {
     const existingMeeting = await this.prisma.meeting.findUnique({ where: { id } });
     if (!existingMeeting) {
       throw new NotFoundException('Meeting not found');
@@ -190,10 +235,10 @@ export class MeetingsService {
     // Log meeting deletion
     await this.logsService.createLog({
       userId,
-      userName,
-      userRole,
+      email,
+      userRole:role,
       action: 'delete_meeting',
-      leadId: existingMeeting.leadId,
+      leadId: existingMeeting.leadId ?? undefined,
       description: `Deleted meeting ${id} for lead ${existingMeeting.leadId}`,
     });
 
@@ -203,31 +248,5 @@ export class MeetingsService {
     };
   }
 
-  async getMeetingsByLead(leadId: string, userId: string, userName: string, userRole: string) {
 
-
-
-    
-    const meetings = await this.prisma.meeting.findMany({
-      where: { leadId },
-      include: {
-        inventory: true,
-        project: true,
-        createdBy: true,
-      },
-      orderBy: { date: 'desc' },
-    });
-
-
-
-    await this.logsService.createLog({
-      userId,
-      userName,
-      userRole,
-      action: 'get_meetings_by_lead',
-      leadId,
-      description: `Retrieved ${meetings.length} meetings for lead: ${leadId}`,
-    });
-    return meetings;
-  }
 } 

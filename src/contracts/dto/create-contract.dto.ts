@@ -1,27 +1,31 @@
 import { IsString, IsNumber, IsOptional, IsUUID, IsDateString } from 'class-validator';
 
 export class CreateContractDto {
-  @IsUUID()
-  leadId: string;
+  @IsOptional()
+  @IsString()
+  leadId?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   inventoryId?: string;
 
   @IsOptional()
-  @IsUUID()
-  projectId?: string;
-
   @IsNumber()
-  dealValue: number;
+  dealValue?: number;
 
-  @IsDateString()
-  contractDate: string;
-
+  @IsOptional()
   @IsString()
-  status: string;
+  contractDate?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: 'Pending' | 'Signed' | 'Cancelled';
 
   @IsOptional()
   @IsString()
   notes?: string;
-} 
+
+  @IsOptional()
+  @IsString()
+  createdById?: string;
+}

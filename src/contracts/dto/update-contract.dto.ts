@@ -2,26 +2,30 @@ import { IsString, IsNumber, IsOptional, IsUUID, IsDateString } from 'class-vali
 
 export class UpdateContractDto {
   @IsOptional()
-  @IsUUID()
-  inventoryId?: string;
+  @IsString()
+  leadId?: string;
 
   @IsOptional()
-  @IsUUID()
-  projectId?: string;
+  @IsString()
+  inventoryId?: string;
 
   @IsOptional()
   @IsNumber()
   dealValue?: number;
 
   @IsOptional()
-  @IsDateString()
+  @IsString()
   contractDate?: string;
 
   @IsOptional()
   @IsString()
-  status?: string;
+  status?: 'Pending' | 'Signed' | 'Cancelled';
 
   @IsOptional()
   @IsString()
   notes?: string;
-} 
+
+  @IsOptional()
+  @IsString()
+  createdById?: string;
+}

@@ -38,19 +38,19 @@ export class ContractsController {
     return this.contractsService.getAllContracts(userId, userName, userRole);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getContractById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.contractsService.getContractById(id, userId, userName, userRole);
-  }
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  // @Get(':id')
+  // async getContractById(@Param('id') id: string, @Req() req) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.contractsService.getContractById(id, userId, userName, userRole);
+  // }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('lead/:leadId')
-  async getContractsByLead(@Param('leadId') leadId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.contractsService.getContractsByLead(leadId, userId, userName, userRole);
-  }
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  // @Get('lead/:leadId')
+  // async getContractsByLead(@Param('leadId') leadId: string, @Req() req) {
+  //   const { id: userId, name: userName, role: userRole } = req.user;
+  //   return this.contractsService.getContractsByLead(leadId, userId, userName, userRole);
+  // }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Patch(':id')

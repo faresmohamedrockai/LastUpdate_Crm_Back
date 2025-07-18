@@ -30,8 +30,8 @@ export class AuthController {
   ) { }
 
 
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @Roles(Role.ADMIN)
+  // @UseGuards(AuthGuard("jwt"), RolesGuard)
+  // @Roles(Role.ADMIN)
   @Post('add-user')
 
   register(

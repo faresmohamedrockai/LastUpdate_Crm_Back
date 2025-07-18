@@ -15,23 +15,18 @@ export class MeetingsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Post()
   async createMeeting(@Body() dto: CreateMeetingDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.meetingsService.createMeeting(dto, userId, userName, userRole);
+const {  userId, email, role } = req.user;
+    return this.meetingsService.createMeeting(dto, userId, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getAllMeetings(@Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.meetingsService.getAllMeetings(userId, userName, userRole);
+    const {  userId, email, role } = req.user;
+    return this.meetingsService.getAllMeetings(userId, email, role);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get('lead/:leadId')
-  async getMeetingsByLead(@Param('leadId') leadId: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.meetingsService.getMeetingsByLead(leadId, userId, userName, userRole);
-  }
+  
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get('project/:projectId')
@@ -44,12 +39,6 @@ export class MeetingsController {
     throw new HttpException('Method not implemented yet', HttpStatus.NOT_IMPLEMENTED);
   }
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  @Get(':id')
-  async getMeetingById(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.meetingsService.getMeetingById(id, userId, userName, userRole);
-  }
 
 
 
@@ -66,8 +55,9 @@ export class MeetingsController {
     @Body() dto: UpdateMeetingDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.meetingsService.updateMeeting(id, dto, userId, userName, userRole);
+   const {  userId, email, role } = req.user;
+
+    return this.meetingsService.updateMeeting(id, dto, userId, email, role);
   }
 
 
@@ -80,7 +70,7 @@ export class MeetingsController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteMeeting(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.meetingsService.deleteMeeting(id, userId, userName, userRole);
+   const {  userId, email, role } = req.user;
+    return this.meetingsService.deleteMeeting(id, userId, email, role);
   }
 } 
