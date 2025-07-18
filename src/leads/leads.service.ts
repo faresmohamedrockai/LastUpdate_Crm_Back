@@ -212,7 +212,7 @@ export class LeadsService {
       userId,
       email,
       userRole,
-      action: 'update_lead_full',
+      action: 'update_lead',
       // leadId: leadId,
       description: `Updated lead: id=${leadId}, name=${dto.nameEn}, contact=${dto.contact}, status=${dto.status}`,
     });

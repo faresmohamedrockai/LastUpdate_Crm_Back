@@ -47,7 +47,7 @@ export class DevelopersService {
       });
 
       await this.logsService.createLog({
-        action: 'CREATE',
+        action: 'Create Developer',
         userId,
         email: email,
         userRole,
@@ -207,11 +207,10 @@ export class DevelopersService {
     const hasInventories = existingDeveloper.projects.some(project => project.inventories.length > 0);
     if (hasInventories) {
       throw new ConflictException('Cannot delete developer with existing projects that have inventories');
-    }
 
-    await this.prisma.developer.delete({ where: { id } });
 
-    // Log developer deletion
+
+    }  // Log developer deletion
     await this.logsService.createLog({
       userId,
       email,
@@ -219,6 +218,13 @@ export class DevelopersService {
       action: 'delete_developer',
       description: `Deleted developer: id=${id}, name=${existingDeveloper.nameEn}`,
     });
+
+
+    
+
+    await this.prisma.developer.delete({ where: { id } });
+
+  
 
     return {
       status: 200,
@@ -297,13 +303,13 @@ export class DevelopersService {
 
 
 
-      await this.logsService.createLog({
-        action: 'READ',
-        userId,
+      // await this.logsService.createLog({
+      //   action: 'READ',
+      //   userId,
 
-        userRole,
-        description: `Retrieved all developers: count=${developers.length}`,
-      });
+      //   userRole,
+      //   description: `Retrieved all developers: count=${developers.length}`,
+      // });
 
 
       return developers;

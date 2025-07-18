@@ -55,14 +55,13 @@ export class ContractsService {
   });
 
   // Log
-  // await this.logsService.createLog({
-  //   userId,
-  //   email,
-  //   userRole:role,
-  //   action: 'create_contract',
-  //   leadId: contract.leadId || null,
-  //   description: `Created contract: id=${contract.id}, dealValue=${contract.dealValue}, status=${contract.status}`,
-  // });
+  await this.logsService.createLog({
+    userId,
+    email,
+    userRole:role,
+    action: 'create_contract',
+    description: `Created contract: id=${contract.id}, dealValue=${contract.dealValue}, status=${contract.status}`,
+  });
 
   return {
     status: 201,
@@ -177,6 +176,8 @@ await this.logsService.createLog({
       throw new NotFoundException('Contract not found');
     }
 
+
+
      await this.logsService.createLog({
       userId,
       email,
@@ -185,6 +186,11 @@ await this.logsService.createLog({
       
       description: `Deleted contract: id=${id}, dealValue=${existingContract.dealValue}`,
     });
+
+
+
+
+
 
     await this.prisma.contract.delete({ where: { id } });
 

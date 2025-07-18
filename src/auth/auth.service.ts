@@ -133,8 +133,7 @@ export class AuthService {
       userId: existingUser.id,
       action: 'login',
       description: `User ${existingUser.email} logged in`,
-      ip,
-      userAgent,
+     
       userName: existingUser.name,
       userRole: existingUser.role,
     });
@@ -407,7 +406,7 @@ export class AuthService {
     };
     const access_token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
-      expiresIn: '15d',
+      expiresIn: '15m',
     });
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('SECERT_JWT_REFRESH'),

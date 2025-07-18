@@ -24,7 +24,7 @@ export class CallsController {
   async createCall(@Body() dto: CreateCallDto, @Req() req) {
     const {id}=req.params
     const {  userId, email, role } = req.user;
-    return this.callsService.createCall(dto,userId,id );
+    return this.callsService.createCall(dto,userId,id,email,role );
   }
 
 

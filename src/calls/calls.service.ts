@@ -10,7 +10,7 @@ export class CallsService {
     private readonly logsService: LogsService
   ) {}
 
-  async createCall(dto: CreateCallDto, userId: string, id: string) {
+  async createCall(dto: CreateCallDto, userId: string, id: string,email,role) {
   // 1. تأكد من وجود العميل
   const lead = await this.prisma.lead.findUnique({
     where: { id: dto.leadId },
@@ -45,7 +45,14 @@ console.log(dto);
 });
 
 
-
+ await this.logsService.createLog({
+      userId: id,
+      action: 'create_call',
+      description: `User ${id} created Call in`,
+   
+      email: email,
+      userRole: role,
+    });
 
   // 5. رد النجاح
   return {
@@ -156,7 +163,64 @@ console.log(dto);
   //   };
   // }
 
-  async updateCall(id: string, dto: CreateCallDto, userId: string, userName: string, userRole: string) {
+//   async updateCall(id: string, dto: CreateCallDto, userId: string, email: string, role: string) {
+//     const existingCall = await this.prisma.call.findUnique({
+//       where: { id },
+//       include: {
+//         lead: true,
+//         Project: true,
+//       },
+//     });
+//     if (!existingCall) throw new NotFoundException('Call not found');
+
+//     // Validate project if provided
+//     if (dto.project) {
+//       const project = await this.prisma.project.findUnique({
+//         where: { id: dto.project },
+//       });
+//       if (!project) {
+//         throw new NotFoundException('Project not found');
+//       }
+//     }
+
+//     const updatedCall = await this.prisma.call.update({
+//       where: { id },
+//       data: {
+//         date: dto.date,
+//         outcome: dto.outcome,
+//         duration: dto.duration,
+//         notes: dto.notes,
+//         projectId: dto.project
+//       },
+//       include: {
+//         lead: true,
+//         Project: true,
+//       },
+//     });
+
+//     // Log call update
+//  await this.logsService.createLog({
+//       userId: id,
+//       action: 'create_call',
+//       description: `User ${id} Updated Call in`,
+   
+//       email: email,
+//       userRole: role,
+//     });
+
+//     return {
+//       status: 200,
+//       message: 'Call updated successfully',
+//       data: updatedCall,
+//     };
+//   }
+
+  async deleteCall(id: string, userId: string, email: string, role: string) {
+
+
+
+
+
     const existingCall = await this.prisma.call.findUnique({
       where: { id },
       include: {
@@ -166,50 +230,16 @@ console.log(dto);
     });
     if (!existingCall) throw new NotFoundException('Call not found');
 
-    // Validate project if provided
-    if (dto.project) {
-      const project = await this.prisma.project.findUnique({
-        where: { id: dto.project },
-      });
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
-    }
 
-    const updatedCall = await this.prisma.call.update({
-      where: { id },
-      data: {
-        date: dto.date,
-        outcome: dto.outcome,
-        duration: dto.duration,
-        notes: dto.notes,
-        projectId: dto.project
-      },
-      include: {
-        lead: true,
-        Project: true,
-      },
+ await this.logsService.createLog({
+      userId: userId || "none",
+      action: 'create_call',
+      description: `User ${id} created Call in`,
+   
+      email: email,
+      userRole: role,
     });
 
-    // Log call update
-
-
-    return {
-      status: 200,
-      message: 'Call updated successfully',
-      data: updatedCall,
-    };
-  }
-
-  async deleteCall(id: string, userId: string, userName: string, userRole: string) {
-    const existingCall = await this.prisma.call.findUnique({
-      where: { id },
-      include: {
-        lead: true,
-        Project: true,
-      },
-    });
-    if (!existingCall) throw new NotFoundException('Call not found');
 
     await this.prisma.call.delete({ where: { id } });
 

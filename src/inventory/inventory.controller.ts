@@ -21,9 +21,11 @@ export class InventoryController {
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Post("create")
+
+  
   async createInventory(@Body() dto: CreateInventoryDto, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.createInventory(dto, userId, userName, userRole);
+    const { userId, email, role } = req.user;
+    return this.inventoryService.createInventory(dto, userId, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
@@ -66,8 +68,8 @@ export class InventoryController {
     @Body() dto: UpdateInventoryDto,
     @Req() req
   ) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.updateInventory(id, dto, userId, userName, userRole);
+    const { userId, email, role } = req.user;
+    return this.inventoryService.updateInventory(id, dto, userId, email, role);
   }
 
 
@@ -78,7 +80,7 @@ export class InventoryController {
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteInventory(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.inventoryService.deleteInventory(id, userId, userName, userRole);
+   const { userId, email, role } = req.user;
+    return this.inventoryService.deleteInventory(id, userId, email, role);
   }
 }

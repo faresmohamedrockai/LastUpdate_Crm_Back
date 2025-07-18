@@ -14,7 +14,7 @@ export class InventoryService {
     private readonly CloudinaryService: CloudinaryService,
   ) {}
 
- async createInventory(dto: CreateInventoryDto, userId: string, userName: string, userRole: string) {
+ async createInventory(dto: CreateInventoryDto, userId: string, email: string, role: string) {
   if (dto.projectId) {
     const project = await this.prisma.project.findUnique({
       where: { id: dto.projectId },
@@ -72,6 +72,25 @@ if (dto.images && dto.images.length > 0) {
     },
   });
 
+
+
+
+
+
+
+
+    // Log developer deletion
+    await this.logsService.createLog({
+      userId,
+      email,
+      userRole:role,
+      action: 'Create Inventory',
+      description: `Inventory developer: id=${inventory.id}, name=${inventory.titleEn}`,
+    });
+
+
+
+
   return {
     status: 201,
     message: 'Inventory created successfully',
@@ -105,8 +124,8 @@ async updateInventory(
   id: string,
   dto: UpdateInventoryDto,
   userId: string,
-  userName: string,
-  userRole: string,
+  email: string,
+  role: string,
 ) {
   const existingInventory = await this.prisma.inventory.findUnique({
     where: { id },
@@ -177,6 +196,23 @@ if (dto.images && dto.images.length > 0) {
     },
   });
 
+
+
+  // Log  
+    await this.logsService.createLog({
+      userId,
+      email,
+      userRole:role,
+      action: 'delete_developer',
+      description: `Deleted developer: id=${updatedInventory.id}, name=${updatedInventory.titleEn}`,
+    });
+
+
+
+
+
+
+
   return {
     status: 200,
     message: 'Inventory updated successfully',
@@ -191,7 +227,7 @@ if (dto.images && dto.images.length > 0) {
 
 
 
-  async deleteInventory(id: string, userId: string, userName: string, userRole: string) {
+  async deleteInventory(id: string, userId: string, email: string, role: string) {
     const existingInventory = await this.prisma.inventory.findUnique({
       where: { id },
       include: { leads: true },
@@ -203,15 +239,20 @@ if (dto.images && dto.images.length > 0) {
       throw new ConflictException('Cannot delete inventory with existing leads or visits');
     }
 
+
+  await this.logsService.createLog({
+      userId,
+      email,
+      userRole:role,
+      action: 'delete_inventory',
+      description: `Deleted inventory: id=${id}, title=${existingInventory.title}`,
+    });
+
+
+
     await this.prisma.inventory.delete({ where: { id } });
 
-    // await this.logsService.createLog({
-    //   userId,
-    //   userName,
-    //   userRole,
-    //   action: 'delete_inventory',
-    //   description: `Deleted inventory: id=${id}, title=${existingInventory.title}`,
-    // });
+  
 
     return {
       status: 200,
