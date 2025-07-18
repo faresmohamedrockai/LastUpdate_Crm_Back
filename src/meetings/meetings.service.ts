@@ -32,12 +32,7 @@ export class MeetingsService {
         objections: dto.objections,
         location: dto.location,
 
-        // علاقات
-        ...(dto.leadId && {
-          lead: {
-            connect: { id: dto.leadId },
-          },
-        }),
+       
         ...(dto.inventoryId && {
           inventory: {
             connect: { id: dto.inventoryId },
@@ -68,15 +63,15 @@ export class MeetingsService {
       },
     });
 
-    // سجل عملية الإنشاء
-    await this.logsService.createLog({
-      userId,
-      email,
-      userRole: role,
-      leadId: dto.leadId,
-      action: 'create_meeting',
-      description: `Created meeting: ${dto.title || ''} for lead ${dto.leadId || 'N/A'}`,
-    });
+    // // سجل عملية الإنشاء
+    // await this.logsService.createLog({
+    //   userId,
+    //   email,
+    //   userRole: role,
+    //   leadId: dto.leadId || null,
+    //   action: 'create_meeting',
+    //   description: `Created meeting: ${dto.title || ''} for lead ${dto.leadId || 'N/A'}`,
+    // });
 
     return {
       status: 201,
@@ -176,9 +171,7 @@ export class MeetingsService {
         ...(dto.objections && { objections: dto.objections }),
         ...(dto.location && { location: dto.location }),
 
-        ...(dto.leadId && {
-          lead: { connect: { id: dto.leadId } },
-        }),
+       
         ...(dto.inventoryId && {
           inventory: { connect: { id: dto.inventoryId } },
         }),
@@ -206,13 +199,7 @@ export class MeetingsService {
             id: userId, // تأكد أن هذا موجود في المتغيرات
           },
         },
-        ...(dto.leadId && {
-          lead: {
-            connect: {
-              id: dto.leadId,
-            },
-          },
-        }),
+       
         email,
        userRole: role,
         action: 'update_meeting',

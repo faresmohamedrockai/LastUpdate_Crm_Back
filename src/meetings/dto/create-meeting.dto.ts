@@ -48,9 +48,6 @@ export class CreateMeetingDto {
   @IsString()
   location?: string;
 
-  @IsOptional()
-  @IsString()
-  leadId?: string;
 
   @IsOptional()
   @IsString()
