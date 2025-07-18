@@ -198,6 +198,26 @@ export class AuthService {
 
 
 
+async checkAuth(access_token: string) {
+  try {
+    const payload = await this.jwtService.verifyAsync(access_token, {
+      secret: this.configService.get<string>('SECERT_JWT_ACCESS') || 'default_secret',
+    });
+
+    return {
+      ok: true,
+      status:200,
+      message: 'Valid token',
+     
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status:401,
+      message: 'Invalid or expired token ❌',
+    };
+  }
+}
 
 
 

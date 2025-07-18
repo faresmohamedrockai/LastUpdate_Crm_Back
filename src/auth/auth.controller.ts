@@ -107,6 +107,14 @@ async login(
   const UserData = await this.authService.login(dto);
 
 
+  // 🟢 كوكي للتوكن (15 دقيقة)
+  res.cookie('access_token', UserData.tokens.access_token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: 15 * 60 * 1000, // 15 دقيقة
+  });
+
   res.cookie('refresh_token', UserData.tokens.refreshToken, {
     httpOnly: true, // 
     secure: true, // 
@@ -116,7 +124,6 @@ async login(
 
   // ✅ إرسال فقط access_token + بيانات المستخدم
   return {
-    access_token: UserData.tokens.access_token,
     user: UserData.user,
     message: UserData.message,
     status: UserData.status,
@@ -130,6 +137,12 @@ async login(
 
 
 
+@Get('check')
+checkToken(@Req() req: any) {
+  const access_token = req.cookies?.access_token;
+  return this.authService.checkAuth(access_token)
+    
+}
 
 
 
