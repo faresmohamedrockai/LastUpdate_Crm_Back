@@ -151,7 +151,7 @@ checkToken(@Req() req: any) {
 
 
 
-@Get('refresh')
+@Post('refresh')
 async refreshToken(
   @Req() req: RequestWithCookies,
   @Res() res: Response
