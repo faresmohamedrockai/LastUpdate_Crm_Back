@@ -18,9 +18,8 @@ export class CreateMeetingDto {
 
   @IsOptional()
   @IsDateString()
-  @IsFutureDateIfScheduled('status', {
-    message: 'Time Can Not Before To Day if  Scheduled',
-  })
+  @IsFutureDateIfScheduled('status')
+
   date?: string;
 
   @IsOptional()
