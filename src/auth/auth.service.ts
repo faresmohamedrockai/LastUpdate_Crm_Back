@@ -66,7 +66,7 @@ export class AuthService {
         name,
         password: hashedPassword,
         role: role as any,
-        teamLeaderId: role === 'SALES_REP' ? teamLeaderId : undefined,
+        teamLeaderId: role === 'sales_rep' ? teamLeaderId : undefined,
         image: imageUrl,
       },
     });
@@ -184,10 +184,14 @@ export class AuthService {
     if (role === 'team_leader') {
       return this.prisma.user.findMany({
         where: {
-          teamLeaderId: userId, // ✅ يعرض الفريق الخاص فقط
+          teamLeaderId: userId, // يجيب الفريق الخاص بالـ TL
+        },
+        include: {
+          teamLeader: true, // ⬅️ هنا هنرجع بيانات الـ team leader لكل user
         },
       });
     }
+
 
     throw new ForbiddenException('Unauthorized');
   }
@@ -204,36 +208,36 @@ export class AuthService {
       const payload = await this.jwtService.verifyAsync(access_token, {
         secret: this.configService.get<string>('SECERT_JWT_ACCESS') || 'default_secret',
       });
-if(payload){
-return {
-        user: {
-          ok: true,
-          status: 200,
-          message: 'Valid token'
-        }
-}
-      }
-      else{
+      if (payload) {
         return {
-        user:{
-        ok: false,
-          status: 401,
+          user: {
+            ok: true,
+            status: 200,
+            message: 'Valid token'
+          }
+        }
+      }
+      else {
+        return {
+          user: {
+            ok: false,
+            status: 401,
             message: 'Invalid or expired token',
-}
+          }
 
-    };
+        };
       }
     } catch (error) {
       return {
-        user:{
-        ok: false,
+        user: {
+          ok: false,
           status: 401,
-            message: 'Invalid or expired token',
-}
+          message: 'Invalid or expired token',
+        }
 
-    };
+      };
+    }
   }
-}
 
 
 
@@ -242,77 +246,77 @@ return {
 
 
   async refreshToken(refreshToken: string) {
-  try {
-    const payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.configService.get<string>("SECERT_JWT_REFRESH"),
-    });
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>("SECERT_JWT_REFRESH"),
+      });
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-    });
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
 
-    if (!user) {
-      throw new ForbiddenException('User not found');
-    }
-
-    const access_token = await this.jwtService.signAsync(
-      {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      {
-        secret: this.configService.get<string>("SECERT_JWT_ACCESS"),
-        expiresIn: '15m',
+      if (!user) {
+        throw new ForbiddenException('User not found');
       }
-    );
 
-    return { access_token };
-  } catch (error) {
-    throw new ForbiddenException('Access Denied');
+      const access_token = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        {
+          secret: this.configService.get<string>("SECERT_JWT_ACCESS"),
+          expiresIn: '15m',
+        }
+      );
+
+      return { access_token };
+    } catch (error) {
+      throw new ForbiddenException('Access Denied');
+    }
   }
-}
 
 
 
   async getOneUser(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-    },
-  });
-
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-
-
-  let teamMembers: { id: string; name: string; email: string }[] = [];
-
-  if (user.role === 'team_leader') {
-    teamMembers = await this.prisma.user.findMany({
-      where: { teamLeaderId: user.id },
+    const user = await this.prisma.user.findUnique({
+      where: { id },
       select: {
         id: true,
         name: true,
         email: true,
+        role: true,
       },
     });
-  }
 
-  return {
-    status: 200,
-    message: 'User found',
-    user: {
-      ...user,
-      teamMembers,
-    },
-  };
-}
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+
+    let teamMembers: { id: string; name: string; email: string }[] = [];
+
+    if (user.role === 'team_leader') {
+      teamMembers = await this.prisma.user.findMany({
+        where: { teamLeaderId: user.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+    }
+
+    return {
+      status: 200,
+      message: 'User found',
+      user: {
+        ...user,
+        teamMembers,
+      },
+    };
+  }
 
 
 
@@ -339,93 +343,93 @@ return {
 
   // For Delete User Just admin can do it
   async deleteUser(id: string) {
-  const user = await this.prisma.user.findUnique({ where: { id } });
-  if (!user) throw new NotFoundException("User not found");
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException("User not found");
 
-  // حذف البيانات المرتبطة أولاً
-  await this.prisma.$transaction(async (tx) => {
-    // حذف الـ logs المرتبطة بالمستخدم
-    await tx.log.deleteMany({ where: { userId: id } });
+    // حذف البيانات المرتبطة أولاً
+    await this.prisma.$transaction(async (tx) => {
+      // حذف الـ logs المرتبطة بالمستخدم
+      await tx.log.deleteMany({ where: { userId: id } });
 
-    // حذف الـ leads المرتبطة بالمستخدم
-    await tx.lead.deleteMany({ where: { ownerId: id } });
+      // حذف الـ leads المرتبطة بالمستخدم
+      await tx.lead.deleteMany({ where: { ownerId: id } });
 
-    // حذف الـ calls المرتبطة بالمستخدم (لو كان هناك relation)
-    // await tx.call.deleteMany({ where: { userId: id } });
+      // حذف الـ calls المرتبطة بالمستخدم (لو كان هناك relation)
+      // await tx.call.deleteMany({ where: { userId: id } });
 
-    // حذف الـ visits المرتبطة بالمستخدم (لو كان هناك relation)
-    // await tx.visit.deleteMany({ where: { userId: id } });
+      // حذف الـ visits المرتبطة بالمستخدم (لو كان هناك relation)
+      // await tx.visit.deleteMany({ where: { userId: id } });
 
-    // حذف المستخدم نفسه
-    await tx.user.delete({ where: { id } });
-  });
+      // حذف المستخدم نفسه
+      await tx.user.delete({ where: { id } });
+    });
 
-  return {
-    status: 200,
-    message: "User deleted successfully"
-  };
-}
+    return {
+      status: 200,
+      message: "User deleted successfully"
+    };
+  }
 
 
 
   //Update User Data Just Admin
   //
 
- async updateUser(id: string, data: UpdateUserDto) {
-  const existingUser = await this.prisma.user.findUnique({
-    where: { id },
-  });
-
-  if (!existingUser) {
-    throw new NotFoundException("User not found");
-  }
-
-  if (data.email && data.email !== existingUser.email) {
-    const emailExists = await this.prisma.user.findUnique({
-      where: { email: data.email },
+  async updateUser(id: string, data: UpdateUserDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id },
     });
-    if (emailExists) {
-      throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+
+    if (!existingUser) {
+      throw new NotFoundException("User not found");
     }
-  }
 
-  if (data.password) {
-    data.password = await bcrypt.hash(data.password, 10);
-  }
-
-  if (data.imageBase64) {
-    const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(data.imageBase64);
-    data.image = uploadedImage;
-  }
-
-  const { role, imageBase64, ...updateData } = data;
-
-  // ✅ حذف المفاتيح الفارغة من البيانات
-  Object.keys(updateData).forEach((key) => {
-    if (
-      updateData[key] === undefined ||
-      updateData[key] === null ||
-      (typeof updateData[key] === 'string' && updateData[key].trim() === '')
-    ) {
-      delete updateData[key];
+    if (data.email && data.email !== existingUser.email) {
+      const emailExists = await this.prisma.user.findUnique({
+        where: { email: data.email },
+      });
+      if (emailExists) {
+        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      }
     }
-  });
+
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+
+    if (data.imageBase64) {
+      const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(data.imageBase64);
+      data.image = uploadedImage;
+    }
+
+    const { role, imageBase64, ...updateData } = data;
+
+    // ✅ حذف المفاتيح الفارغة من البيانات
+    Object.keys(updateData).forEach((key) => {
+      if (
+        updateData[key] === undefined ||
+        updateData[key] === null ||
+        (typeof updateData[key] === 'string' && updateData[key].trim() === '')
+      ) {
+        delete updateData[key];
+      }
+    });
 
 
 
 
 
-  const updatedUser = await this.prisma.user.update({
-    where: { id },
-    data: updateData,
-  });
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
 
-  return {
-    status: 200,
-    message: "User updated successfully",
-    user: updatedUser,
-  };
-}
+    return {
+      status: 200,
+      message: "User updated successfully",
+      user: updatedUser,
+    };
+  }
 
 
 
@@ -435,27 +439,24 @@ return {
 
   //This Function For generat access token and refresh token
   async generateTokens(userData: { id: string; email: string; role: string }) {
-  const payload = {
-    sub: userData.id,
-    email: userData.email,
-    role: userData.role,
-  };
-  const access_token = await this.jwtService.signAsync(payload, {
-    secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
-    expiresIn: '15m',
-  });
-  const refreshToken = await this.jwtService.signAsync(payload, {
-    secret: this.configService.get<string>('SECERT_JWT_REFRESH'),
-    expiresIn: '30d',
-  });
-  return {
-    access_token,
-    refreshToken,
-  };
+    const payload = {
+      sub: userData.id,
+      email: userData.email,
+      role: userData.role,
+    };
+    const access_token = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('SECERT_JWT_ACCESS'),
+      expiresIn: '30d',
+    });
+
+    return {
+      access_token,
+
+    };
 
 
 
-}
+  }
 
 
 

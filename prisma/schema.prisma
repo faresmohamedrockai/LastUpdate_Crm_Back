@@ -79,6 +79,8 @@ model Inventory {
   projectId      String
   developerId    String
   paymentPlanId  String?
+
+
   createdAt      DateTime     @default(now())
   project        Project      @relation(fields: [projectId], references: [id])
   paymentPlan    PaymentPlan? @relation(fields: [paymentPlanId], references: [id])
@@ -118,8 +120,8 @@ model PaymentPlan {
   description            String?
   yearsToPay             Int?
   installmentMonthsCount Float?
-  firstInstallmentDate   DateTime? // ✅ جديد
-  deliveryDate           DateTime? // ✅ جديد
+  firstInstallmentDate   DateTime? 
+  deliveryDate           DateTime? 
   projectId              String
   createdAt              DateTime          @default(now())
   installmentPeriod      InstallmentPeriod

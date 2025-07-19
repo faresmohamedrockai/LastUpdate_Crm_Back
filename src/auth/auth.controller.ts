@@ -107,20 +107,15 @@ async login(
   const UserData = await this.authService.login(dto);
 
 
-  // كوكي للتوكن (15 دقيقة)
+  
   res.cookie('access_token', UserData.tokens.access_token, {
     httpOnly: true,
-    secure: true,
+    secure: false,
     sameSite: 'lax',
-    maxAge: 12*60 * 60 * 1000, // 15 دقيقة
+   maxAge: 30 * 24 * 60 * 60 * 1000 // 30 يوم
+
   });
 
-  res.cookie('refresh_token', UserData.tokens.refreshToken, {
-    httpOnly: true, // 
-    secure: true, // 
-    sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
 
   // ✅ إرسال فقط access_token + بيانات المستخدم
   return {
@@ -137,12 +132,12 @@ async login(
 
 
 
-@Get('check')
-checkToken(@Req() req: any) {
-  const access_token = req.cookies?.access_token;
-  return this.authService.checkAuth(access_token)
+// @Get('check')
+// checkToken(@Req() req: any) {
+//   const access_token = req.cookies?.access_token;
+//   return this.authService.checkAuth(access_token)
     
-}
+// }
 
 
 
@@ -151,28 +146,28 @@ checkToken(@Req() req: any) {
 
 
 
-@Post('refresh')
-async refreshToken(
-  @Req() req: RequestWithCookies,
-  @Res() res: Response
-) {
+// @Post('refresh')
+// async refreshToken(
+//   @Req() req: RequestWithCookies,
+//   @Res() res: Response
+// ) {
   
  
-  const refreshToken = req.cookies?.refresh_token;
-  if (!refreshToken) {
-    throw new ForbiddenException('No refresh token provided');
-  }
+//   const refreshToken = req.cookies?.refresh_token;
+//   if (!refreshToken) {
+//     throw new ForbiddenException('No refresh token provided');
+//   }
 
-  const { access_token } = await this.authService.refreshToken(refreshToken);
+//   const { access_token } = await this.authService.refreshToken(refreshToken);
 
-res.cookie('access_token',access_token , {
-  httpOnly: true,
-  secure: true,
-  maxAge: 900000, // 1 ساعة
-});
+// res.cookie('access_token',access_token , {
+//   httpOnly: true,
+//   secure: true,
+//   maxAge: 1500000, // 1 ساعة
+// });
 
-  return res.json({ access_token });
-}
+//   return res.json({ access_token });
+// }
 
 
 
