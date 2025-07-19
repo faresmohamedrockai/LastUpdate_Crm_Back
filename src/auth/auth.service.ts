@@ -53,7 +53,7 @@ export class AuthService {
       imageUrl = await this.cloudinaryService.uploadImageFromBase64(imageBase64);
       console.log('✅ Image uploaded to Cloudinary:', imageUrl);
     } else {
-      console.log('⚠️ No image uploaded');
+      console.log(' No image uploaded');
     }
 
     // 🔐 هاش كلمة السر
