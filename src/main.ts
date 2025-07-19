@@ -17,7 +17,7 @@ async function bootstrap() {
 
  app.enableCors({
   origin: ['http://localhost:3000',
-    'http://localhost:5173',
+    'http://localhost:5174',
     'https://propai-crm-front-end.vercel.app'],
   credentials: true,
   methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
