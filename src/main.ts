@@ -16,7 +16,9 @@ async function bootstrap() {
   app.use(morgan('dev'));
 
  app.enableCors({
-  origin: ['http://localhost:3000','http://localhost:5173','https://propai-crm-front-end.vercel.app'],
+  origin: ['http://localhost:3000',
+    'http://localhost:5173',
+    'https://propai-crm-front-end.vercel.app'],
   credentials: true,
   methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
   allowedHeaders: 'Content-Type,Authorization,ngrok-skip-browser-warning', // ✅ أضف هذا

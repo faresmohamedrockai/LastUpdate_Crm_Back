@@ -109,16 +109,16 @@ async login(
 
   // 🟢 كوكي للتوكن (15 دقيقة)
   res.cookie('access_token', UserData.tokens.access_token, {
-    httpOnly: true,
+    httpOnly: false,
     secure: true,
-    sameSite: 'lax',
+    sameSite: 'none',
     maxAge: 15 * 60 * 1000, // 15 دقيقة
   });
 
   res.cookie('refresh_token', UserData.tokens.refreshToken, {
-    httpOnly: true, // 
+    httpOnly: false, // 
     secure: true, // 
-    sameSite: 'strict',
+    sameSite: 'none',
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
@@ -166,8 +166,9 @@ async refreshToken(
   const { access_token } = await this.authService.refreshToken(refreshToken);
 
 res.cookie('access_token',access_token , {
-  httpOnly: true,
+  httpOnly: false,
   secure: true,
+  sameSite:"none",
   maxAge: 900000, // 1 ساعة
 });
 

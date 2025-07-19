@@ -47,7 +47,7 @@ export class LeadsService {
       status: dto.status,
 
       owner: {
-        connect: { id: dto.assignedTo },
+        connect: { id: dto.assignedToId },
       },
     };
 

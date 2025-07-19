@@ -30,7 +30,7 @@ export class CreateLeadDto {
 
   @IsOptional()
   @IsString()
-  assignedTo?: string;
+  assignedToId?: string;
 
   @IsOptional()
   @IsString()
