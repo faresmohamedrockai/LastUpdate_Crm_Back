@@ -109,6 +109,9 @@ async login(
 
   
   res.cookie('access_token', UserData.tokens.access_token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 يوم
 
   });
@@ -116,6 +119,7 @@ async login(
 
   // ✅ إرسال فقط access_token + بيانات المستخدم
   return {
+  access_token:UserData.tokens.access_token,
     user: UserData.user,
     message: UserData.message,
     status: UserData.status,
