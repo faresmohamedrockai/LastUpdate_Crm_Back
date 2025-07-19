@@ -5,7 +5,7 @@ import {
   IsUUID,
   IsIn,
 } from 'class-validator';
-
+import { IsFutureDateIfScheduled } from '../dto/checkScheduale';
 export class UpdateMeetingDto {
   @IsOptional()
   @IsString()
@@ -15,14 +15,20 @@ export class UpdateMeetingDto {
   @IsString()
   client?: string;
 
-  @IsOptional()
+@IsOptional()
   @IsDateString()
+  @IsFutureDateIfScheduled('status', {
+    message: 'التاريخ لا يمكن أن يكون في الماضي إذا كانت الحالة Scheduled',
+  })
   date?: string;
 
   @IsOptional()
   @IsString()
   time?: string;
 
+
+
+  
   @IsOptional()
   @IsString()
   duration?: string;

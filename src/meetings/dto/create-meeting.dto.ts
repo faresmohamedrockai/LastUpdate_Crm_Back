@@ -1,10 +1,11 @@
+// create-meeting.dto.ts
 import {
   IsString,
   IsOptional,
   IsDateString,
-  IsUUID,
   IsIn,
 } from 'class-validator';
+import { IsFutureDateIfScheduled } from '../dto/checkScheduale';
 
 export class CreateMeetingDto {
   @IsOptional()
@@ -17,6 +18,9 @@ export class CreateMeetingDto {
 
   @IsOptional()
   @IsDateString()
+  @IsFutureDateIfScheduled('status', {
+    message: 'التاريخ لا يمكن أن يكون في الماضي إذا كانت الحالة Scheduled',
+  })
   date?: string;
 
   @IsOptional()
@@ -48,7 +52,6 @@ export class CreateMeetingDto {
   @IsString()
   location?: string;
 
-
   @IsOptional()
   @IsString()
   inventoryId?: string;
@@ -56,7 +59,7 @@ export class CreateMeetingDto {
   @IsOptional()
   @IsString()
   projectId?: string;
-  
+
   @IsOptional()
   @IsString()
   locationType?: string;
