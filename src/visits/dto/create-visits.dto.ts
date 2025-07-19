@@ -6,8 +6,12 @@ import {
   IsUUID,
   IsOptional,
 } from 'class-validator';
+import { IsFutureDateIfScheduled } from '../../meetings/dto/checkScheduale';
+
+
 
 export class CreateVisitDto {
+  @IsFutureDateIfScheduled('status')
   @IsDateString()
   date: string;
 
