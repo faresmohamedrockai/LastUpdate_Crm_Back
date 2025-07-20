@@ -12,7 +12,7 @@ export class UpdateUserDto {
   email?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsString()
   teamLeaderId?: string;
 
   @IsOptional()
