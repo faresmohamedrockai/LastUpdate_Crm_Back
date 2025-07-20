@@ -13,6 +13,7 @@ export class LogsService {
     userId,
     action,
     leadId,
+    email,
     description,
     ip,
     userAgent,
@@ -24,9 +25,9 @@ export class LogsService {
       userName,
       userRole,
       action,
+      email,
       description: description || '',
-      ip,
-      userAgent,
+    
     };
     if (leadId) {
       logData.leadId = leadId;

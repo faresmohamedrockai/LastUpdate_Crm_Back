@@ -90,57 +90,60 @@ export class LeadsService {
   }
 
 
-  async getLeads(user: { id: string; role: Role }, userName?: string, userRole?: string) {
-    let leads;
-    let description;
+ async getLeads(id: string, email: string, userRole?: string) {
+  let leads;
+  let description;
 
-    switch (user.role) {
-      case Role.ADMIN:
-      case Role.SALES_ADMIN:
-        leads = await this.prisma.lead.findMany({
-          include: { owner: true },
-        });
-        description = `Admin retrieved ${leads.length} leads`;
-        break;
+  switch (userRole) {
+    case Role.ADMIN:
+    case Role.SALES_ADMIN:
+      leads = await this.prisma.lead.findMany({
+        include: {
+          owner: true,
+          calls: true, // ✅ أضف المكالمات
+        },
+      });
+      description = `Admin retrieved ${leads.length} leads`;
+      break;
 
-      case Role.TEAM_LEADER:
-        const teamMembers = await this.prisma.user.findMany({
-          where: { teamLeaderId: user.id },
-          select: { id: true },
-        });
+    case Role.TEAM_LEADER:
+      const teamMembers = await this.prisma.user.findMany({
+        where: { teamLeaderId: id },
+        select: { id: true },
+      });
 
-        const memberIds = teamMembers.map(member => member.id);
+      const memberIds = teamMembers.map(member => member.id);
 
-        leads = await this.prisma.lead.findMany({
-          where: { ownerId: { in: memberIds } },
-          include: { owner: true },
-        });
-        description = `Team leader retrieved ${leads.length} leads for team`;
-        break;
+      leads = await this.prisma.lead.findMany({
+        where: { ownerId: { in: memberIds } },
+        include: {
+          owner: true,
+          calls: true, // ✅ أضف المكالمات
+        },
+      });
+      description = `Team leader retrieved ${leads.length} leads for team`;
+      break;
 
-      case Role.SALES_REP:
-        leads = await this.prisma.lead.findMany({
-          where: { ownerId: user.id },
-          include: { owner: true },
-        });
-        description = `Sales rep retrieved ${leads.length} leads`;
-        break;
+    case Role.SALES_REP:
+      leads = await this.prisma.lead.findMany({
+        where: { ownerId: id },
+        include: {
+          owner: true,
+          calls: true, // ✅ أضف المكالمات
+        },
+      });
+      description = `Sales rep retrieved ${leads.length} leads`;
+      break;
 
-      default:
-        throw new ForbiddenException('Access denied');
-    }
-
-    // Log leads retrieval
-    // await this.logsService.createLog({
-    //   userId: user.id,
-    //   userName,
-    //   userRole,
-    //   action: 'get_leads',
-    //   description,
-    // });
-
-    return { leads };
+    default:
+      throw new ForbiddenException('Access denied');
   }
+
+ 
+
+  return { leads };
+}
+
 
 
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException, HttpException, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, HttpException, HttpStatus, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from '../DTOS/register.dto';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { UpdateUserDto } from 'src/DTOS/update.user.dto';
 import { LogsService } from '../logs/logs.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service'; // عدل المسار حسب مكان الملف
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 @Injectable()
 export class AuthService {
   constructor(
@@ -31,6 +32,23 @@ export class AuthService {
     if (existingUser) {
       throw new HttpException('User already exists. Please login.', HttpStatus.CONFLICT);
     }
+
+
+
+if (userData.role === 'admin') {
+  const existingAdmin = await this.prisma.user.findFirst({
+    where: { role: 'admin' },
+  });
+
+  if (existingAdmin) {
+    throw new BadRequestException('Only one admin is allowed!');
+  }
+}
+
+
+
+
+
 
     // 🔍 تحقق من الـ teamLeader لو المستخدم sales_rep
     if (role === 'SALES_REP') {

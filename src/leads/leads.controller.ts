@@ -34,7 +34,7 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
   @Get()
   async getLeads(@Req() req) {
     const { id: userId, email:email, role: userRole } = req.user;
-    return this.leadsService.getLeads({ id: userId, role: userRole }, email, userRole);
+    return this.leadsService.getLeads(  userId, email, userRole);
   }
 
   // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)

@@ -11,13 +11,13 @@ export class CallsService {
   ) {}
 
   async createCall(dto: CreateCallDto, userId: string, id: string,email,role) {
-  // 1. تأكد من وجود العميل
+  
   const lead = await this.prisma.lead.findUnique({
     where: { id: dto.leadId },
   });
   if (!lead) throw new NotFoundException('Lead not found');
 
-  // 2. تحقق من المشروع لو تم إرساله
+  
   if (dto.project) {
     const project = await this.prisma.project.findUnique({
       where: { id: dto.project },
@@ -26,17 +26,18 @@ export class CallsService {
       throw new NotFoundException('Project not found');
     }
   }
-console.log(dto);
+
 
   // 3. أنشئ المكالمة
   const call = await this.prisma.call.create({
   data: {
-    date: dto.date, // ✅ string
+    date: dto.date, 
     outcome: dto.outcome,
     duration: dto.duration,
     notes: dto.notes,
     leadId: dto.leadId,
     projectId: dto.project,
+    createdBy:userId
   },
   include: {
     lead: true,
@@ -46,7 +47,7 @@ console.log(dto);
 
 
  await this.logsService.createLog({
-      userId: id,
+      userId: userId,
       action: 'create_call',
       description: `User ${id} created Call in`,
    
@@ -67,7 +68,7 @@ console.log(dto);
     where: { leadId },
     include: {
       lead: true,
-      Project: true, // ✅ حروف صغيرة
+      Project: true, 
     },
     orderBy: { date: 'desc' },
   });
@@ -234,7 +235,7 @@ console.log(dto);
  await this.logsService.createLog({
       userId: userId || "none",
       action: 'create_call',
-      description: `User ${id} created Call in`,
+      description: `User ${userId} created Call in`,
    
       email: email,
       userRole: role,

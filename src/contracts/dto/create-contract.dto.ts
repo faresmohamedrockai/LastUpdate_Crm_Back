@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsOptional, IsUUID, IsDateString } from 'class-validator';
-
+import {IsFutureDateIfPendingOrSigned} from './contract'
 export class CreateContractDto {
   @IsOptional()
   @IsString()
@@ -13,8 +13,9 @@ export class CreateContractDto {
   @IsNumber()
   dealValue?: number;
 
-  @IsOptional()
-  @IsString()
+   @IsFutureDateIfPendingOrSigned('status', {
+    message: 'Contract date is not valid for the current status.',
+  })
   contractDate?: string;
 
   @IsOptional()
