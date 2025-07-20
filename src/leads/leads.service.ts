@@ -100,7 +100,7 @@ export class LeadsService {
       leads = await this.prisma.lead.findMany({
         include: {
           owner: true,
-          calls: true, // ✅ أضف المكالمات
+          calls: true,
         },
       });
       description = `Admin retrieved ${leads.length} leads`;
@@ -118,7 +118,7 @@ export class LeadsService {
         where: { ownerId: { in: memberIds } },
         include: {
           owner: true,
-          calls: true, // ✅ أضف المكالمات
+          calls: true, 
         },
       });
       description = `Team leader retrieved ${leads.length} leads for team`;
@@ -163,6 +163,7 @@ export class LeadsService {
       // Sales Rep limited update
       const limitedUpdate = {
         ...(dto.status && { status: dto.status }),
+        ...(dto.assignedToId && { assignedToId: dto.assignedToId }),
         ...(dto.notes && {
     notes: {
       push: dto.notes, // هذا يضيف الملاحظة الجديدة للمصفوفة الموجودة

@@ -34,6 +34,10 @@ export class UpdateLeadDto {
   source?: string;
 
   @IsOptional()
+  @IsString()
+  assignedToId?: string;
+
+  @IsOptional()
   status?: LeadStatus;
 
   @IsOptional()
