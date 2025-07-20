@@ -405,6 +405,14 @@ export class AuthService {
       throw new NotFoundException("User not found");
     }
 
+
+
+if(data.role === "admin"){
+  throw new BadRequestException("You Can't Make Than More Than one Admin For System")
+}
+
+
+
     if (data.email && data.email !== existingUser.email) {
       const emailExists = await this.prisma.user.findUnique({
         where: { email: data.email },
@@ -422,6 +430,9 @@ export class AuthService {
       const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(data.imageBase64);
       data.image = uploadedImage;
     }
+
+
+
 
     const { role, imageBase64, ...updateData } = data;
 
