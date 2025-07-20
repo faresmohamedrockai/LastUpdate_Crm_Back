@@ -33,8 +33,11 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getLeads(@Req() req) {
-    const { id: userId, email:email, role: userRole } = req.user;
-    return this.leadsService.getLeads(  userId, email, userRole);
+  
+    
+    const { userId, email, role } = req.user;
+
+    return this.leadsService.getLeads(  userId, email, role);
   }
 
   // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
@@ -58,8 +61,8 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteLead(@Param('id') id: string, @Req() req) {
-    const { id: userId, name: userName, role: userRole } = req.user;
-    return this.leadsService.deleteLead(id, userId, userName, userRole);
+    const {  userId,  email, role } = req.user;
+    return this.leadsService.deleteLead(id, userId, email, role);
   }
 }
 

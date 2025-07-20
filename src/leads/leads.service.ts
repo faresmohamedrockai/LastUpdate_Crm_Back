@@ -106,6 +106,10 @@ export class LeadsService {
       description = `Admin retrieved ${leads.length} leads`;
       break;
 
+
+
+
+
     case Role.TEAM_LEADER:
       const teamMembers = await this.prisma.user.findMany({
         where: { teamLeaderId: id },
@@ -129,7 +133,7 @@ export class LeadsService {
         where: { ownerId: id },
         include: {
           owner: true,
-          calls: true, // ✅ أضف المكالمات
+          calls: true, 
         },
       });
       description = `Sales rep retrieved ${leads.length} leads`;
@@ -163,7 +167,7 @@ export class LeadsService {
       // Sales Rep limited update
       const limitedUpdate = {
         ...(dto.status && { status: dto.status }),
-        ...(dto.assignedToId && { assignedToId: dto.assignedToId }),
+        ...(dto.assignedToId && { ownerId: dto.assignedToId }),
         ...(dto.notes && {
     notes: {
       push: dto.notes, // هذا يضيف الملاحظة الجديدة للمصفوفة الموجودة
@@ -203,6 +207,8 @@ export class LeadsService {
         budget: dto.budget,
         source: dto.source,
         status: dto.status,
+      // ownerId:dto.assignedToId
+        
        notes: dto.notes ? { push: dto.notes } : undefined,
         lastCall: dto.lastCall,
         lastVisit: dto.lastVisit,
@@ -224,7 +230,7 @@ export class LeadsService {
     return updatedLead;
   }
 
-  async deleteLead(leadId: string, userId: string, userName: string, userRole: string) {
+  async deleteLead(leadId: string, userId: string, email: string, role: string) {
     const existingLead = await this.prisma.lead.findUnique({
       where: { id: leadId },
       include: { calls: true, visits: true, meetings: true },
@@ -244,8 +250,8 @@ export class LeadsService {
     // Log lead deletion
     await this.logsService.createLog({
       userId,
-      userName,
-      userRole,
+      email,
+      userRole:role,
       action: 'delete_lead',
       leadId: leadId,
       description: `Deleted lead: id=${leadId}, name=${existingLead.nameEn}, contact=${existingLead.contact}`,

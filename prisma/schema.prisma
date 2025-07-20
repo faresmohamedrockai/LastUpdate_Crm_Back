@@ -279,6 +279,7 @@ enum LeadStatus {
   closed_deal
   no_answer
   not_intersted_now
+  reservation
 }
 
 enum installmentPeriod {

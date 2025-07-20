@@ -9,6 +9,7 @@ export enum LeadStatus {
   CLOSED_DEAL = 'closed_deal',
   NO_ANSWER = 'no_answer',
   NOT_INTERSTED_NOW = 'not_intersted_now',
+  RESERVATION = 'reservation',
 }
 export class CreateLeadDto {
   @IsOptional()
