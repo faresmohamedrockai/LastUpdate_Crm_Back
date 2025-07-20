@@ -20,10 +20,10 @@ export class UpdateUserDto {
   role?: Role;
 
 
-@IsOptional()
-  imageBase64?: string; 
-@IsOptional()
-  image?: string; 
+  @IsOptional()
+  imageBase64?: string;
+  @IsOptional()
+  image?: string;
 
 
 }
