@@ -35,15 +35,15 @@ export class AuthService {
 
 
 
-if (userData.role === 'admin') {
-  const existingAdmin = await this.prisma.user.findFirst({
-    where: { role: 'admin' },
-  });
+    if (userData.role === 'admin') {
+      const existingAdmin = await this.prisma.user.findFirst({
+        where: { role: 'admin' },
+      });
 
-  if (existingAdmin) {
-    throw new BadRequestException('Only one admin is allowed!');
-  }
-}
+      if (existingAdmin) {
+        throw new BadRequestException('Only one admin is allowed!');
+      }
+    }
 
 
 
@@ -171,6 +171,9 @@ if (userData.role === 'admin') {
       status: 200,
       user: {
         id: existingUser.id,
+
+        name: existingUser.name
+        ,
         email: existingUser.email,
         role: existingUser.role,
       },

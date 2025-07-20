@@ -12,6 +12,10 @@ export class UpdateUserDto {
   email?: string;
 
   @IsOptional()
+  @IsEmail()
+  teamLeaderId?: string;
+
+  @IsOptional()
   @IsString()
   password?: string;
 
