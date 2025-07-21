@@ -225,7 +225,6 @@ var LeadsService = /** @class */ (function () {
                         return [2 /*return*/, updatedLead_1];
                     case 4: return [4 /*yield*/, this.prisma.lead.update({
                             where: { id: leadId },
-                            // Full update for admins
                             data: {
                                 nameAr: dto.nameAr,
                                 nameEn: dto.nameEn,
@@ -233,7 +232,7 @@ var LeadsService = /** @class */ (function () {
                                 budget: dto.budget,
                                 source: dto.source,
                                 status: dto.status,
-                                notes: dto.notes ? { push: dto.notes } : undefined,
+                                notes: dto.notes !== undefined ? dto.notes : undefined,
                                 lastCall: dto.lastCall,
                                 lastVisit: dto.lastVisit,
                                 inventoryInterestId: dto.inventoryInterestId

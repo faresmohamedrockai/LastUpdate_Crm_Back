@@ -193,25 +193,22 @@ export class LeadsService {
     }
 
     // Admin/Sales Admin/Team Leader: يعدل كل الحقول
-    const updatedLead = await this.prisma.lead.update({
-      where: { id: leadId },
-      // Full update for admins
-      data: {
-        nameAr: dto.nameAr,
-        nameEn: dto.nameEn,
-        contact: dto.contact,
-        budget: dto.budget,
-        source: dto.source,
-        status: dto.status,
-      
-        
-       notes: dto.notes ? { push: dto.notes } : undefined,
-        lastCall: dto.lastCall,
-        lastVisit: dto.lastVisit,
-        inventoryInterestId: dto.inventoryInterestId,
-      }
+  const updatedLead = await this.prisma.lead.update({
+  where: { id: leadId },
+  data: {
+    nameAr: dto.nameAr,
+    nameEn: dto.nameEn,
+    contact: dto.contact,
+    budget: dto.budget,
+    source: dto.source,
+    status: dto.status,
+    notes: dto.notes !== undefined ? dto.notes : undefined, // ✅ المهم هنا
+    lastCall: dto.lastCall,
+    lastVisit: dto.lastVisit,
+    inventoryInterestId: dto.inventoryInterestId,
+  },
+});
 
-    });
 
     // Log full lead update
     await this.logsService.createLog({
