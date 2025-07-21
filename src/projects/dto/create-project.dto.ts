@@ -35,7 +35,7 @@ export class CreateProjectDto {
   inventories?: string[];
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   developerId?: string;
 
   @IsOptional()
