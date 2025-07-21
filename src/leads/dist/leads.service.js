@@ -203,11 +203,7 @@ var LeadsService = /** @class */ (function () {
                         if (lead.ownerId !== userId) {
                             throw new common_1.ForbiddenException('You can only edit your own leads');
                         }
-                        limitedUpdate = __assign(__assign(__assign({}, (dto.status && { status: dto.status })), (dto.assignedToId && { ownerId: dto.assignedToId })), (dto.notes && {
-                            notes: {
-                                push: dto.notes
-                            }
-                        }));
+                        limitedUpdate = __assign(__assign(__assign({}, (dto.status && { status: dto.status })), (dto.assignedToId && { ownerId: dto.assignedToId })), (dto.notes !== undefined && { notes: dto.notes }));
                         return [4 /*yield*/, this.prisma.lead.update({
                                 where: { id: leadId },
                                 data: limitedUpdate

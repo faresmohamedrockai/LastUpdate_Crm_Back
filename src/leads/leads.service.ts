@@ -168,11 +168,7 @@ export class LeadsService {
       const limitedUpdate = {
         ...(dto.status && { status: dto.status }),
         ...(dto.assignedToId && { ownerId: dto.assignedToId }),
-        ...(dto.notes && {
-    notes: {
-      push: dto.notes, // هذا يضيف الملاحظة الجديدة للمصفوفة الموجودة
-    },
-  }),
+          ...(dto.notes !== undefined && { notes: dto.notes })
 };
       
 

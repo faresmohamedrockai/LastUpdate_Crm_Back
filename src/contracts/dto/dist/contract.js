@@ -19,7 +19,7 @@ function IsFutureDateIfPendingOrSigned(statusField, validationOptions) {
                     var date = moment(value);
                     var today = moment().startOf('day');
                     if (status === 'Pending') {
-                        return date.isSameOrAfter(today); // المستقبل أو اليوم
+                        return true; // المستقبل أو اليوم
                     }
                     if (status === 'Signed') {
                         return date.isSameOrBefore(today); // الماضي أو اليوم
