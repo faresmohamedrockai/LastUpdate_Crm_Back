@@ -363,33 +363,45 @@ export class AuthService {
 
 
   // For Delete User Just admin can do it
-  async deleteUser(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException("User not found");
+ async deleteUser(id: string) {
+  const user = await this.prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundException("User not found");
 
-    // حذف البيانات المرتبطة أولاً
-    await this.prisma.$transaction(async (tx) => {
-      // حذف الـ logs المرتبطة بالمستخدم
-      await tx.log.deleteMany({ where: { userId: id } });
+ const fallbackUser = await this.prisma.user.findFirst({
+  where: {
+    id: { not: id }, // لا يرجع نفس المستخدم
+    role: {
+      in: ['sales_rep', 'team_leader'],
+    },
+  },
+});
 
-      // حذف الـ leads المرتبطة بالمستخدم
-      await tx.lead.deleteMany({ where: { ownerId: id } });
 
-      // حذف الـ calls المرتبطة بالمستخدم (لو كان هناك relation)
-      // await tx.call.deleteMany({ where: { userId: id } });
+  if (!fallbackUser) {
+    throw new BadRequestException('No fallback user found to reassign leads');
+  }
 
-      // حذف الـ visits المرتبطة بالمستخدم (لو كان هناك relation)
-      // await tx.visit.deleteMany({ where: { userId: id } });
+  // استخدم transaction لإجراء كل التغييرات
+  await this.prisma.$transaction(async (tx) => {
+    // حذف الـ logs المرتبطة بالمستخدم
+    await tx.log.deleteMany({ where: { userId: id } });
 
-      // حذف المستخدم نفسه
-      await tx.user.delete({ where: { id } });
+    // إعادة تعيين الـ leads المرتبطة بالمستخدم لمستخدم بديل
+    await tx.lead.updateMany({
+      where: { ownerId: id },
+      data: { ownerId: fallbackUser.id },
     });
 
-    return {
-      status: 200,
-      message: "User deleted successfully"
-    };
-  }
+    // حذف المستخدم نفسه
+    await tx.user.delete({ where: { id } });
+  });
+
+  return {
+    status: 200,
+    message: "User deleted and leads reassigned successfully"
+  };
+}
+
 
 
 
@@ -400,6 +412,11 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
     });
+
+
+
+
+
 
     if (!existingUser) {
       throw new NotFoundException("User not found");
@@ -434,7 +451,8 @@ if(data.role === "admin"){
 
 
 
-    const { role, imageBase64, ...updateData } = data;
+    const { imageBase64, ...updateData } = data;
+
 
     // ✅ حذف المفاتيح الفارغة من البيانات
     Object.keys(updateData).forEach((key) => {

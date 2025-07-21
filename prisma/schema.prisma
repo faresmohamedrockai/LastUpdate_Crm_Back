@@ -27,7 +27,7 @@ model User {
   assignedMeetings Meeting[] @relation("AssignedMeetings")
 
   // العلاقة القديمة للفريق
-  teamLeader   User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id])
+  teamLeader   User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id], onDelete: SetNull)
   teamMembers  User[]     @relation("TeamMembers")
 }
 
@@ -44,15 +44,15 @@ model Lead {
   status              LeadStatus
   lastCall            DateTime?
   lastVisit           DateTime?
-  ownerId             String
+  ownerId             String?
   createdAt           DateTime   @default(now())
 
   // العلاقات (ما اتغيرتش)
   notes             String[]
   calls             Call[]
   Contract          Contract[]
-  inventoryInterest Inventory? @relation(fields: [inventoryInterestId], references: [id])
-  owner             User       @relation(fields: [ownerId], references: [id])
+  inventoryInterest Inventory? @relation(fields: [inventoryInterestId], references: [id], onDelete: SetNull)
+  owner             User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   logs              Log[]
   meetings          Meeting[]
   visits            Visit[]
@@ -75,17 +75,17 @@ model Inventory {
   amenitiesOther String?
   images         String[] // أقصى 1 صورة بصيغة data URL
   status         String? // نصي بدل enum لتطابق FormState
-  zoneId         String
-  projectId      String
-  developerId    String
+  zoneId         String?
+  projectId      String?
+  developerId    String?
   paymentPlanId  String?
 
 
   createdAt      DateTime     @default(now())
-  project        Project      @relation(fields: [projectId], references: [id])
-  paymentPlan    PaymentPlan? @relation(fields: [paymentPlanId], references: [id])
-  developer      Developer    @relation(fields: [developerId], references: [id])
-  zone           Zone         @relation(fields: [zoneId], references: [id])
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  paymentPlan    PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: SetNull)
+  developer      Developer?    @relation(fields: [developerId], references: [id], onDelete: SetNull)
+  zone           Zone ?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
   Contract       Contract[]
   leads          Lead[]
   meetings       Meeting[]
@@ -107,8 +107,8 @@ model Project {
   inventories  Inventory[]
   meetings     Meeting[]
   paymentPlans PaymentPlan[]
-  developer    Developer?    @relation(fields: [developerId], references: [id])
-  zone         Zone?         @relation(fields: [zoneId], references: [id])
+  developer    Developer?    @relation(fields: [developerId], references: [id], onDelete: SetNull)
+  zone         Zone?         @relation(fields: [zoneId], references: [id], onDelete: SetNull)
 }
 
 model PaymentPlan {
@@ -122,11 +122,11 @@ model PaymentPlan {
   installmentMonthsCount Float?
   firstInstallmentDate   DateTime? 
   deliveryDate           DateTime? 
-  projectId              String
+  projectId              String?
   createdAt              DateTime          @default(now())
   installmentPeriod      InstallmentPeriod
   inventories            Inventory[]
-  project                Project           @relation(fields: [projectId], references: [id])
+  project                Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
 }
 
 model Visit {
@@ -137,16 +137,16 @@ model Visit {
   notes      String?
 
   // العلاقات
-  leadId      String
+  leadId      String?
   inventoryId String?
-  createdById String
+  createdById String?
 
   createdAt DateTime @default(now())
 
   // علاقات Prisma
-  lead      Lead       @relation(fields: [leadId], references: [id])
-  inventory Inventory? @relation(fields: [inventoryId], references: [id])
-  createdBy User       @relation(fields: [createdById], references: [id])
+  lead      Lead ?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  inventory Inventory? @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+  createdBy User ?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
 }
 
 model Call {
@@ -160,9 +160,9 @@ model Call {
   createdBy String?
   createdAt DateTime @default(now())
 
-  lead      Lead?     @relation(fields: [leadId], references: [id])
+  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
   // لا يوجد علاقة واضحة مع Project، لذلك أزلناها
-  Project   Project? @relation(fields: [projectId], references: [id])
+  Project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   projectId String?
 }
 
@@ -170,7 +170,7 @@ model Log {
   id          Int      @id @default(autoincrement())
   action      String
   description String?
-  userId      String
+  userId      String?
   userName    String?
   email       String?
   userRole    String?
@@ -178,8 +178,8 @@ model Log {
   ip          String?
   userAgent   String?
   createdAt   DateTime @default(now())
-  lead        Lead?    @relation(fields: [leadId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  lead        Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Zone {
@@ -216,9 +216,9 @@ model Contract {
   createdAt    DateTime   @default(now())
 
   // Relations
-  createdBy    User?       @relation(fields: [createdById], references: [id])
-  inventory    Inventory?  @relation(fields: [inventoryId], references: [id])
-  lead         Lead?       @relation(fields: [leadId], references: [id])
+  createdBy    User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  inventory    Inventory?  @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+  lead         Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
 }
 
 enum ContractStatus {
@@ -237,7 +237,7 @@ model Meeting {
   duration      String?
   type          String?
   status        String?
-  location      String?     // ✅ احتفظ بهذا فقط
+  location      String?    
   locationType  String?
   notes         String?
   objections    String?
@@ -248,11 +248,11 @@ model Meeting {
   assignedToId  String?
   createdAt     DateTime   @default(now())
 
-  createdBy     User?       @relation("CreatedMeetings", fields: [createdById], references: [id])
-  assignedTo    User?       @relation("AssignedMeetings", fields: [assignedToId], references: [id])
+  createdBy     User?       @relation("CreatedMeetings", fields: [createdById], references: [id], onDelete: SetNull)
+  assignedTo    User?       @relation("AssignedMeetings", fields: [assignedToId], references: [id], onDelete: SetNull)
   inventory     Inventory? @relation(fields: [inventoryId], references: [id])
-  lead          Lead?      @relation(fields: [leadId], references: [id])
-  project       Project?   @relation(fields: [projectId], references: [id])
+  lead          Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  project       Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
 }
 
 

@@ -98,14 +98,14 @@ async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: st
     if (!existingVisit) throw new NotFoundException('Visit not found');
 
     await this.prisma.visit.delete({ where: { id } });
-
+const leadName = existingVisit.lead?.nameEn || 'Unknown Lead';
     // Log visit deletion
     await this.logsService.createLog({
       userId,
       userName,
       userRole,
       action: 'delete_visit',
-      description: `Deleted visit: id=${id}, lead=${existingVisit.lead.nameEn}`,
+      description: `Deleted visit: id=${id}, lead=${leadName}`,
     });
 
     return { message: 'Visit deleted successfully' };
