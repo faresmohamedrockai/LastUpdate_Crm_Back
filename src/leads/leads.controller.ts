@@ -9,17 +9,15 @@ import { Role } from '../auth/roles.enum';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 
-
-
-
-
 @Controller('leads')
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
+
+  
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Post("create")
-@Post('create')
-@Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+
+
 async createLead(@Body() dto: CreateLeadDto, @Req() req) {
   const { userId, email, role } = req.user;
 

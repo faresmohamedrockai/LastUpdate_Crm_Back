@@ -33,7 +33,7 @@ export function IsFutureDateIfPendingOrSigned(
           }
 
           if (status === 'Cancelled') {
-            return false; // التاريخ غير مسموح
+            return true; // التاريخ غير مسموح
           }
 
           return true; // باقي الحالات

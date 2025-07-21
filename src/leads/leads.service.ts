@@ -207,7 +207,7 @@ export class LeadsService {
         budget: dto.budget,
         source: dto.source,
         status: dto.status,
-      // ownerId:dto.assignedToId
+      
         
        notes: dto.notes ? { push: dto.notes } : undefined,
         lastCall: dto.lastCall,

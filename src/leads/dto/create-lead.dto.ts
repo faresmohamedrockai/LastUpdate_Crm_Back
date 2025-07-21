@@ -37,9 +37,15 @@ export class CreateLeadDto {
   @IsString()
   budget?: string;
 
+
+
+  
   @IsOptional()
- 
+ @IsString()
   notes?: String[];
+
+
+
 
   @IsOptional()
   @IsString()

@@ -65,13 +65,16 @@ export class AuthController {
 
 
 
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @Roles(Role.ADMIN)
-  @Delete('delete-user/:id')
-  async deleteUsere(@Param('id') id: string) {
+ @Delete('delete-user/:id/leadsTo/:assignToId')
+@Roles(Role.ADMIN) 
+@UseGuards(AuthGuard('jwt'), RolesGuard) 
+async deleteUser(
+  @Param('id') id: string,
+  @Param('assignToId') assignToId: string,
+) {
+  return this.authService.deleteUser(id, assignToId);
+}
 
-    return this.authService.deleteUser(id)
-  }
 
 
 

@@ -15,8 +15,6 @@ export class CreateVisitDto {
   @IsDateString()
   date: string;
 
-  @IsString()
-  status: string;
 
 @IsOptional()
   @IsString()

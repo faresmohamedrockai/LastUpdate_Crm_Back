@@ -21,7 +21,7 @@ async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: st
   const visit = await this.prisma.visit.create({
     data: {
       date: dto.date,
-      status: dto.status,
+     
       notes: dto.notes,
       objections: dto.objections,
       createdById: userId,

@@ -363,44 +363,37 @@ export class AuthService {
 
 
   // For Delete User Just admin can do it
- async deleteUser(id: string) {
+async deleteUser(id: string, assignToId: string) {
+  if (id === assignToId) {
+    throw new BadRequestException('Cannot assign leads to the same user being deleted');
+  }
+
   const user = await this.prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundException("User not found");
 
- const fallbackUser = await this.prisma.user.findFirst({
-  where: {
-    id: { not: id }, // لا يرجع نفس المستخدم
-    role: {
-      in: ['sales_rep', 'team_leader'],
-    },
-  },
-});
+  const assignToUser = await this.prisma.user.findUnique({ where: { id: assignToId } });
+  if (!assignToUser) throw new NotFoundException("Assigned user not found");
 
-
-  if (!fallbackUser) {
-    throw new BadRequestException('No fallback user found to reassign leads');
-  }
-
-  // استخدم transaction لإجراء كل التغييرات
   await this.prisma.$transaction(async (tx) => {
-    // حذف الـ logs المرتبطة بالمستخدم
-    await tx.log.deleteMany({ where: { userId: id } });
-
-    // إعادة تعيين الـ leads المرتبطة بالمستخدم لمستخدم بديل
+    // نقل الـ leads للمستخدم الجديد
     await tx.lead.updateMany({
       where: { ownerId: id },
-      data: { ownerId: fallbackUser.id },
+      data: { ownerId: assignToId },
     });
 
-    // حذف المستخدم نفسه
+   
+    await tx.log.deleteMany({ where: { userId: id } });
+
+    
     await tx.user.delete({ where: { id } });
   });
 
   return {
     status: 200,
-    message: "User deleted and leads reassigned successfully"
+    message: `User deleted and leads reassigned `,
   };
 }
+
 
 
 
