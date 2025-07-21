@@ -26,8 +26,8 @@ export class UpdateLeadDto {
   contact?: string;
 
   @IsOptional()
-  @IsString()
-  budget?: string;
+  @@IsNumber()
+  budget?: number;
 
   @IsOptional()
   @IsString()

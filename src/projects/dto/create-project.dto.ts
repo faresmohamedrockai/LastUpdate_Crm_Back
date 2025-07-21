@@ -10,8 +10,6 @@ export class CreateProjectDto {
   @IsString()
   nameAr?: string;
 
- 
-
   @IsOptional()
   @IsString()
   description?: string;
@@ -33,6 +31,7 @@ export class CreateProjectDto {
   @IsArray()
   @IsUUID('all', { each: true })
   inventories?: string[];
+
 
   @IsOptional()
   @IsString()
