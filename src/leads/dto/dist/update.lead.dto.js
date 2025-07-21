@@ -37,8 +37,7 @@ var UpdateLeadDto = /** @class */ (function () {
     ], UpdateLeadDto.prototype, "contact");
     __decorate([
         class_validator_1.IsOptional(),
-        ,
-        IsNumber()
+        class_validator_1.IsNumber()
     ], UpdateLeadDto.prototype, "budget");
     __decorate([
         class_validator_1.IsOptional(),

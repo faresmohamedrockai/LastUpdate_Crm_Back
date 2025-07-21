@@ -1,5 +1,5 @@
 // leads/dto/update-lead.dto.ts
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsOptional, IsString, IsUUID,IsNumber } from 'class-validator';
 
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
@@ -26,7 +26,7 @@ export class UpdateLeadDto {
   contact?: string;
 
   @IsOptional()
-  @@IsNumber()
+  @IsNumber()
   budget?: number;
 
   @IsOptional()
