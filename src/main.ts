@@ -20,10 +20,11 @@ async function bootstrap() {
     'http://localhost:5174',
     'http://localhost:5173',
     'https://propai-crm-front-end.vercel.app',
+    'https://propai-crm-front-end-1-coral.vercel.app',
   'https://propai-crm-front-end-1.vercel.app'],
   credentials: true,
   methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
-  allowedHeaders: 'Content-Type,Authorization,ngrok-skip-browser-warning', // ✅ أضف هذا
+  allowedHeaders: 'Content-Type,Authorization,ngrok-skip-browser-warning',
 });
 
   app.setGlobalPrefix('api');

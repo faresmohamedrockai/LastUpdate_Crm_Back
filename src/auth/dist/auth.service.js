@@ -389,14 +389,11 @@ var AuthService = /** @class */ (function () {
                         return [4 /*yield*/, this.prisma.$transaction(function (tx) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0: 
-                                        // نقل الـ leads للمستخدم الجديد
-                                        return [4 /*yield*/, tx.lead.updateMany({
+                                        case 0: return [4 /*yield*/, tx.lead.updateMany({
                                                 where: { ownerId: id },
                                                 data: { ownerId: assignToId }
                                             })];
                                         case 1:
-                                            // نقل الـ leads للمستخدم الجديد
                                             _a.sent();
                                             return [4 /*yield*/, tx.log.deleteMany({ where: { userId: id } })];
                                         case 2:

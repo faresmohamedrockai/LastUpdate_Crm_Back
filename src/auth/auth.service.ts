@@ -375,7 +375,7 @@ async deleteUser(id: string, assignToId: string) {
   if (!assignToUser) throw new NotFoundException("Assigned user not found");
 
   await this.prisma.$transaction(async (tx) => {
-    // نقل الـ leads للمستخدم الجديد
+   
     await tx.lead.updateMany({
       where: { ownerId: id },
       data: { ownerId: assignToId },
