@@ -25,7 +25,7 @@ export function IsFutureDateIfPendingOrSigned(
           const today = moment().startOf('day');
 
           if (status === 'Pending') {
-            return date.isSameOrAfter(today); // المستقبل أو اليوم
+            return true; // المستقبل أو اليوم
           }
 
           if (status === 'Signed') {
