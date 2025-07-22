@@ -187,36 +187,84 @@ export class AuthService {
 
 
   async GetUsers(role: string, userId?: string) {
+    const defaultSelect = {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    };
+  
     if (role === 'admin') {
-      return this.prisma.user.findMany({});
+      return this.prisma.user.findMany({
+        select: defaultSelect,
+      });
     }
-
+  
     if (role === 'sales_admin') {
       return this.prisma.user.findMany({
         where: {
-          OR: [
-            { role: 'sales_rep' },
-            { role: 'sales_admin' },
-            { role: 'team_leader' },
-          ],
+          role: { in: ['sales_rep', 'sales_admin', 'team_leader'] },
         },
+        select: defaultSelect,
       });
     }
-
+  
     if (role === 'team_leader') {
+      if (!userId) throw new ForbiddenException('Missing team leader ID');
+  
       return this.prisma.user.findMany({
         where: {
-          teamLeaderId: userId, // يجيب الفريق الخاص بالـ TL
+          teamLeaderId: userId,
         },
-        include: {
-          teamLeader: true, // ⬅️ هنا هنرجع بيانات الـ team leader لكل user
+        select: {
+          ...defaultSelect,
+          teamLeader: true, // فقط لو محتاج ترجع بيانات القائد
         },
       });
     }
-
-
+  
     throw new ForbiddenException('Unauthorized');
   }
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
