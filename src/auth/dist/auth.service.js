@@ -174,7 +174,7 @@ var AuthService = /** @class */ (function () {
                     case 2:
                         isPasswordValid = _a.sent();
                         if (!isPasswordValid) {
-                            throw new common_1.UnauthorizedException('Invalid password');
+                            throw new common_1.BadRequestException('Invalid password');
                         }
                         return [4 /*yield*/, this.generateTokens({
                                 id: existingUser.id,
@@ -212,32 +212,53 @@ var AuthService = /** @class */ (function () {
     };
     AuthService.prototype.GetUsers = function (role, userId) {
         return __awaiter(this, void 0, void 0, function () {
+            var defaultSelect, users;
             return __generator(this, function (_a) {
-                if (role === 'admin') {
-                    return [2 /*return*/, this.prisma.user.findMany({})];
+                switch (_a.label) {
+                    case 0:
+                        defaultSelect = {
+                            id: true,
+                            name: true,
+                            email: true,
+                            role: true,
+                            createdAt: true
+                        };
+                        if (!(role === 'admin')) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.prisma.user.findMany({
+                                select: defaultSelect
+                            })];
+                    case 1:
+                        users = _a.sent();
+                        return [3 /*break*/, 7];
+                    case 2:
+                        if (!(role === 'sales_admin')) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.prisma.user.findMany({
+                                where: {
+                                    role: { "in": ['sales_rep', 'sales_admin', 'team_leader'] }
+                                },
+                                select: defaultSelect
+                            })];
+                    case 3:
+                        users = _a.sent();
+                        return [3 /*break*/, 7];
+                    case 4:
+                        if (!(role === 'team_leader')) return [3 /*break*/, 6];
+                        if (!userId)
+                            throw new common_1.ForbiddenException('Missing team leader ID');
+                        return [4 /*yield*/, this.prisma.user.findMany({
+                                where: {
+                                    teamLeaderId: userId
+                                },
+                                select: __assign(__assign({}, defaultSelect), { teamLeader: true })
+                            })];
+                    case 5:
+                        users = _a.sent();
+                        return [3 /*break*/, 7];
+                    case 6: throw new common_1.ForbiddenException('Unauthorized');
+                    case 7: 
+                    // ✅ تحويل createdAt إلى string
+                    return [2 /*return*/, users.map(function (user) { return (__assign(__assign({}, user), { createdAt: user.createdAt.toISOString() })); })];
                 }
-                if (role === 'sales_admin') {
-                    return [2 /*return*/, this.prisma.user.findMany({
-                            where: {
-                                OR: [
-                                    { role: 'sales_rep' },
-                                    { role: 'sales_admin' },
-                                    { role: 'team_leader' },
-                                ]
-                            }
-                        })];
-                }
-                if (role === 'team_leader') {
-                    return [2 /*return*/, this.prisma.user.findMany({
-                            where: {
-                                teamLeaderId: userId
-                            },
-                            include: {
-                                teamLeader: true
-                            }
-                        })];
-                }
-                throw new common_1.ForbiddenException('Unauthorized');
             });
         });
     };

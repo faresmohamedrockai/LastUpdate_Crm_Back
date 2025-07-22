@@ -186,46 +186,51 @@ export class AuthService {
 
 
 
-  async GetUsers(role: string, userId?: string) {
-    const defaultSelect = {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      createdAt: true,
-    };
-  
-    if (role === 'admin') {
-      return this.prisma.user.findMany({
-        select: defaultSelect,
-      });
-    }
-  
-    if (role === 'sales_admin') {
-      return this.prisma.user.findMany({
-        where: {
-          role: { in: ['sales_rep', 'sales_admin', 'team_leader'] },
-        },
-        select: defaultSelect,
-      });
-    }
-  
-    if (role === 'team_leader') {
-      if (!userId) throw new ForbiddenException('Missing team leader ID');
-  
-      return this.prisma.user.findMany({
-        where: {
-          teamLeaderId: userId,
-        },
-        select: {
-          ...defaultSelect,
-          teamLeader: true, // فقط لو محتاج ترجع بيانات القائد
-        },
-      });
-    }
-  
+ async GetUsers(role: string, userId?: string) {
+  const defaultSelect = {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    createdAt: true,
+  };
+
+  let users;
+
+  if (role === 'admin') {
+    users = await this.prisma.user.findMany({
+      select: defaultSelect,
+    });
+  } else if (role === 'sales_admin') {
+    users = await this.prisma.user.findMany({
+      where: {
+        role: { in: ['sales_rep', 'sales_admin', 'team_leader'] },
+      },
+      select: defaultSelect,
+    });
+  } else if (role === 'team_leader') {
+    if (!userId) throw new ForbiddenException('Missing team leader ID');
+
+    users = await this.prisma.user.findMany({
+      where: {
+        teamLeaderId: userId,
+      },
+      select: {
+        ...defaultSelect,
+        teamLeader: true,
+      },
+    });
+  } else {
     throw new ForbiddenException('Unauthorized');
   }
+
+  // ✅ تحويل createdAt إلى string
+  return users.map(user => ({
+    ...user,
+    createdAt: user.createdAt.toISOString(),
+  }));
+}
+
   
 
 

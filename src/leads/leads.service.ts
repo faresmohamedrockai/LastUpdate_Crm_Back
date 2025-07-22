@@ -93,7 +93,7 @@ export class LeadsService {
   }
 
 
- async getLeads(id: string, email: string, userRole?: string) {
+async getLeads(id: string, email: string, userRole?: string) {
   let leads;
   let description;
 
@@ -108,10 +108,6 @@ export class LeadsService {
       });
       description = `Admin retrieved ${leads.length} leads`;
       break;
-
-
-
-
 
     case Role.TEAM_LEADER:
       const teamMembers = await this.prisma.user.findMany({
@@ -146,10 +142,26 @@ export class LeadsService {
       throw new ForbiddenException('Access denied');
   }
 
- 
+  // ✅ تحويل التواريخ كلها إلى toISOString()
+  const parsedLeads = leads.map(lead => ({
+    ...lead,
+    createdAt: lead.createdAt?.toISOString(),
+    updatedAt: lead.updatedAt?.toISOString?.(),
+    owner: lead.owner
+      ? {
+          ...lead.owner,
+          createdAt: lead.owner.createdAt?.toISOString?.(),
+        }
+      : null,
+    calls: lead.calls?.map(call => ({
+      ...call,
+      createdAt: call.createdAt?.toISOString?.(),
+    })) || [],
+  }));
 
-  return { leads };
+  return { leads: parsedLeads };
 }
+
 
 
 

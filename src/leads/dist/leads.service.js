@@ -86,6 +86,7 @@ var LeadsService = /** @class */ (function () {
                             nameAr: dto.nameAr,
                             contact: dto.contact,
                             notes: dto.notes,
+                            email: dto.email,
                             budget: dto.budget,
                             source: dto.source,
                             status: dto.status,
@@ -131,7 +132,7 @@ var LeadsService = /** @class */ (function () {
     };
     LeadsService.prototype.getLeads = function (id, email, userRole) {
         return __awaiter(this, void 0, void 0, function () {
-            var leads, description, _a, teamMembers, memberIds;
+            var leads, description, _a, teamMembers, memberIds, parsedLeads;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -183,7 +184,16 @@ var LeadsService = /** @class */ (function () {
                         description = "Sales rep retrieved " + leads.length + " leads";
                         return [3 /*break*/, 9];
                     case 8: throw new common_1.ForbiddenException('Access denied');
-                    case 9: return [2 /*return*/, { leads: leads }];
+                    case 9:
+                        parsedLeads = leads.map(function (lead) {
+                            var _a, _b, _c, _d, _e, _f;
+                            return (__assign(__assign({}, lead), { createdAt: (_a = lead.createdAt) === null || _a === void 0 ? void 0 : _a.toISOString(), updatedAt: (_c = (_b = lead.updatedAt) === null || _b === void 0 ? void 0 : _b.toISOString) === null || _c === void 0 ? void 0 : _c.call(_b), owner: lead.owner
+                                    ? __assign(__assign({}, lead.owner), { createdAt: (_e = (_d = lead.owner.createdAt) === null || _d === void 0 ? void 0 : _d.toISOString) === null || _e === void 0 ? void 0 : _e.call(_d) }) : null, calls: ((_f = lead.calls) === null || _f === void 0 ? void 0 : _f.map(function (call) {
+                                    var _a, _b;
+                                    return (__assign(__assign({}, call), { createdAt: (_b = (_a = call.createdAt) === null || _a === void 0 ? void 0 : _a.toISOString) === null || _b === void 0 ? void 0 : _b.call(_a) }));
+                                })) || [] }));
+                        });
+                        return [2 /*return*/, { leads: parsedLeads }];
                 }
             });
         });
@@ -203,7 +213,7 @@ var LeadsService = /** @class */ (function () {
                         if (lead.ownerId !== userId) {
                             throw new common_1.ForbiddenException('You can only edit your own leads');
                         }
-                        limitedUpdate = __assign(__assign(__assign({}, (dto.status && { status: dto.status })), (dto.assignedToId && { ownerId: dto.assignedToId })), (dto.notes !== undefined && { notes: dto.notes }));
+                        limitedUpdate = __assign(__assign(__assign(__assign({}, (dto.status && { status: dto.status })), (dto.notes !== undefined && { notes: dto.notes })), (dto.budget !== undefined && { budget: dto.budget })), (dto.inventoryInterestId !== undefined && { inventoryInterestId: dto.inventoryInterestId }));
                         return [4 /*yield*/, this.prisma.lead.update({
                                 where: { id: leadId },
                                 data: limitedUpdate
@@ -231,11 +241,12 @@ var LeadsService = /** @class */ (function () {
                                 contact: dto.contact,
                                 budget: dto.budget,
                                 source: dto.source,
+                                email: dto.email,
                                 status: dto.status,
                                 notes: dto.notes !== undefined ? dto.notes : undefined,
                                 lastCall: dto.lastCall,
                                 lastVisit: dto.lastVisit,
-                                inventoryInterestId: dto.inventoryInterestId
+                                inventoryInterestId: dto.inventoryInterestId ? dto.inventoryInterestId : null
                             }
                         })];
                     case 5:
@@ -268,6 +279,7 @@ var LeadsService = /** @class */ (function () {
                         })];
                     case 1:
                         existingLead = _a.sent();
+                        // Log lead deletion
                         if (!existingLead) {
                             throw new common_1.NotFoundException('Lead not found');
                         }
@@ -275,10 +287,6 @@ var LeadsService = /** @class */ (function () {
                         if (existingLead.calls.length > 0 || existingLead.visits.length > 0 || existingLead.meetings.length > 0) {
                             throw new common_1.ConflictException('Cannot delete lead with existing calls, visits, or meetings');
                         }
-                        return [4 /*yield*/, this.prisma.lead["delete"]({ where: { id: leadId } })];
-                    case 2:
-                        _a.sent();
-                        // Log lead deletion
                         return [4 /*yield*/, this.logsService.createLog({
                                 userId: userId,
                                 email: email,
@@ -287,8 +295,10 @@ var LeadsService = /** @class */ (function () {
                                 leadId: leadId,
                                 description: "Deleted lead: id=" + leadId + ", name=" + existingLead.nameEn + ", contact=" + existingLead.contact
                             })];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, this.prisma.lead["delete"]({ where: { id: leadId } })];
                     case 3:
-                        // Log lead deletion
                         _a.sent();
                         return [2 /*return*/, {
                                 status: 200,

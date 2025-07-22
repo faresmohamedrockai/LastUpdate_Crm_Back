@@ -59,6 +59,8 @@ var AuthController = /** @class */ (function () {
     AuthController.prototype.register = function (body) {
         return this.authService.register(body);
     };
+    // @UseGuards(AuthGuard("jwt"), RolesGuard)
+    // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
     AuthController.prototype.GetUsrs = function (req) {
         var _a = req.user, role = _a.role, userId = _a.userId;
         //     {
@@ -168,8 +170,6 @@ var AuthController = /** @class */ (function () {
         __param(0, common_1.Body())
     ], AuthController.prototype, "register");
     __decorate([
-        common_1.UseGuards(passport_1.AuthGuard("jwt"), roles_gaurd_1.RolesGuard),
-        Role_decorator_1.Roles(roles_enum_1.Role.ADMIN, roles_enum_1.Role.SALES_ADMIN, roles_enum_1.Role.TEAM_LEADER),
         common_1.Get('users'),
         __param(0, common_1.Req())
     ], AuthController.prototype, "GetUsrs");
