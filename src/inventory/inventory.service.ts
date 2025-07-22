@@ -175,7 +175,6 @@ if (dto.images && dto.images.length > 0) {
       area: dto.area,
       bedrooms: dto.bedrooms,
       bathrooms: dto.bathrooms,
-      
       amenities: dto.amenities,
       typeOther: dto.typeOther,
       amenitiesOther: dto.amenitiesOther,
@@ -185,8 +184,6 @@ if (dto.images && dto.images.length > 0) {
       projectId: dto.projectId,
       developerId: dto.developerId,
       paymentPlanId: dto.paymentPlanId,
-      
-     
     },
     include: {
       project: { include: { developer: true, zone: true } },

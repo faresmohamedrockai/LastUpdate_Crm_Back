@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+// src/app.module.ts
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,15 +11,18 @@ import { InventoryModule } from './inventory/inventory.module';
 import { ProjectsModule } from './projects/projects.module';
 import { DevelopersModule } from './developers/developers.module';
 import { ZonesModule } from './zones/zones.module';
-// import { PaymentPlansModule } from './payment-plans/payment-plans.module';
 import { LogsModule } from './logs/logs.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { PrismaModule } from './prisma/prisma.module';
+import { JwtModule } from '@nestjs/jwt';
+import { UserCheckMiddleware } from './common/middelwares/UserCheckMiddleware ';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    JwtModule.register({ secret: process.env.JWT_SECRET }), // لازم تسجله
     AuthModule,
     LeadsModule,
     CallsModule,
@@ -31,9 +35,19 @@ import { PrismaModule } from './prisma/prisma.module';
     LogsModule,
     MeetingsModule,
     ContractsModule,
-     MulterModule.register({}), 
+    MulterModule.register({}),
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(UserCheckMiddleware)
+      .exclude(
+        { path: 'api/auth/login', method: RequestMethod.POST },
+      
+      )
+      .forRoutes('*');
+  }
+}
