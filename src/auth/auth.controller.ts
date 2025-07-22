@@ -30,8 +30,8 @@ export class AuthController {
   ) { }
 
 
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @Roles(Role.ADMIN)
+  // @UseGuards(AuthGuard("jwt"), RolesGuard)
+  // @Roles(Role.ADMIN)
   @Post('add-user')
 
   register(
@@ -45,8 +45,8 @@ export class AuthController {
 
 
 
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
+  // @UseGuards(AuthGuard("jwt"), RolesGuard)
+  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Get('users')
 
   GetUsrs(@Req() req: any) {
