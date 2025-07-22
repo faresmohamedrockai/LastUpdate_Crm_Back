@@ -38,7 +38,7 @@ model Lead {
   nameAr              String?
   contact             String     @unique
   email               String?
-  budget              Int?
+  budget              BigInt?
   inventoryInterestId String?
   source              String?
   status              LeadStatus
