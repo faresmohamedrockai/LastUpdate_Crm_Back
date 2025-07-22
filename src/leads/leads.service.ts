@@ -170,8 +170,9 @@ export class LeadsService {
       // Sales Rep limited update
       const limitedUpdate = {
         ...(dto.status && { status: dto.status }),
-        ...(dto.assignedToId && { ownerId: dto.assignedToId }),
-          ...(dto.notes !== undefined && { notes: dto.notes })
+          ...(dto.notes !== undefined && { notes: dto.notes }),
+          ...(dto.budget !== undefined && { budget: dto.budget }),
+          ...(dto.inventoryInterestId !== undefined && { inventoryInterestId: dto.inventoryInterestId })
 };
       
 
