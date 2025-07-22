@@ -29,11 +29,11 @@ export class UserCheckMiddleware implements NestMiddleware {
         secret,
       });
 
-      if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
+      if (!decoded || typeof decoded !== 'object' || !('sub' in decoded)) {
         return res.status(401).json({ message: 'Invalid token payload' });
       }
 
-      const userId = decoded.userId;
+      const userId = decoded.sub;
 
       const user = await this.prisma.user.findUnique({
         where: { id: userId },

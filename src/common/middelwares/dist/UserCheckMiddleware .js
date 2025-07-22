@@ -72,10 +72,10 @@ var UserCheckMiddleware = /** @class */ (function () {
                             })];
                     case 2:
                         decoded = _a.sent();
-                        if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
+                        if (!decoded || typeof decoded !== 'object' || !('sub' in decoded)) {
                             return [2 /*return*/, res.status(401).json({ message: 'Invalid token payload' })];
                         }
-                        userId = decoded.userId;
+                        userId = decoded.sub;
                         return [4 /*yield*/, this.prisma.user.findUnique({
                                 where: { id: userId }
                             })];
