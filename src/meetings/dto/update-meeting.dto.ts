@@ -17,9 +17,7 @@ export class UpdateMeetingDto {
 
 @IsOptional()
   @IsDateString()
-  @IsFutureDateIfScheduled('status', {
-    message: 'التاريخ لا يمكن أن يكون في الماضي إذا كانت الحالة Scheduled',
-  })
+  @IsFutureDateIfScheduled('status')
   date?: string;
 
   @IsOptional()

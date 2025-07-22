@@ -12,9 +12,7 @@ export class UpdateContractDto {
   @IsOptional()
   @IsNumber()
   dealValue?: number;
- @IsFutureDateIfPendingOrSigned('status', {
-    message: 'Contract date is not valid for the current status.',
-  })
+  @IsFutureDateIfPendingOrSigned('status')
   contractDate?: string;
 
   @IsOptional()

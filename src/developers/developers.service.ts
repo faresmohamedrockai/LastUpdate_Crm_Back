@@ -41,6 +41,8 @@ export class DevelopersService {
           nameEn: dto.nameEn,
           nameAr: dto.nameAr || '',
           logo: dto.image,
+          phone: dto.phone ,
+          email: dto.email,
           established: dto.established || '',
           location: dto.location || '',
         },
