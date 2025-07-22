@@ -61,7 +61,7 @@ var UpdateLeadDto = /** @class */ (function () {
     ], UpdateLeadDto.prototype, "lastVisit");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsUUID()
+        class_validator_1.IsString()
     ], UpdateLeadDto.prototype, "inventoryInterestId");
     return UpdateLeadDto;
 }());

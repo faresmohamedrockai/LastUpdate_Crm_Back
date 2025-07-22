@@ -52,6 +52,6 @@ export class UpdateLeadDto {
   lastVisit?: Date;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   inventoryInterestId?: string;
 }

@@ -67,7 +67,7 @@ var CreateLeadDto = /** @class */ (function () {
     ], CreateLeadDto.prototype, "lastVisit");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsUUID()
+        class_validator_1.IsString()
     ], CreateLeadDto.prototype, "inventoryInterestId");
     return CreateLeadDto;
 }());

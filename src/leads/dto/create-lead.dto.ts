@@ -65,6 +65,6 @@ export class CreateLeadDto {
   lastVisit?: Date;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   inventoryInterestId?: string;
 }
