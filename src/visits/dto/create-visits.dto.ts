@@ -11,7 +11,7 @@ import { IsFutureDateIfScheduled } from '../../meetings/dto/checkScheduale';
 
 
 export class CreateVisitDto {
-  @IsFutureDateIfScheduled('status')
+  @IsOptional()
   @IsDateString()
   date: string;
 
