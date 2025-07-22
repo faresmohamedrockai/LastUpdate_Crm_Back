@@ -21,6 +21,12 @@ export class UpdateLeadDto {
   @IsString()
   nameEn?: string;
 
+
+  
+  @IsOptional()
+  @IsString()
+  email?: string;
+
   @IsOptional()
   @IsString()
   contact?: string;

@@ -28,6 +28,10 @@ export class CreateLeadDto {
   @IsString()
   contact?: string;
 
+  @IsOptional()
+  @IsString()
+  email?: string;
+
 
   @IsOptional()
   @IsString()
