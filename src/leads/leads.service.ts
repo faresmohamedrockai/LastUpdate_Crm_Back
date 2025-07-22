@@ -42,7 +42,7 @@ export class LeadsService {
       nameAr: dto.nameAr,
       contact: dto.contact,
       notes: dto.notes,
-      budget: typeof dto.budget === 'number' ? String(dto.budget) : dto.budget,
+      budget: Number(dto.budget),
       source: dto.source,
       status: dto.status,
 
