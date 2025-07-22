@@ -129,7 +129,7 @@ export class AuthService {
     // 2. Validate password
     const isPasswordValid = await bcrypt.compare(password, existingUser.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid password');
+      throw new BadRequestException('Invalid password');
     }
 
 
