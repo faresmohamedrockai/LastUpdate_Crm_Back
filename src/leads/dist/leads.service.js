@@ -63,11 +63,11 @@ var LeadsService = /** @class */ (function () {
         this.logsService = logsService;
     }
     LeadsService.prototype.create = function (dto, userId, email, userRole) {
-        var _a;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
             var existingLead, leadData, inventory, lead;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         if (!userId) {
                             throw new common_1.BadRequestException('User ID is required to create a lead');
@@ -77,7 +77,7 @@ var LeadsService = /** @class */ (function () {
                                 where: { contact: dto.contact }
                             })];
                     case 1:
-                        existingLead = _b.sent();
+                        existingLead = _d.sent();
                         if (existingLead) {
                             throw new common_1.ConflictException('Lead with this contact already exists');
                         }
@@ -86,7 +86,7 @@ var LeadsService = /** @class */ (function () {
                             nameAr: dto.nameAr,
                             contact: dto.contact,
                             notes: dto.notes,
-                            budget: Number(dto.budget),
+                            budget: dto.budget,
                             source: dto.source,
                             status: dto.status,
                             owner: {
@@ -104,14 +104,14 @@ var LeadsService = /** @class */ (function () {
                                 where: { id: dto.inventoryInterestId }
                             })];
                     case 2:
-                        inventory = _b.sent();
+                        inventory = _d.sent();
                         if (!inventory) {
                             throw new common_1.NotFoundException('Inventory item not found');
                         }
                         leadData.inventoryInterest = {
                             connect: { id: dto.inventoryInterestId }
                         };
-                        _b.label = 3;
+                        _d.label = 3;
                     case 3: return [4 /*yield*/, this.prisma.lead.create({
                             data: leadData,
                             include: {
@@ -119,11 +119,11 @@ var LeadsService = /** @class */ (function () {
                             }
                         })];
                     case 4:
-                        lead = _b.sent();
+                        lead = _d.sent();
                         return [2 /*return*/, {
                                 status: 201,
                                 message: 'Lead created successfully',
-                                data: __assign(__assign({}, lead), { inventory: (_a = lead.inventoryInterest) !== null && _a !== void 0 ? _a : null, properties: [] })
+                                data: __assign(__assign({}, lead), { budget: (_b = (_a = lead.budget) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : null, inventory: (_c = lead.inventoryInterest) !== null && _c !== void 0 ? _c : null, properties: [] })
                             }];
                 }
             });
@@ -229,7 +229,7 @@ var LeadsService = /** @class */ (function () {
                                 nameAr: dto.nameAr,
                                 nameEn: dto.nameEn,
                                 contact: dto.contact,
-                                budget: Number(dto.budget),
+                                budget: dto.budget,
                                 source: dto.source,
                                 status: dto.status,
                                 notes: dto.notes !== undefined ? dto.notes : undefined,

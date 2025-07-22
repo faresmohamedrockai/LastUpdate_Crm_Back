@@ -21,7 +21,7 @@ export class LogsService {
     userRole,
   }: CreateLogDto) {
     const logData: any = {
-      user: { connect: { id: userId } },
+      // user: { connect: { id: userId } },
       userName,
       userRole,
       action,

@@ -42,7 +42,7 @@ export class LeadsService {
       nameAr: dto.nameAr,
       contact: dto.contact,
       notes: dto.notes,
-      budget: Number(dto.budget),
+      budget: dto.budget,
       source: dto.source,
       status: dto.status,
 
@@ -78,15 +78,17 @@ export class LeadsService {
       },
     });
 
-    return {
-      status: 201,
-      message: 'Lead created successfully',
-      data: {
-        ...lead,
-        inventory: lead.inventoryInterest ?? null,
-        properties: [], // ⬅️ نجهزها لاحقًا أو تفضل فاضية
-      },
-    };
+  return {
+  status: 201,
+  message: 'Lead created successfully',
+  data: {
+    ...lead,
+    budget: lead.budget?.toString() ?? null,
+    inventory: lead.inventoryInterest ?? null,
+    properties: [], // ⬅️ نجهزها لاحقًا أو تفضل فاضية
+  },
+};
+
   }
 
 
@@ -199,13 +201,13 @@ export class LeadsService {
     nameAr: dto.nameAr,
     nameEn: dto.nameEn,
     contact: dto.contact,
-    budget: Number(dto.budget),
+    budget: dto.budget,
     source: dto.source,
     status: dto.status,
-    notes: dto.notes !== undefined ? dto.notes : undefined, // ✅ المهم هنا
+    notes: dto.notes !== undefined ? dto.notes : undefined, 
     lastCall: dto.lastCall,
     lastVisit: dto.lastVisit,
-    inventoryInterestId: dto.inventoryInterestId,
+    inventoryInterestId: dto.inventoryInterestId ? dto.inventoryInterestId : null,
   },
 });
 
@@ -229,6 +231,11 @@ export class LeadsService {
       include: { calls: true, visits: true, meetings: true },
     });
 
+
+    // Log lead deletion
+  
+
+
     if (!existingLead) {
       throw new NotFoundException('Lead not found');
     }
@@ -238,9 +245,6 @@ export class LeadsService {
       throw new ConflictException('Cannot delete lead with existing calls, visits, or meetings');
     }
 
-    await this.prisma.lead.delete({ where: { id: leadId } });
-
-    // Log lead deletion
     await this.logsService.createLog({
       userId,
       email,
@@ -249,6 +253,10 @@ export class LeadsService {
       leadId: leadId,
       description: `Deleted lead: id=${leadId}, name=${existingLead.nameEn}, contact=${existingLead.contact}`,
     });
+
+
+
+    await this.prisma.lead.delete({ where: { id: leadId } });
 
     return {
       status: 200,

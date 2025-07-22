@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import * as morgan from 'morgan';
 import { json, urlencoded } from 'express';
+import { BigIntInterceptor } from './BigInterseptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,7 +27,7 @@ async function bootstrap() {
   methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
   allowedHeaders: 'Content-Type,Authorization,ngrok-skip-browser-warning',
 });
-
+app.useGlobalInterceptors(new BigIntInterceptor());
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(

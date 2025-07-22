@@ -22,11 +22,11 @@ model User {
   logs         Log[]
   visit        Visit[]
 
-  // 👇 الحقول المطلوبة
+ 
   createdMeetings  Meeting[] @relation("CreatedMeetings")
   assignedMeetings Meeting[] @relation("AssignedMeetings")
 
-  // العلاقة القديمة للفريق
+  
   teamLeader   User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id], onDelete: SetNull)
   teamMembers  User[]     @relation("TeamMembers")
 }
