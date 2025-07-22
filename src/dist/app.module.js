@@ -33,7 +33,7 @@ var AppModule = /** @class */ (function () {
     AppModule.prototype.configure = function (consumer) {
         consumer
             .apply(UserCheckMiddleware_1.UserCheckMiddleware)
-            .exclude({ path: 'api/auth/login', method: common_1.RequestMethod.POST })
+            .exclude({ path: 'auth/login', method: common_1.RequestMethod.POST })
             .forRoutes('*');
     };
     AppModule = __decorate([

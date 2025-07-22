@@ -45,14 +45,16 @@ exports.__esModule = true;
 exports.UserCheckMiddleware = void 0;
 // src/common/middleware/user-check.middleware.ts
 var common_1 = require("@nestjs/common");
-var jwt = require("jsonwebtoken");
 var UserCheckMiddleware = /** @class */ (function () {
-    function UserCheckMiddleware(prisma) {
+    function UserCheckMiddleware(prisma, configService, jwtService // ✅ inject JwtService
+    ) {
         this.prisma = prisma;
+        this.configService = configService;
+        this.jwtService = jwtService;
     }
     UserCheckMiddleware.prototype.use = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var authHeader, token, jwtSecret, decoded, userId, user, err_1;
+            var authHeader, token, secret, decoded, userId, user, err_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -61,33 +63,34 @@ var UserCheckMiddleware = /** @class */ (function () {
                             return [2 /*return*/, res.status(401).json({ message: 'Token missing' })];
                         }
                         token = authHeader.split(' ')[1];
-                        jwtSecret = process.env.SECRET_JWT_ACCESS;
-                        if (!jwtSecret) {
-                            throw new Error('JWT secret is not defined in environment variables');
-                        }
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        decoded = jwt.verify(token, jwtSecret);
-                        if (typeof decoded !== 'object' || !decoded || !('userId' in decoded)) {
+                        _a.trys.push([1, 4, , 5]);
+                        secret = this.configService.get('SECERT_JWT_ACCESS') || 'default_secret';
+                        return [4 /*yield*/, this.jwtService.verifyAsync(token, {
+                                secret: secret
+                            })];
+                    case 2:
+                        decoded = _a.sent();
+                        if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
                             return [2 /*return*/, res.status(401).json({ message: 'Invalid token payload' })];
                         }
                         userId = decoded.userId;
                         return [4 /*yield*/, this.prisma.user.findUnique({
                                 where: { id: userId }
                             })];
-                    case 2:
+                    case 3:
                         user = _a.sent();
                         if (!user) {
                             return [2 /*return*/, res.status(401).json({ message: 'User no longer exists' })];
                         }
                         req['user'] = user;
                         next();
-                        return [3 /*break*/, 4];
-                    case 3:
+                        return [3 /*break*/, 5];
+                    case 4:
                         err_1 = _a.sent();
                         return [2 /*return*/, res.status(401).json({ message: 'Invalid or expired token' })];
-                    case 4: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
