@@ -199,7 +199,7 @@ export class LeadsService {
     nameAr: dto.nameAr,
     nameEn: dto.nameEn,
     contact: dto.contact,
-    budget: dto.budget,
+    budget: Number(dto.budget),
     source: dto.source,
     status: dto.status,
     notes: dto.notes !== undefined ? dto.notes : undefined, // ✅ المهم هنا

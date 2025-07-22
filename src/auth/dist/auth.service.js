@@ -221,6 +221,7 @@ var AuthService = /** @class */ (function () {
                             where: {
                                 OR: [
                                     { role: 'sales_rep' },
+                                    { role: 'sales_rep' },
                                     { role: 'team_leader' },
                                 ]
                             }
