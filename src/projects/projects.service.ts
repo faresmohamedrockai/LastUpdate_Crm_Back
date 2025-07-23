@@ -56,7 +56,7 @@ if (dto.images && dto.images.length > 0) {
   );
 }
 
-  // 4. إنشاء المشروع
+ 
   const project = await this.prisma.project.create({
     data: {
       nameEn: dto.nameEn,
@@ -82,6 +82,7 @@ if (dto.images && dto.images.length > 0) {
  
 if (dto.paymentPlans && dto.paymentPlans.length > 0) {
   for (const plan of dto.paymentPlans) {
+
     await this.prisma.paymentPlan.create({
   data: {
     downpayment: plan.downpayment,
@@ -119,12 +120,12 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
   async getAllProjects() {
   const data = await this.prisma.project.findMany({
     include: {
-      developer: true,
-      zone: true,
+      developer: false,
+      zone: false,
       inventories: {
         include: {
-          leads: true,
-          visits: true,
+          leads: false,
+          visits: false,
         },
       },
       paymentPlans: true,
@@ -134,22 +135,30 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
 
 
 
-  return {
-    status: 200,
-    message: 'Projects retrieved successfully',
-    data: data.map(project => ({
-      ...project,
-      images: project.images ?? [],
-      inventories: project.inventories.map(inv => ({
-        ...inv,
-        images: inv.images ?? [],
-      })),
+ return {
+  status: 200,
+  message: 'Projects retrieved successfully',
+  data: data.map(project => ({
+    ...project,
+    createdAt: project.createdAt?.toISOString(), // ← هنا
+    images: project.images ?? [],
+    paymentPlans: project.paymentPlans.map(plan => ({
+      ...plan,
+      createdAt: plan.createdAt?.toISOString(),
+      firstInstallmentDate: plan.firstInstallmentDate?.toISOString?.() ?? null,
+      deliveryDate: plan.deliveryDate?.toISOString?.() ?? null,
     })),
-  };
-}
+    inventories: project.inventories.map(inv => ({
+      ...inv,
+      createdAt: inv.createdAt?.toISOString(),
+      images: inv.images ?? [],
+    })),
+  })),
+};
 
 
 
+  }
 
 
 
