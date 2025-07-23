@@ -16,27 +16,26 @@ function IsFutureDateIfScheduled(property, validationOptions) {
                     var relatedPropertyName = args.constraints[0];
                     var status = args.object[relatedPropertyName];
                     if (!value)
-                        return true; // Skip validation if no date
+                        return true; // تخطي لو التاريخ مش موجود
                     var date = moment(value);
                     var today = moment().startOf('day');
                     if (status === 'Scheduled') {
-                        return date.isSameOrAfter(today); // Date must be today or in the future
+                        return date.isSameOrAfter(today); // تاريخ اليوم أو بعده
                     }
-                    else {
-                        return date.isSameOrBefore(today); // Date must be today or in the past
+                    if (status === 'Completed') {
+                        return date.isSameOrBefore(today); // تاريخ اليوم أو قبله
                     }
+                    return true; // أي حالة تانية، لا نتحقق منها
                 },
                 defaultMessage: function (args) {
                     var status = args.object[args.constraints[0]];
                     if (status === 'Scheduled') {
                         return "Date cannot be in the past if the status is Scheduled.";
                     }
-                    else if (status === 'Completed') {
+                    if (status === 'Completed') {
                         return "Date cannot be in the future if the status is Completed.";
                     }
-                    else {
-                        return true;
-                    }
+                    return '';
                 }
             }
         });

@@ -225,7 +225,9 @@ var AuthService = /** @class */ (function () {
                         };
                         if (!(role === 'admin')) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.prisma.user.findMany({
-                                select: defaultSelect
+                                include: {
+                                    teamLeader: true
+                                }
                             })];
                     case 1:
                         users = _a.sent();
@@ -234,9 +236,13 @@ var AuthService = /** @class */ (function () {
                         if (!(role === 'sales_admin')) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.prisma.user.findMany({
                                 where: {
-                                    role: { "in": ['sales_rep', 'sales_admin', 'team_leader'] }
+                                    role: {
+                                        "in": ['sales_rep', 'sales_admin', 'team_leader']
+                                    }
                                 },
-                                select: defaultSelect
+                                include: {
+                                    teamLeader: true
+                                }
                             })];
                     case 3:
                         users = _a.sent();

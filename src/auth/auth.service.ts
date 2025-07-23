@@ -196,19 +196,26 @@ export class AuthService {
   };
 
   let users;
-
-  if (role === 'admin') {
-    users = await this.prisma.user.findMany({
-      select: defaultSelect,
-    });
-  } else if (role === 'sales_admin') {
-    users = await this.prisma.user.findMany({
-      where: {
-        role: { in: ['sales_rep', 'sales_admin', 'team_leader'] },
+if (role === 'admin') {
+  users = await this.prisma.user.findMany({
+    include: {
+      teamLeader:true
+    },
+  });
+} else if (role === 'sales_admin') {
+  users = await this.prisma.user.findMany({
+    where: {
+      role: {
+        in: ['sales_rep', 'sales_admin', 'team_leader'],
       },
-      select: defaultSelect,
-    });
-  } else if (role === 'team_leader') {
+    },
+    include: {
+      teamLeader:true
+    },
+  });
+}
+
+   else if (role === 'team_leader') {
     if (!userId) throw new ForbiddenException('Missing team leader ID');
 
     users = await this.prisma.user.findMany({
