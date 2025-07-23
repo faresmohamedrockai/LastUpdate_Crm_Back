@@ -340,10 +340,6 @@ var ProjectsService = /** @class */ (function () {
                         exists = _a.sent();
                         if (!exists)
                             throw new common_1.NotFoundException('Project not found');
-                        // تأكد أنه لا توجد وحدات مرتبطة بالمشروع
-                        if (exists.inventories.length > 0) {
-                            throw new common_1.ConflictException('Cannot delete project with existing inventories');
-                        }
                         // حذف جميع خطط الدفع المرتبطة بالمشروع
                         return [4 /*yield*/, this.prisma.paymentPlan.deleteMany({
                                 where: { projectId: id }

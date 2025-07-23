@@ -285,10 +285,7 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
 
   if (!exists) throw new NotFoundException('Project not found');
 
-  // تأكد أنه لا توجد وحدات مرتبطة بالمشروع
-  if (exists.inventories.length > 0) {
-    throw new ConflictException('Cannot delete project with existing inventories');
-  }
+ 
 
   // حذف جميع خطط الدفع المرتبطة بالمشروع
   await this.prisma.paymentPlan.deleteMany({
