@@ -455,7 +455,7 @@ async deleteUser(id: string, assignToId: string) {
   //Update User Data Just Admin
   //
 
-  async updateUser(id: string, data: UpdateUserDto) {
+  async updateUser(id: string, data: UpdateUserDto,userId:string,currentRole:string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -471,7 +471,10 @@ async deleteUser(id: string, assignToId: string) {
 
 
 
+    
+
 if(data.role === "admin"){
+  
   throw new BadRequestException("You Can't Make Than More Than one Admin For System")
 }
 

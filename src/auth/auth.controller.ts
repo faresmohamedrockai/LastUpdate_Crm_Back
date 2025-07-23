@@ -45,17 +45,13 @@ export class AuthController {
 
 
 
-  // @UseGuards(AuthGuard("jwt"), RolesGuard)
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Get('users')
 
   GetUsrs(@Req() req: any) {
     const { role,userId } = req.user
-    //     {
-    //   userId: '14157eb6-2cea-4a27-a6ba-69d3080fa24c',
-    //   email: 'fares@gmail.com',
-    //   role: 'admin'
-    // }
+ 
     return this.authService.GetUsers(role,userId);
   }
 
@@ -87,10 +83,14 @@ async deleteUser(
 
 async updateUser(
   @Param('id') id: string,
-
+@Req() req: any,
   @Body() data: UpdateUserDto
 ) {
-  return this.authService.updateUser(id, data);
+
+
+const {userId,role} = req.user
+
+  return this.authService.updateUser(id, data,userId,role);
 }
 
 

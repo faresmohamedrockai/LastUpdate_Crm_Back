@@ -439,7 +439,7 @@ var AuthService = /** @class */ (function () {
     };
     //Update User Data Just Admin
     //
-    AuthService.prototype.updateUser = function (id, data) {
+    AuthService.prototype.updateUser = function (id, data, userId, currentRole) {
         return __awaiter(this, void 0, void 0, function () {
             var existingUser, emailExists, _a, uploadedImage, imageBase64, updateData, updatedUser;
             return __generator(this, function (_b) {
