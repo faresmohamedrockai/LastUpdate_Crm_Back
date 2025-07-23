@@ -236,27 +236,7 @@ export class MeetingsService {
 
     await this.prisma.meeting.delete({ where: { id } });
 
-    // Log meeting deletion
-   const log = await this.prisma.log.create({
-  data: {
-    user: {
-      connect: {
-        id: "755d6c75-fd02-429b-9adf-c9c560f08957",
-      },
-    },
-    userName: undefined,
-    userRole: "admin",
-    action: "delete_meeting",
-    description: "Deleted meeting 7bfe99b4-ee23-4a60-8180-b210090358ef for lead bb21cb68-5fa0-4c58-a553-e533fb40f9f1",
-    ip: undefined,
-    userAgent: undefined,
-    lead: {
-      connect: {
-        id: "bb21cb68-5fa0-4c58-a553-e533fb40f9f1",
-      },
-    },
-  },
-});
+  
 
 
     return {
