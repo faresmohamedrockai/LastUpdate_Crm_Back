@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsEnum, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsEnum } from 'class-validator';
 
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
@@ -32,31 +32,20 @@ export class CreateLeadDto {
   @IsString()
   email?: string;
 
-
   @IsOptional()
   @IsString()
   assignedToId?: string;
 
   @IsOptional()
-  @IsNumber()
-  budget?: number;
-
-
-
+  budget?: number | string; // Allow both number and string
 
   @IsOptional()
   @IsString()
   notes?: String[];
 
-
-
-
   @IsOptional()
   @IsString()
   source?: string;
-
-
-
 
   @IsOptional()
   @IsEnum(LeadStatus)

@@ -26,6 +26,23 @@ export class LeadsService {
     }
     console.log(dto);
 
+    // Helper function to convert budget safely
+    const convertBudget = (value: number | string | undefined): number => {
+      if (value === undefined || value === null || value === '') return 0;
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    };
+
+    const budget = convertBudget(dto.budget);
+    
+    // Validate budget is not negative
+    if (budget < 0) {
+      throw new BadRequestException('Budget must be greater than or equal to 0');
+    }
 
     const existingLead = await this.prisma.lead.findUnique({
       where: { contact: dto.contact },
@@ -35,15 +52,13 @@ export class LeadsService {
       throw new ConflictException('Lead with this contact already exists');
     }
 
-
     const leadData: any = {
-
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
       contact: dto.contact,
       notes: dto.notes,
       email: dto.email,
-      budget: dto.budget,
+      budget: budget,
       source: dto.source,
       status: dto.status,
 
@@ -79,17 +94,16 @@ export class LeadsService {
       },
     });
 
-  return {
-  status: 201,
-  message: 'Lead created successfully',
-  data: {
-    ...lead,
-    budget: lead.budget?.toString() ?? null,
-    inventory: lead.inventoryInterest ?? null,
-    properties: [], // ⬅️ نجهزها لاحقًا أو تفضل فاضية
-  },
-};
-
+    return {
+      status: 201,
+      message: 'Lead created successfully',
+      data: {
+        ...lead,
+        budget: lead.budget?.toString() ?? null,
+        inventory: lead.inventoryInterest ?? null,
+        properties: [], // ⬅️ نجهزها لاحقًا أو تفضل فاضية
+      },
+    };
   }
 
 
@@ -162,8 +176,100 @@ async getLeads(id: string, email: string, userRole?: string) {
   return { leads: parsedLeads };
 }
 
+  async getLeadById(leadId: string, user: { id: string; role: Role }) {
+    const { role, id: userId } = user;
+    
+    let lead;
+    
+    switch (role) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+        // Admins can access any lead
+        lead = await this.prisma.lead.findUnique({
+          where: { id: leadId },
+          include: {
+            owner: {
+              select: { id: true, name: true, email: true }
+            },
+            inventoryInterest: {
+              select: { id: true, title: true, titleEn: true, titleAr: true }
+            }
+          }
+        });
+        break;
 
+      case Role.TEAM_LEADER:
+        // Team leaders can access leads assigned to their team members
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: userId },
+          select: { id: true },
+        });
+        const memberIds = teamMembers.map(member => member.id);
+        
+        lead = await this.prisma.lead.findFirst({
+          where: { 
+            id: leadId,
+            ownerId: { in: memberIds }
+          },
+          include: {
+            owner: {
+              select: { id: true, name: true, email: true }
+            },
+            inventoryInterest: {
+              select: { id: true, title: true, titleEn: true, titleAr: true }
+            }
+          }
+        });
+        break;
 
+      case Role.SALES_REP:
+        // Sales reps can only access their own leads
+        lead = await this.prisma.lead.findFirst({
+          where: { 
+            id: leadId,
+            ownerId: userId
+          },
+          include: {
+            owner: {
+              select: { id: true, name: true, email: true }
+            },
+            inventoryInterest: {
+              select: { id: true, title: true, titleEn: true, titleAr: true }
+            }
+          }
+        });
+        break;
+
+      default:
+        throw new ForbiddenException('Access denied');
+    }
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found or access denied');
+    }
+
+    // Return data in the format expected by the form
+    return {
+      id: lead.id,
+      nameEn: lead.nameEn || '',
+      nameAr: lead.nameAr || '',
+      contact: lead.contact || '',
+      email: lead.email || '',
+      budget: Number(lead.budget) || 0,
+      inventoryInterestId: lead.inventoryInterestId || '',
+      source: lead.source || '',
+      status: lead.status || 'fresh_lead',
+      assignedToId: lead.ownerId || '', // Map ownerId back to assignedToId for form
+      // Additional fields
+      notes: lead.notes || [],
+      lastCall: lead.lastCall,
+      lastVisit: lead.lastVisit,
+      createdAt: lead.createdAt?.toISOString(),
+      // Include related data for reference
+      owner: lead.owner,
+      inventoryInterest: lead.inventoryInterest
+    };
+  }
 
 
   async updateLead(leadId: string, dto: UpdateLeadDto, user: { id: string; role: Role }, email?: string, userRole?: string) {
@@ -173,22 +279,65 @@ async getLeads(id: string, email: string, userRole?: string) {
 
     const { role, id: userId } = user;
 
-    // Sales Rep: فقط يعدل status و notes
+    // Helper function to convert budget safely
+    const convertBudget = (value: number | string | undefined): number => {
+      if (value === undefined || value === null || value === '') return 0;
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    };
+
+    // Prepare update data with fallback values as requested
+    const updateData = {
+      nameEn: dto.nameEn !== undefined ? dto.nameEn || '' : lead.nameEn || '',
+      nameAr: dto.nameAr !== undefined ? dto.nameAr || '' : lead.nameAr || '',
+      contact: dto.contact !== undefined ? dto.contact || '' : lead.contact || '',
+      email: dto.email !== undefined ? dto.email || '' : lead.email || '',
+      budget: dto.budget !== undefined ? convertBudget(dto.budget) : Number(lead.budget) || 0,
+      inventoryInterestId: dto.inventoryInterestId !== undefined 
+        ? (dto.inventoryInterestId || null) 
+        : lead.inventoryInterestId || null,
+      source: dto.source !== undefined ? dto.source || '' : lead.source || '',
+      status: dto.status || lead.status || 'fresh_lead',
+      // Map assignedToId to ownerId for database
+      ownerId: dto.assignedToId !== undefined 
+        ? (dto.assignedToId || null) 
+        : lead.ownerId || null,
+    };
+
+    // Validate budget is not negative
+    if (updateData.budget < 0) {
+      throw new BadRequestException('Budget must be greater than or equal to 0');
+    }
+
+    // Sales Rep: limited update permissions
     if (role === Role.SALES_REP) {
       if (lead.ownerId !== userId) {
         throw new ForbiddenException('You can only edit your own leads');
       }
 
-      // Sales Rep limited update
-      const limitedUpdate = {
-        ...(dto.status && { status: dto.status }),
-          ...(dto.notes !== undefined && { notes: dto.notes }),
-          ...(dto.budget !== undefined && { budget: dto.budget }),
-          ...(dto.inventoryInterestId !== undefined && { inventoryInterestId: dto.inventoryInterestId })
-};
+      // Sales Rep limited update - only specific fields
+      const limitedUpdate: any = {};
       
-
-
+      if (dto.status !== undefined) {
+        limitedUpdate.status = dto.status || lead.status || 'fresh_lead';
+      }
+      if (dto.notes !== undefined) {
+        limitedUpdate.notes = dto.notes;
+      }
+      if (dto.budget !== undefined) {
+        const budgetValue = convertBudget(dto.budget);
+        if (budgetValue < 0) {
+          throw new BadRequestException('Budget must be greater than or equal to 0');
+        }
+        limitedUpdate.budget = budgetValue;
+      }
+      if (dto.inventoryInterestId !== undefined) {
+        limitedUpdate.inventoryInterestId = dto.inventoryInterestId || null;
+      }
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },
@@ -208,24 +357,46 @@ async getLeads(id: string, email: string, userRole?: string) {
       return updatedLead;
     }
 
-    // Admin/Sales Admin/Team Leader: يعدل كل الحقول
-  const updatedLead = await this.prisma.lead.update({
-  where: { id: leadId },
-  data: {
-    nameAr: dto.nameAr,
-    nameEn: dto.nameEn,
-    contact: dto.contact,
-    budget: dto.budget,
-    source: dto.source,
-    email: dto.email,
-    status: dto.status,
-    notes: dto.notes !== undefined ? dto.notes : undefined, 
-    lastCall: dto.lastCall,
-    lastVisit: dto.lastVisit,
-    inventoryInterestId: dto.inventoryInterestId ? dto.inventoryInterestId : null,
-  },
-});
+    // Admin/Sales Admin/Team Leader: full update permissions
+    // Validate assignedToId if provided
+    if (updateData.ownerId) {
+      const assignedUser = await this.prisma.user.findUnique({
+        where: { id: updateData.ownerId },
+      });
+      if (!assignedUser) {
+        throw new NotFoundException('Assigned user not found');
+      }
+    }
 
+    // Validate inventoryInterestId if provided
+    if (updateData.inventoryInterestId) {
+      const inventory = await this.prisma.inventory.findUnique({
+        where: { id: updateData.inventoryInterestId },
+      });
+      if (!inventory) {
+        throw new NotFoundException('Inventory item not found');
+      }
+    }
+
+    // Perform the update with all the prepared data
+    const updatedLead = await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        nameAr: updateData.nameAr,
+        nameEn: updateData.nameEn,
+        contact: updateData.contact,
+        email: updateData.email,
+        budget: updateData.budget,
+        source: updateData.source,
+        status: updateData.status,
+        ownerId: updateData.ownerId,
+        inventoryInterestId: updateData.inventoryInterestId,
+        // Handle additional fields if provided
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
+        ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
+      },
+    });
 
     // Log full lead update
     await this.logsService.createLog({
@@ -233,8 +404,8 @@ async getLeads(id: string, email: string, userRole?: string) {
       email,
       userRole,
       action: 'update_lead',
-      // leadId: leadId,
-      description: `Updated lead: id=${leadId}, name=${dto.nameEn}, contact=${dto.contact}, status=${dto.status}`,
+      leadId: leadId,
+      description: `Updated lead: id=${leadId}, name=${updateData.nameEn}, contact=${updateData.contact}, status=${updateData.status}`,
     });
 
     return updatedLead;

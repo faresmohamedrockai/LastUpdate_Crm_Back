@@ -1,5 +1,5 @@
 // leads/dto/update-lead.dto.ts
-import { IsOptional, IsString, IsUUID,IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsEnum } from 'class-validator';
 
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
@@ -10,54 +10,52 @@ export enum LeadStatus {
   CLOSED_DEAL = 'closed_deal',
   NO_ANSWER = 'no_answer',
   NOT_INTERSTED_NOW = 'not_intersted_now',
+  RESERVATION = 'reservation',
 }
+
 export class UpdateLeadDto {
- 
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
   @IsOptional()
   @IsString()
   nameAr?: string;
 
   @IsOptional()
   @IsString()
-  nameEn?: string;
+  contact?: string;
 
-
-  
   @IsOptional()
   @IsString()
   email?: string;
 
   @IsOptional()
-  @IsString()
-  contact?: string;
+  budget?: number | string; // Allow both number and string
 
   @IsOptional()
-  @IsNumber()
-  budget?: number;
+  @IsString()
+  inventoryInterestId?: string;
 
   @IsOptional()
   @IsString()
   source?: string;
 
   @IsOptional()
-  @IsString()
-  assignedToId?: string;
-
-  @IsOptional()
+  @IsEnum(LeadStatus)
   status?: LeadStatus;
 
   @IsOptional()
+  @IsString()
+  assignedToId?: string;
+
+  // Additional fields that might be needed
+  @IsOptional()
   lastCall?: Date;
- 
-@IsOptional()
 
+  @IsOptional()
   notes?: string[];
-
 
   @IsOptional()
   lastVisit?: Date;
-
-  @IsOptional()
-  @IsString()
-  inventoryInterestId?: string;
 }
