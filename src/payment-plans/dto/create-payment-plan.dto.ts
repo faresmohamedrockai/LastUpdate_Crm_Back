@@ -1,5 +1,5 @@
 
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, IsDateString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, IsDateString, ValidateIf, registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
 import {IsLastInstallmentAfterFirst} from './IsLastInstallmentAfterFirst';
 
 export enum InstallmentPeriodEnum {
@@ -7,6 +7,31 @@ export enum InstallmentPeriodEnum {
   QUARTERLY = 'quarterly',
   YEARLY = 'yearly',
   CUSTOM = 'custom',
+}
+
+// Custom validator to ensure date string is valid and parseable
+function IsValidDateString(validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isValidDateString',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any) {
+          if (!value) return true; // Allow optional
+          if (typeof value !== 'string') return false;
+          
+          // Check if it's a valid ISO date string
+          const date = new Date(value);
+          return !isNaN(date.getTime()) && value === date.toISOString().split('T')[0];
+        },
+        defaultMessage() {
+          return `${propertyName} must be a valid date string in YYYY-MM-DD format`;
+        }
+      }
+    });
+  };
 }
 
 export class NestedPaymentPlanDto {
@@ -35,18 +60,18 @@ export class NestedPaymentPlanDto {
   @IsNumber()
   installmentMonthsCount: number;
 
-  @IsDateString()
+  @IsValidDateString({
+    message: 'First installment date must be a valid date string in YYYY-MM-DD format'
+  })
   firstInstallmentDate: string;
 
-
-
-
-
-  @IsDateString()
+  @IsValidDateString({
+    message: 'Delivery date must be a valid date string in YYYY-MM-DD format'
+  })
   @IsLastInstallmentAfterFirst('firstInstallmentDate', {
-  message: 'Delivery date cannot be before the first installment date',
-})
-deliveryDate: string;
+    message: 'Delivery date cannot be before the first installment date',
+  })
+  deliveryDate: string;
 
   @IsOptional()
   @IsString()

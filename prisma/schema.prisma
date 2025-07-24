@@ -75,11 +75,10 @@ model Inventory {
   zoneId         String?
   projectId      String?
   developerId    String?
-  paymentPlanId  String?
+  paymentPlanIndex Int?    // Index of selected payment plan in project's paymentPlans array
 
   createdAt   DateTime     @default(now())
   project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  paymentPlan PaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: SetNull)
   developer   Developer?   @relation(fields: [developerId], references: [id], onDelete: SetNull)
   zone        Zone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
   Contract    Contract[]
@@ -121,7 +120,6 @@ model PaymentPlan {
   projectId              String?
   createdAt              DateTime          @default(now())
   installmentPeriod      InstallmentPeriod
-  inventories            Inventory[]
   project                Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
 }
 
@@ -196,7 +194,7 @@ model Developer {
   established String?
   nameAr      String?
   email       String?
-  phone       Int?
+  phone       String?
   logo        String?
   inventories Inventory[]
   projects    Project[]

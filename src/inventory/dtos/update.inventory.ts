@@ -76,8 +76,8 @@ export class UpdateInventoryDto {
   developerId?: string;
 
   @IsOptional()
-  @IsString()
-  paymentPlanId?: string;
+  @IsNumber()
+  paymentPlanIndex?: number;  // Index-based reference to payment plan within project
 
   @IsOptional()
   @IsNumber()

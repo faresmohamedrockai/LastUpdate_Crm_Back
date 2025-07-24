@@ -20,8 +20,8 @@ export class CreateDeveloperDto {
   email?: string; 
 
   @IsOptional()
-  @IsNumber()
-  phone?: number; 
+  @IsString()
+  phone?: string; 
 
 
   @IsOptional()

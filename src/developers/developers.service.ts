@@ -31,8 +31,13 @@ export class DevelopersService {
     }
 
     if (dto.image) {
-      const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(dto.image);
-      dto.image = uploadedImage;
+      try {
+        const uploadedImage = await this.cloudinaryService.uploadImageFromBase64(dto.image);
+        dto.image = uploadedImage;
+      } catch (error) {
+        console.log('Cloudinary upload failed, creating developer without image:', error.message);
+        dto.image = undefined; // Set to undefined if upload fails
+      }
     }
 
     try {
@@ -41,7 +46,7 @@ export class DevelopersService {
           nameEn: dto.nameEn,
           nameAr: dto.nameAr || '',
           logo: dto.image,
-          phone: dto.phone ,
+          phone: dto.phone,
           email: dto.email,
           established: dto.established || '',
           location: dto.location || '',
@@ -162,6 +167,7 @@ export class DevelopersService {
         ...(dto.established && { established: dto.established }),
         ...(dto.location && { location: dto.location }),
         ...(dto.email && { email: dto.email }),
+        ...(dto.phone && { phone: dto.phone }),
         ...(dto.image && { logo: dto.image }),
       },
       include: {

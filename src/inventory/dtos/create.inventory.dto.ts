@@ -82,10 +82,7 @@ export class CreateInventoryDto {
   @IsString()
   parking?: string;
 
-
-
- @IsOptional()
   @IsOptional()
-  @IsUUID()
-  paymentPlanId?: string;
+  @IsNumber()
+  paymentPlanIndex?: number;  // Index-based reference to payment plan within project
 }

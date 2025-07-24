@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import {UpdateProjectDto} from './dto/update-project.dto'
 import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -12,9 +13,32 @@ export class ProjectsService {
     private readonly logsService: LogsService,
   ) { }
 
+  // Helper method to validate and parse dates
+  private validateAndParseDate(dateString: string | null | undefined, fieldName: string): Date | null {
+    if (!dateString) return null;
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException(`Invalid ${fieldName}: ${dateString}. Must be a valid date.`);
+    }
+    
+    return date;
+  }
+
+  // Helper method to provide default dates if needed
+  private getDefaultDates() {
+    const now = new Date();
+    const firstInstallmentDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // Next month, 1st day
+    const deliveryDate = new Date(now.getFullYear() + 2, now.getMonth(), 1); // 2 years later
+    
+    return {
+      firstInstallmentDate,
+      deliveryDate
+    };
+  }
+
 async createProject(
   dto: CreateProjectDto,
-
   email: string,
   userRole: string,
 ) {
@@ -45,23 +69,22 @@ async createProject(
   if (existingProject) {
     throw new ConflictException('Project with this name already exists');
   }
-// 4. رفع الصور من base64 إلى Cloudinary (لو موجودة)
-let uploadedImages: string[] = [];
 
-if (dto.images && dto.images.length > 0) {
-  uploadedImages = await Promise.all(
-    dto.images.map((base64, index) =>
-      this.cloudinaryservice.uploadImageFromBase64(base64, 'projects', `project_${Date.now()}_${index}`)
-    ),
-  );
-}
+  // 4. رفع الصور من base64 إلى Cloudinary (لو موجودة)
+  let uploadedImages: string[] = [];
 
- 
+  if (dto.images && dto.images.length > 0) {
+    uploadedImages = await Promise.all(
+      dto.images.map((base64, index) =>
+        this.cloudinaryservice.uploadImageFromBase64(base64, 'projects', `project_${Date.now()}_${index}`)
+      ),
+    );
+  }
+
   const project = await this.prisma.project.create({
     data: {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr ?? null,
-     
       description: dto.description ?? null,
       images:  uploadedImages ?? [],
       developerId: dto.developerId ?? null,
@@ -79,31 +102,52 @@ if (dto.images && dto.images.length > 0) {
     },
   });
 
- 
-if (dto.paymentPlans && dto.paymentPlans.length > 0) {
-  for (const plan of dto.paymentPlans) {
-
-    await this.prisma.paymentPlan.create({
-  data: {
-    downpayment: plan.downpayment,
-    installment: 100 - plan.downpayment - plan.delivery,
-    delivery: plan.delivery,
-    schedule: plan.schedule,
-    description: plan.description,
-    yearsToPay: plan.yearsToPay,
-    installmentPeriod: plan.installmentPeriod,
-    installmentMonthsCount: plan.installmentMonthsCount,
-    firstInstallmentDate: plan.firstInstallmentDate ? new Date(plan.firstInstallmentDate) : null,
-    deliveryDate: plan.deliveryDate ? new Date(plan.deliveryDate) : null,
+  // 5. إضافة خطط الدفع مع التحقق من صحة التواريخ
+  if (dto.paymentPlans && dto.paymentPlans.length > 0) {
+    const defaultDates = this.getDefaultDates();
     
-    projectId: project.id,
-  },
-});
+    for (const plan of dto.paymentPlans) {
+      // Validate and parse dates, use defaults if invalid/missing
+      let firstInstallmentDate: Date | null = null;
+      let deliveryDate: Date | null = null;
 
+      try {
+        firstInstallmentDate = this.validateAndParseDate(plan.firstInstallmentDate, 'firstInstallmentDate') 
+          || defaultDates.firstInstallmentDate;
+        
+        deliveryDate = this.validateAndParseDate(plan.deliveryDate, 'deliveryDate') 
+          || defaultDates.deliveryDate;
+
+        // Ensure delivery date is after first installment date
+        if (deliveryDate && firstInstallmentDate && deliveryDate <= firstInstallmentDate) {
+          deliveryDate = new Date(firstInstallmentDate.getTime() + (2 * 365 * 24 * 60 * 60 * 1000)); // Add 2 years
+        }
+
+      } catch (error) {
+        // If validation fails, use default dates
+        console.warn(`Using default dates for payment plan due to validation error: ${error.message}`);
+        firstInstallmentDate = defaultDates.firstInstallmentDate;
+        deliveryDate = defaultDates.deliveryDate;
+      }
+
+      await this.prisma.paymentPlan.create({
+        data: {
+          downpayment: plan.downpayment,
+          installment: 100 - plan.downpayment - plan.delivery,
+          delivery: plan.delivery,
+          schedule: plan.schedule,
+          description: plan.description,
+          yearsToPay: plan.yearsToPay,
+          installmentPeriod: plan.installmentPeriod,
+          installmentMonthsCount: plan.installmentMonthsCount,
+          firstInstallmentDate,
+          deliveryDate,
+          projectId: project.id,
+        },
+      });
+    }
   }
-}
 
- 
   return {
     status: 201,
     message: 'Project created successfully',
@@ -114,53 +158,48 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
   };
 }
 
-
-
-//  async getAllProjects(userId: string, userName: string, userRole: string) {
   async getAllProjects() {
-  const data = await this.prisma.project.findMany({
-    include: {
-      developer: false,
-      zone: false,
-      inventories: {
-        include: {
-          leads: false,
-          visits: false,
+    const data = await this.prisma.project.findMany({
+      include: {
+        developer: false,
+        zone: false,
+        inventories: {
+          include: {
+            leads: false,
+            visits: false,
+          },
         },
+        paymentPlans: true,
       },
-      paymentPlans: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    });
 
-
-
- return {
-  status: 200,
-  message: 'Projects retrieved successfully',
-  data: data.map(project => ({
-    ...project,
-    createdAt: project.createdAt?.toISOString(), // ← هنا
-    images: project.images ?? [],
-    paymentPlans: project.paymentPlans.map(plan => ({
-      ...plan,
-      createdAt: plan.createdAt?.toISOString(),
-      firstInstallmentDate: plan.firstInstallmentDate?.toISOString?.() ?? null,
-      deliveryDate: plan.deliveryDate?.toISOString?.() ?? null,
-    })),
-    inventories: project.inventories.map(inv => ({
-      ...inv,
-      createdAt: inv.createdAt?.toISOString(),
-      images: inv.images ?? [],
-    })),
-  })),
-};
-
-
-
+    return {
+      status: 200,
+      message: 'Projects retrieved successfully',
+      data: data.map(project => ({
+        ...project,
+        createdAt: project.createdAt?.toISOString(),
+        images: project.images ?? [],
+        paymentPlans: project.paymentPlans.map(plan => ({
+          ...plan,
+          createdAt: plan.createdAt?.toISOString(),
+          // Ensure dates are properly formatted and valid
+          firstInstallmentDate: plan.firstInstallmentDate 
+            ? plan.firstInstallmentDate.toISOString().split('T')[0] 
+            : null,
+          deliveryDate: plan.deliveryDate 
+            ? plan.deliveryDate.toISOString().split('T')[0] 
+            : null,
+        })),
+        inventories: project.inventories.map(inv => ({
+          ...inv,
+          createdAt: inv.createdAt?.toISOString(),
+          images: inv.images ?? [],
+        })),
+      })),
+    };
   }
-
-
 
  async updateProject(
   id: string,
@@ -229,26 +268,46 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
     where: { projectId: id },
   });
 
-
-  // 8. إضافة الخطط الجديدة
+  // 8. إضافة الخطط الجديدة مع التحقق من صحة التواريخ
   if (dto.paymentPlans && dto.paymentPlans.length > 0) {
+    const defaultDates = this.getDefaultDates();
+    
     for (const plan of dto.paymentPlans) {
+      // Validate and parse dates, use defaults if invalid/missing
+      let firstInstallmentDate: Date | null = null;
+      let deliveryDate: Date | null = null;
+
+      try {
+        firstInstallmentDate = this.validateAndParseDate(plan.firstInstallmentDate, 'firstInstallmentDate') 
+          || defaultDates.firstInstallmentDate;
+        
+        deliveryDate = this.validateAndParseDate(plan.deliveryDate, 'deliveryDate') 
+          || defaultDates.deliveryDate;
+
+        // Ensure delivery date is after first installment date
+        if (deliveryDate && firstInstallmentDate && deliveryDate <= firstInstallmentDate) {
+          deliveryDate = new Date(firstInstallmentDate.getTime() + (2 * 365 * 24 * 60 * 60 * 1000)); // Add 2 years
+        }
+
+      } catch (error) {
+        // If validation fails, use default dates
+        console.warn(`Using default dates for payment plan due to validation error: ${error.message}`);
+        firstInstallmentDate = defaultDates.firstInstallmentDate;
+        deliveryDate = defaultDates.deliveryDate;
+      }
+
       await this.prisma.paymentPlan.create({
         data: {
           downpayment: plan.downpayment,
-           installment: 100 - plan.downpayment - plan.delivery,
+          installment: 100 - plan.downpayment - plan.delivery,
           delivery: plan.delivery,
           schedule: plan.schedule,
           description: plan.description,
           yearsToPay: plan.yearsToPay,
           installmentPeriod: plan.installmentPeriod,
           installmentMonthsCount: plan.installmentMonthsCount,
-          firstInstallmentDate: plan.firstInstallmentDate
-            ? new Date(plan.firstInstallmentDate)
-            : null,
-          deliveryDate: plan.deliveryDate
-            ? new Date(plan.deliveryDate)
-            : null,
+          firstInstallmentDate,
+          deliveryDate,
           projectId: id,
         },
       });
@@ -266,14 +325,6 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
   };
 }
 
-
-  
-
-
- 
-
-
-
  async deleteProject(id: string, userId: string, userName: string, userRole: string) {
   const exists = await this.prisma.project.findUnique({
     where: { id },
@@ -285,8 +336,6 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
 
   if (!exists) throw new NotFoundException('Project not found');
 
- 
-
   // حذف جميع خطط الدفع المرتبطة بالمشروع
   await this.prisma.paymentPlan.deleteMany({
     where: { projectId: id },
@@ -297,21 +346,9 @@ if (dto.paymentPlans && dto.paymentPlans.length > 0) {
     where: { id },
   });
 
-  // تسجيل العملية (يمكنك تفعيل السطر لو أردت تسجيل اللوج)
-  // await this.logsService.createLog({
-  //   userId,
-  //   userName,
-  //   userRole,
-  //   action: 'delete_project',
-  //   description: `Deleted project: id=${id}, name=${exists.nameEn}`,
-  // });
-
   return {
     status: 200,
     message: 'Project deleted successfully',
   };
 }
-
-
- 
 }
