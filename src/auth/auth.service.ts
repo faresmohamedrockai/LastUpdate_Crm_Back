@@ -186,59 +186,62 @@ export class AuthService {
 
 
 
- async GetUsers(role: string, userId?: string) {
-  const defaultSelect = {
-    id: true,
-    name: true,
-    email: true,
-    role: true,
-    createdAt: true,
-  };
+  async GetUsers(role: string, userId?: string) {
+    const defaultSelect = {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    };
 
-  let users;
-if (role === 'admin') {
-  users = await this.prisma.user.findMany({
-    include: {
-      teamLeader:true
-    },
-  });
-} else if (role === 'sales_admin') {
-  users = await this.prisma.user.findMany({
-    where: {
-      role: {
-        in: ['sales_rep', 'sales_admin', 'team_leader'],
-      },
-    },
-    include: {
-      teamLeader:true
-    },
-  });
-}
+    let users;
+    if (role === 'admin') {
+      users = await this.prisma.user.findMany({
+        include: {
+          teamLeader: true
+        },
+      });
+    } else if (role === 'sales_admin') {
+      users = await this.prisma.user.findMany({
+        where: {
+          role: {
+            in: ['sales_rep', 'sales_admin', 'team_leader'],
+          },
+        },
+        include: {
+          teamLeader: true
+        },
+      });
+    }
 
-   else if (role === 'team_leader') {
-    if (!userId) throw new ForbiddenException('Missing team leader ID');
+    else if (role === 'team_leader') {
+      if (!userId) throw new ForbiddenException('Missing team leader ID');
 
-    users = await this.prisma.user.findMany({
-      where: {
-        teamLeaderId: userId,
-      },
-      select: {
-        ...defaultSelect,
-        teamLeader: true,
-      },
-    });
-  } else {
-    throw new ForbiddenException('Unauthorized');
+      users = await this.prisma.user.findMany({
+        where: {
+          OR: [
+            { teamLeaderId: userId },
+            { id: userId }
+          ]
+        },
+        select: {
+          ...defaultSelect,
+          teamLeader: true,
+        },
+      });
+    } else {
+      throw new ForbiddenException('Unauthorized');
+    }
+
+    // ✅ تحويل createdAt إلى string
+    return users.map(user => ({
+      ...user,
+      createdAt: user.createdAt.toISOString(),
+    }));
   }
 
-  // ✅ تحويل createdAt إلى string
-  return users.map(user => ({
-    ...user,
-    createdAt: user.createdAt.toISOString(),
-  }));
-}
 
-  
 
 
 
@@ -424,36 +427,36 @@ if (role === 'admin') {
 
 
   // For Delete User Just admin can do it
-async deleteUser(id: string, assignToId: string) {
-  if (id === assignToId) {
-    throw new BadRequestException('Cannot assign leads to the same user being deleted');
-  }
+  async deleteUser(id: string, assignToId: string) {
+    if (id === assignToId) {
+      throw new BadRequestException('Cannot assign leads to the same user being deleted');
+    }
 
-  const user = await this.prisma.user.findUnique({ where: { id } });
-  if (!user) throw new NotFoundException("User not found");
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException("User not found");
 
-  const assignToUser = await this.prisma.user.findUnique({ where: { id: assignToId } });
-  if (!assignToUser) throw new NotFoundException("Assigned user not found");
+    const assignToUser = await this.prisma.user.findUnique({ where: { id: assignToId } });
+    if (!assignToUser) throw new NotFoundException("Assigned user not found");
 
-  await this.prisma.$transaction(async (tx) => {
-   
-    await tx.lead.updateMany({
-      where: { ownerId: id },
-      data: { ownerId: assignToId },
+    await this.prisma.$transaction(async (tx) => {
+
+      await tx.lead.updateMany({
+        where: { ownerId: id },
+        data: { ownerId: assignToId },
+      });
+
+
+      await tx.log.deleteMany({ where: { userId: id } });
+
+
+      await tx.user.delete({ where: { id } });
     });
 
-   
-    await tx.log.deleteMany({ where: { userId: id } });
-
-    
-    await tx.user.delete({ where: { id } });
-  });
-
-  return {
-    status: 200,
-    message: `User deleted and leads reassigned `,
-  };
-}
+    return {
+      status: 200,
+      message: `User deleted and leads reassigned `,
+    };
+  }
 
 
 

@@ -18,19 +18,30 @@ async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: st
   const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
   if (!lead) throw new NotFoundException('Lead not found');
 
+  // Validate project if provided
+  if (dto.projectId && dto.projectId.trim()) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: dto.projectId },
+    });
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+  }
+
   const visit = await this.prisma.visit.create({
     data: {
       date: dto.date,
-     
       notes: dto.notes,
       objections: dto.objections,
       createdById: userId,
       leadId,
       inventoryId: dto.inventoryId?.trim() || undefined,
+      // projectId: dto.projectId?.trim() || undefined, // Temporarily commented until Prisma client is regenerated
     },
     include: {
       lead: true,
       inventory: true,
+      // project: true, // Temporarily commented until Prisma client is regenerated
     },
   });
 
@@ -72,12 +83,11 @@ async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: st
     },
     include: {
       lead: true,
-   
+      inventory: true,
+      // project: true, // Temporarily commented until Prisma client is regenerated
     },
     orderBy: { createdAt: 'desc' },
   });
-
-  
 
   return {visits};
 }

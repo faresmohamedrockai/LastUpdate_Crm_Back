@@ -15,10 +15,13 @@ export class CreateVisitDto {
   @IsDateString()
   date: string;
 
-
-@IsOptional()
+  @IsOptional()
   @IsString()
   inventoryId: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'Project ID must be a valid UUID' })
+  projectId?: string;
 
   @IsOptional()
   @IsString()
