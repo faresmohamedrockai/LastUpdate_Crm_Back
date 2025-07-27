@@ -462,28 +462,29 @@ async deleteUser(id: string, assignToId: string) {
   //Update User Data Just Admin
   //
 
-  async updateUser(id: string, data: UpdateUserDto,userId:string,currentRole:string) {
+  async updateUser(id: string, data: UpdateUserDto, userId: string, currentRole: string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
     });
-
-
-
-
-
 
     if (!existingUser) {
       throw new NotFoundException("User not found");
     }
 
+    // Role-based restrictions
+    if (currentRole !== 'admin' && currentRole !== 'sales_admin') {
+      // Non-admin users can only update their own profile and cannot change role or teamLeaderId
+      if (data.role !== undefined) {
+        throw new ForbiddenException('You cannot change your role');
+      }
+      if (data.teamLeaderId !== undefined) {
+        throw new ForbiddenException('You cannot change your team leader assignment');
+      }
+    }
 
-
-    
-
-if(data.role === "admin"){
-  
-  throw new BadRequestException("You Can't Make Than More Than one Admin For System")
-}
+    if (data.role === "admin") {
+      throw new BadRequestException("You Can't Make Than More Than one Admin For System")
+    }
 
 
 
@@ -529,6 +530,15 @@ if(data.role === "admin"){
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateData,
+    });
+
+    // Log the profile update
+    await this.logsService.createLog({
+      userId: userId,
+      email: existingUser.email,
+      userRole: currentRole,
+      action: 'update_user_profile',
+      description: `User profile updated: id=${id}, updatedBy=${userId}, role=${currentRole}`,
     });
 
     return {

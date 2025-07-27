@@ -124,21 +124,36 @@ async getLeads(id: string, email: string, userRole?: string) {
       break;
 
     case Role.TEAM_LEADER:
+      // First, get team members
       const teamMembers = await this.prisma.user.findMany({
         where: { teamLeaderId: id },
         select: { id: true },
       });
 
       const memberIds = teamMembers.map(member => member.id);
-
-      leads = await this.prisma.lead.findMany({
+      
+      // Get leads owned by team members
+      const teamLeads = await this.prisma.lead.findMany({
         where: { ownerId: { in: memberIds } },
         include: {
           owner: true,
           calls: true, 
         },
       });
-      description = `Team leader retrieved ${leads.length} leads for team`;
+
+      // Get leads owned by the team leader themselves
+      const ownLeads = await this.prisma.lead.findMany({
+        where: { ownerId: id },
+        include: {
+          owner: true,
+          calls: true, 
+        },
+      });
+
+      // Combine both sets of leads
+      leads = [...teamLeads, ...ownLeads];
+
+      description = `Team leader retrieved ${leads.length} leads for team and self`;
       break;
 
     case Role.SALES_REP:
@@ -160,7 +175,6 @@ async getLeads(id: string, email: string, userRole?: string) {
   const parsedLeads = leads.map(lead => ({
     ...lead,
     createdAt: lead.createdAt?.toISOString(),
-    updatedAt: lead.updatedAt?.toISOString?.(),
     owner: lead.owner
       ? {
           ...lead.owner,
@@ -175,6 +189,35 @@ async getLeads(id: string, email: string, userRole?: string) {
 
   return { leads: parsedLeads };
 }
+
+  async getLeadsByOwnerId(userId: string) {
+    const leads = await this.prisma.lead.findMany({
+      where: { ownerId: userId },
+      include: {
+        owner: true,
+        calls: true,
+        inventoryInterest: true,
+      },
+    });
+
+    // Convert dates to ISO strings for consistent formatting
+    const parsedLeads = leads.map(lead => ({
+      ...lead,
+      createdAt: lead.createdAt?.toISOString(),
+      owner: lead.owner
+        ? {
+            ...lead.owner,
+            createdAt: lead.owner.createdAt?.toISOString?.(),
+          }
+        : null,
+      calls: lead.calls?.map(call => ({
+        ...call,
+        createdAt: call.createdAt?.toISOString?.(),
+      })) || [],
+    }));
+
+    return { leads: parsedLeads };
+  }
 
   async getLeadById(leadId: string, user: { id: string; role: Role }) {
     const { role, id: userId } = user;
@@ -199,17 +242,19 @@ async getLeads(id: string, email: string, userRole?: string) {
         break;
 
       case Role.TEAM_LEADER:
-        // Team leaders can access leads assigned to their team members
+        // Team leaders can access leads assigned to their team members and their own leads
         const teamMembers = await this.prisma.user.findMany({
           where: { teamLeaderId: userId },
           select: { id: true },
         });
         const memberIds = teamMembers.map(member => member.id);
+        // Include team leader's own ID along with team members' IDs
+        const allIds = [...memberIds, userId];
         
         lead = await this.prisma.lead.findFirst({
           where: { 
             id: leadId,
-            ownerId: { in: memberIds }
+            ownerId: { in: allIds }
           },
           include: {
             owner: {
@@ -417,13 +462,40 @@ async getLeads(id: string, email: string, userRole?: string) {
       include: { calls: true, visits: true, meetings: true },
     });
 
-
-    // Log lead deletion
-  
-
-
     if (!existingLead) {
       throw new NotFoundException('Lead not found');
+    }
+
+    // Role-based access control for deletion
+    switch (role) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+        // Admins can delete any lead
+        break;
+
+      case Role.TEAM_LEADER:
+        // Team leaders can delete their own leads and their team members' leads
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: userId },
+          select: { id: true },
+        });
+        const memberIds = teamMembers.map(member => member.id);
+        const allIds = [...memberIds, userId];
+        
+        if (existingLead.ownerId && !allIds.includes(existingLead.ownerId)) {
+          throw new ForbiddenException('You can only delete leads owned by you or your team members');
+        }
+        break;
+
+      case Role.SALES_REP:
+        // Sales reps can only delete their own leads
+        if (existingLead.ownerId !== userId) {
+          throw new ForbiddenException('You can only delete your own leads');
+        }
+        break;
+
+      default:
+        throw new ForbiddenException('Access denied');
     }
 
     // Check if lead has related data
