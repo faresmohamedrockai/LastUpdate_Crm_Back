@@ -36,12 +36,12 @@ async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: st
       createdById: userId,
       leadId,
       inventoryId: dto.inventoryId?.trim() || undefined,
-      // projectId: dto.projectId?.trim() || undefined, // Temporarily commented until Prisma client is regenerated
+      projectId: dto.projectId?.trim() || undefined,
     },
     include: {
       lead: true,
       inventory: true,
-      // project: true, // Temporarily commented until Prisma client is regenerated
+      project: true,
     },
   });
 
@@ -84,7 +84,7 @@ async createVisit(dto: CreateVisitDto, userId: string, leadId: string, email: st
     include: {
       lead: true,
       inventory: true,
-      // project: true, // Temporarily commented until Prisma client is regenerated
+      project: true,
     },
     orderBy: { createdAt: 'desc' },
   });

@@ -21,7 +21,8 @@
     "fix-payment-dates": "npx ts-node scripts/fix-payment-plan-dates.ts",
     "test-payment-dates": "npx ts-node scripts/test-payment-plan-dates.ts",
     "fix-payment-dates-comprehensive": "npx ts-node scripts/comprehensive-payment-plan-fix.ts",
-    "test-inventory-response": "npx ts-node scripts/test-inventory-response.ts"
+    "test-inventory-response": "npx ts-node scripts/test-inventory-response.ts",
+    "seed": "npx ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
