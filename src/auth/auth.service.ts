@@ -187,6 +187,8 @@ export class AuthService {
 
 
   async GetUsers(role: string, userId?: string) {
+    console.log('🔍 GetUsers called with role:', role, 'userId:', userId);
+    
     const defaultSelect = {
       id: true,
       name: true,
@@ -197,12 +199,14 @@ export class AuthService {
 
     let users;
     if (role === 'admin') {
+      console.log('👑 Admin access - fetching all users');
       users = await this.prisma.user.findMany({
         include: {
           teamLeader: true
         },
       });
     } else if (role === 'sales_admin') {
+      console.log('📊 Sales admin access - fetching sales users');
       users = await this.prisma.user.findMany({
         where: {
           role: {
@@ -213,10 +217,12 @@ export class AuthService {
           teamLeader: true
         },
       });
-    }
-
-    else if (role === 'team_leader') {
-      if (!userId) throw new ForbiddenException('Missing team leader ID');
+    } else if (role === 'team_leader') {
+      console.log('👥 Team leader access - fetching team members and self');
+      if (!userId) {
+        console.log('❌ Missing team leader ID');
+        throw new ForbiddenException('Missing team leader ID');
+      }
 
       users = await this.prisma.user.findMany({
         where: {
@@ -230,7 +236,9 @@ export class AuthService {
           teamLeader: true,
         },
       });
+      console.log(`✅ Found ${users.length} users for team leader ${userId}`);
     } else {
+      console.log('❌ Unauthorized role:', role);
       throw new ForbiddenException('Unauthorized');
     }
 

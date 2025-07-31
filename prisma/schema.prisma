@@ -20,15 +20,13 @@ model User {
   Contract         Contract[]
   leads            Lead[]
   logs             Log[]
+  assignedMeetings Meeting[]  @relation("AssignedMeetings")
+  createdMeetings  Meeting[]  @relation("CreatedMeetings")
+  assignedTasks    Task[]     @relation("AssignedTasks")
+  createdTasks     Task[]     @relation("CreatedTasks")
+  teamLeader       User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id])
+  teamMembers      User[]     @relation("TeamMembers")
   visit            Visit[]
-
-  createdMeetings  Meeting[] @relation("CreatedMeetings")
-  assignedMeetings Meeting[] @relation("AssignedMeetings")
-  createdTasks     Task[]    @relation("CreatedTasks")
-  assignedTasks    Task[]    @relation("AssignedTasks")
-
-  teamLeader  User?  @relation("TeamMembers", fields: [teamLeaderId], references: [id], onDelete: SetNull)
-  teamMembers User[] @relation("TeamMembers")
 }
 
 model Lead {
@@ -48,45 +46,44 @@ model Lead {
   budget              BigInt?
   calls               Call[]
   Contract            Contract[]
-  inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id], onDelete: SetNull)
-  owner               User?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id])
+  owner               User?      @relation(fields: [ownerId], references: [id])
   logs                Log[]
   meetings            Meeting[]
-  visits              Visit[]
   tasks               Task[]
+  visits              Visit[]
 }
 
 model Inventory {
   id               String     @id @default(uuid())
   title            String?
-  titleEn          String?
-  titleAr          String?
-  type             String?
   price            Float?
-  location         String?
   area             Float?
   bedrooms         Int?
   bathrooms        Int?
-  parking          String?
-  amenities        String[] // مثل ['pool', 'gym']
-  typeOther        String?
-  amenitiesOther   String?
-  images           String[] // أقصى 1 صورة بصيغة data URL
-  status           String? // نصي بدل enum لتطابق FormState
-  zoneId           String?
+  images           String[]
   projectId        String?
+  createdAt        DateTime   @default(now())
+  amenities        String[]
+  amenitiesOther   String?
   developerId      String?
-  paymentPlanIndex Int?    // Index of selected payment plan in project's paymentPlans array
-  createdAt        DateTime @default(now())
-  
-  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  developer   Developer?   @relation(fields: [developerId], references: [id], onDelete: SetNull)
-  zone        Zone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
-  Contract    Contract[]
-  leads       Lead[]
-  meetings    Meeting[]
-  visits      Visit[]
-  tasks       Task[]
+  location         String?
+  parking          String?
+  titleAr          String?
+  titleEn          String?
+  type             String?
+  typeOther        String?
+  zoneId           String?
+  status           String?
+  paymentPlanIndex Int?
+  Contract         Contract[]
+  developer        Developer? @relation(fields: [developerId], references: [id])
+  project          Project?   @relation(fields: [projectId], references: [id])
+  zone             Zone?      @relation(fields: [zoneId], references: [id])
+  leads            Lead[]
+  meetings         Meeting[]
+  tasks            Task[]
+  visits           Visit[]
 }
 
 model Project {
@@ -102,11 +99,10 @@ model Project {
   calls        Call[]
   inventories  Inventory[]
   meetings     Meeting[]
-  visits       Visit[]
   paymentPlans PaymentPlan[]
+  developer    Developer?    @relation(fields: [developerId], references: [id])
+  zone         Zone?         @relation(fields: [zoneId], references: [id])
   tasks        Task[]
-  developer    Developer?    @relation(fields: [developerId], references: [id], onDelete: SetNull)
-  zone         Zone?         @relation(fields: [zoneId], references: [id], onDelete: SetNull)
 }
 
 model PaymentPlan {
@@ -136,11 +132,9 @@ model Visit {
   createdById String?
   objections  String?
   inventoryId String?
-  projectId   String?
   createdBy   User?      @relation(fields: [createdById], references: [id])
   inventory   Inventory? @relation(fields: [inventoryId], references: [id])
   lead        Lead?      @relation(fields: [leadId], references: [id])
-  project     Project?   @relation(fields: [projectId], references: [id])
 }
 
 model Call {
@@ -239,6 +233,31 @@ model Meeting {
   project      Project?   @relation(fields: [projectId], references: [id])
 }
 
+model Task {
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  dueDate      DateTime
+  priority     TaskPriority @default(medium)
+  status       TaskStatus   @default(pending)
+  type         TaskType
+  reminder     Boolean      @default(true)
+  reminderTime DateTime?
+  emailSent    Boolean      @default(false)
+  assignedToId String?
+  createdById  String?
+  leadId       String?
+  projectId    String?
+  inventoryId  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  assignedTo   User?        @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  createdBy    User?        @relation("CreatedTasks", fields: [createdById], references: [id])
+  inventory    Inventory?   @relation(fields: [inventoryId], references: [id])
+  lead         Lead?        @relation(fields: [leadId], references: [id])
+  project      Project?     @relation(fields: [projectId], references: [id])
+}
+
 enum ContractStatus {
   Pending
   Signed
@@ -283,35 +302,6 @@ enum InventoryStatus {
   reserved
   sold
   under_construction
-}
-
-model Task {
-  id          String       @id @default(uuid())
-  title       String
-  description String?
-  dueDate     DateTime
-  priority    TaskPriority @default(medium)
-  status      TaskStatus   @default(pending)
-  type        TaskType
-  reminder    Boolean      @default(true)
-  reminderTime DateTime?
-  emailSent   Boolean      @default(false)
-  
-  // Relations
-  assignedToId String?
-  createdById  String?
-  leadId       String?
-  projectId    String?
-  inventoryId  String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  assignedTo User?      @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdBy  User?      @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: SetNull)
-  lead      Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  project   Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  inventory Inventory?  @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
 }
 
 enum TaskPriority {

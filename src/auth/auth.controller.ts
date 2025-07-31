@@ -50,9 +50,11 @@ export class AuthController {
   @Get('users')
 
   GetUsrs(@Req() req: any) {
-    const { role,userId } = req.user
+    const { role, userId } = req.user
+    console.log('🔍 Controller - req.user:', req.user);
+    console.log('🔍 Controller - extracted role:', role, 'userId:', userId);
  
-    return this.authService.GetUsers(role,userId);
+    return this.authService.GetUsers(role, userId);
   }
 
 

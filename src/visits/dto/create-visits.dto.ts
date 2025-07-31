@@ -21,7 +21,7 @@ export class CreateVisitDto {
 
   @IsOptional()
   @IsUUID('4', { message: 'Project ID must be a valid UUID' })
-  projectId?: string;
+  projectId?: string; // Note: This field is not currently used due to database schema limitations
 
   @IsOptional()
   @IsString()
