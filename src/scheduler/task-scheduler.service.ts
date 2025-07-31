@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { Task } from '../tasks/types';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class TaskSchedulerService {

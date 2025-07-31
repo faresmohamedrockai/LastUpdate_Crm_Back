@@ -6,6 +6,12 @@ import * as morgan from 'morgan';
 import { json, urlencoded } from 'express';
 import { BigIntInterceptor } from './BigInterseptor';
 
+// Ensure crypto is available globally
+if (typeof globalThis.crypto === 'undefined') {
+  const crypto = require('crypto');
+  globalThis.crypto = crypto;
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
