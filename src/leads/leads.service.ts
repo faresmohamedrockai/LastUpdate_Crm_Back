@@ -20,10 +20,38 @@ export class LeadsService {
     private readonly logsService: LogsService,
   ) { }
 
-  async create(dto: CreateLeadDto, userId: string, email?: string, userRole?: string) {
+  async create(dto: CreateLeadDto, userId: string, email: string, userRole: string) {
+    // 🔒 SECURITY FIX: Validate parameters
     if (!userId) {
       throw new BadRequestException('User ID is required to create a lead');
     }
+    if (!email || !userRole) {
+      throw new ForbiddenException('Email and user role are required');
+    }
+
+    // Validate that the role is a valid enum value
+    if (!Object.values(Role).includes(userRole as Role)) {
+      throw new ForbiddenException('Invalid user role');
+    }
+
+    // 🔒 SECURITY FIX: Validate user exists and role matches database
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, email: true }
+    });
+
+    if (!dbUser) {
+      throw new ForbiddenException('User not found in database');
+    }
+
+    if (dbUser.role !== userRole) {
+      throw new ForbiddenException('Role mismatch with database - potential security breach');
+    }
+
+    if (dbUser.email !== email) {
+      throw new ForbiddenException('Email mismatch with database - potential security breach');
+    }
+
     console.log(dto);
 
     // Helper function to convert budget safely
@@ -107,7 +135,35 @@ export class LeadsService {
   }
 
 
-async getLeads(id: string, email: string, userRole?: string) {
+async getLeads(id: string, email: string, userRole: string) {
+  // 🔒 SECURITY FIX: Validate userRole parameter
+  if (!userRole) {
+    throw new ForbiddenException('User role is required');
+  }
+
+  // Validate that the role is a valid enum value
+  if (!Object.values(Role).includes(userRole as Role)) {
+    throw new ForbiddenException('Invalid user role');
+  }
+
+  // 🔒 SECURITY FIX: Validate user exists and role matches
+  const user = await this.prisma.user.findUnique({
+    where: { id },
+    select: { id: true, role: true, email: true }
+  });
+
+  if (!user) {
+    throw new ForbiddenException('User not found');
+  }
+
+  if (user.role !== userRole) {
+    throw new ForbiddenException('Role mismatch - potential security breach');
+  }
+
+  if (user.email !== email) {
+    throw new ForbiddenException('Email mismatch - potential security breach');
+  }
+
   let leads;
   let description;
 
@@ -130,15 +186,17 @@ async getLeads(id: string, email: string, userRole?: string) {
       });
 
       const memberIds = teamMembers.map(member => member.id);
+      // Include team leader's own ID along with team members
+      const allIds = [...memberIds, id].filter(id => id !== undefined && id !== null);
 
       leads = await this.prisma.lead.findMany({
-        where: { ownerId: { in: memberIds } },
+        where: { ownerId: { in: allIds } },
         include: {
           owner: true,
           calls: true, 
         },
       });
-      description = `Team leader retrieved ${leads.length} leads for team`;
+      description = `Team leader retrieved ${leads.length} leads for team and self`;
       break;
 
     case Role.SALES_REP:
@@ -177,6 +235,30 @@ async getLeads(id: string, email: string, userRole?: string) {
 }
 
   async getLeadById(leadId: string, user: { id: string; role: Role }) {
+    // 🔒 SECURITY FIX: Validate parameters
+    if (!user || !user.id || !user.role) {
+      throw new ForbiddenException('Valid user object with id and role is required');
+    }
+
+    // Validate that the role is a valid enum value
+    if (!Object.values(Role).includes(user.role)) {
+      throw new ForbiddenException('Invalid user role');
+    }
+
+    // 🔒 SECURITY FIX: Validate user exists and role matches database
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, role: true, email: true }
+    });
+
+    if (!dbUser) {
+      throw new ForbiddenException('User not found in database');
+    }
+
+    if (dbUser.role !== user.role) {
+      throw new ForbiddenException('Role mismatch with database - potential security breach');
+    }
+
     const { role, id: userId } = user;
     
     let lead;
@@ -199,17 +281,19 @@ async getLeads(id: string, email: string, userRole?: string) {
         break;
 
       case Role.TEAM_LEADER:
-        // Team leaders can access leads assigned to their team members
+        // Team leaders can access leads assigned to their team members and their own leads
         const teamMembers = await this.prisma.user.findMany({
           where: { teamLeaderId: userId },
           select: { id: true },
         });
         const memberIds = teamMembers.map(member => member.id);
+        // Include team leader's own ID along with team members
+        const allIds = [...memberIds, userId].filter(id => id !== undefined && id !== null);
         
         lead = await this.prisma.lead.findFirst({
           where: { 
             id: leadId,
-            ownerId: { in: memberIds }
+            ownerId: { in: allIds }
           },
           include: {
             owner: {
@@ -272,12 +356,87 @@ async getLeads(id: string, email: string, userRole?: string) {
   }
 
 
-  async updateLead(leadId: string, dto: UpdateLeadDto, user: { id: string; role: Role }, email?: string, userRole?: string) {
-    const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
+  async updateLead(leadId: string, dto: UpdateLeadDto, user: { id: string; role: Role }, email: string, userRole: string) {
+    // 🔒 SECURITY FIX: Validate parameters
+    if (!email || !userRole) {
+      throw new ForbiddenException('Email and user role are required');
+    }
 
-    if (!lead) throw new NotFoundException('Lead not found');
+    // Validate that the role is a valid enum value
+    if (!Object.values(Role).includes(userRole as Role)) {
+      throw new ForbiddenException('Invalid user role');
+    }
+
+    // Validate that the user role matches the user object
+    if (user.role !== userRole) {
+      throw new ForbiddenException('User role mismatch');
+    }
+
+    // 🔒 SECURITY FIX: Validate user exists and role matches database
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, role: true, email: true }
+    });
+
+    if (!dbUser) {
+      throw new ForbiddenException('User not found in database');
+    }
+
+    if (dbUser.role !== userRole) {
+      throw new ForbiddenException('Role mismatch with database - potential security breach');
+    }
+
+    if (dbUser.email !== email) {
+      throw new ForbiddenException('Email mismatch with database - potential security breach');
+    }
 
     const { role, id: userId } = user;
+
+    // 🔒 Access Control: Check if user can access this lead
+    let lead;
+    
+    switch (role) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+        // Admins can access any lead
+        lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
+        break;
+
+      case Role.TEAM_LEADER:
+        // Team leaders can access leads assigned to their team members and their own leads
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: userId },
+          select: { id: true },
+        });
+        const memberIds = teamMembers.map(member => member.id);
+        // Include team leader's own ID along with team members
+        const allIds = [...memberIds, userId];
+        
+        lead = await this.prisma.lead.findFirst({
+          where: { 
+            id: leadId,
+            ownerId: { in: allIds }
+          }
+        });
+        break;
+
+      case Role.SALES_REP:
+        // Sales reps can only access their own leads
+        lead = await this.prisma.lead.findFirst({
+          where: { 
+            id: leadId,
+            ownerId: userId
+          }
+        });
+        break;
+
+      default:
+        throw new ForbiddenException('Access denied');
+    }
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found or access denied');
+    }
 
     // Helper function to convert budget safely
     const convertBudget = (value: number | string | undefined): number => {
@@ -412,18 +571,83 @@ async getLeads(id: string, email: string, userRole?: string) {
   }
 
   async deleteLead(leadId: string, userId: string, email: string, role: string) {
-    const existingLead = await this.prisma.lead.findUnique({
-      where: { id: leadId },
-      include: { calls: true, visits: true, meetings: true },
+    // 🔒 SECURITY FIX: Validate parameters
+    if (!userId || !email || !role) {
+      throw new ForbiddenException('User ID, email, and role are required');
+    }
+
+    // Validate that the role is a valid enum value
+    if (!Object.values(Role).includes(role as Role)) {
+      throw new ForbiddenException('Invalid user role');
+    }
+
+    // 🔒 SECURITY FIX: Validate user exists and role matches database
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, email: true }
     });
 
+    if (!dbUser) {
+      throw new ForbiddenException('User not found in database');
+    }
 
-    // Log lead deletion
-  
+    if (dbUser.role !== role) {
+      throw new ForbiddenException('Role mismatch with database - potential security breach');
+    }
 
+    if (dbUser.email !== email) {
+      throw new ForbiddenException('Email mismatch with database - potential security breach');
+    }
+
+    // 🔒 Access Control: Check if user can access this lead
+    let existingLead;
+    
+    switch (role) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+        // Admins can access any lead
+        existingLead = await this.prisma.lead.findUnique({
+          where: { id: leadId },
+          include: { calls: true, visits: true, meetings: true },
+        });
+        break;
+
+      case Role.TEAM_LEADER:
+        // Team leaders can access leads assigned to their team members and their own leads
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: userId },
+          select: { id: true },
+        });
+        const memberIds = teamMembers.map(member => member.id);
+        // Include team leader's own ID along with team members
+        const allIds = [...memberIds, userId];
+        
+        existingLead = await this.prisma.lead.findFirst({
+          where: { 
+            id: leadId,
+            ownerId: { in: allIds }
+          },
+          include: { calls: true, visits: true, meetings: true },
+        });
+        break;
+
+      case Role.SALES_REP:
+        // Sales reps can only access their own leads
+        existingLead = await this.prisma.lead.findFirst({
+          where: { 
+            id: leadId,
+            ownerId: userId
+          },
+          include: { calls: true, visits: true, meetings: true },
+        });
+        break;
+
+      default:
+        throw new ForbiddenException('Access denied');
+    }
 
     if (!existingLead) {
-      throw new NotFoundException('Lead not found');
+      throw new NotFoundException('Lead not found or access denied');
     }
 
     // Check if lead has related data

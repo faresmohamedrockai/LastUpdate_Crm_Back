@@ -19,29 +19,27 @@ export class LeadsController {
 
 
 async createLead(@Body() dto: CreateLeadDto, @Req() req) {
-  const { userId, email, role } = req.user;
+  const { id, email, role } = req.user;
 
-  if (!userId) {
+  if (!id) {
     throw new BadRequestException('User ID not found in request');
   }
 
-  return this.leadsService.create(dto, userId, email, role);
+  return this.leadsService.create(dto, id, email, role);
 }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getLeads(@Req() req) {
-  
-    
-    const { userId, email, role } = req.user;
+    const { id, email, role } = req.user;
 
-    return this.leadsService.getLeads(  userId, email, role);
+    return this.leadsService.getLeads(id, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get(':id')
   async getLeadById(@Param('id') id: string, @Req() req) {
-    const { userId, role } = req.user;
+    const { id: userId, email, role } = req.user;
     return this.leadsService.getLeadById(id, { id: userId, role: role });
   }
 
@@ -52,14 +50,14 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
     @Body() dto: UpdateLeadDto,
     @Req() req
   ) {
-    const {userId,email,role} = req.user
+    const { id: userId, email, role } = req.user;
     return this.leadsService.updateLead(id, dto, { id: userId, role: role }, email, role);
   }
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteLead(@Param('id') id: string, @Req() req) {
-    const {  userId,  email, role } = req.user;
+    const { id: userId, email, role } = req.user;
     return this.leadsService.deleteLead(id, userId, email, role);
   }
 }

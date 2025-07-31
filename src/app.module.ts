@@ -14,6 +14,9 @@ import { ZonesModule } from './zones/zones.module';
 import { LogsModule } from './logs/logs.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { ContractsModule } from './contracts/contracts.module';
+import { TasksModule } from './tasks/tasks.module';
+import { EmailModule } from './email/email.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -35,6 +38,9 @@ import { UserCheckMiddleware } from './common/middelwares/UserCheckMiddleware ';
     LogsModule,
     MeetingsModule,
     ContractsModule,
+    TasksModule,
+    EmailModule,
+    SchedulerModule,
     MulterModule.register({}),
   ],
   controllers: [AppController],

@@ -24,6 +24,8 @@ model User {
 
   createdMeetings  Meeting[] @relation("CreatedMeetings")
   assignedMeetings Meeting[] @relation("AssignedMeetings")
+  createdTasks     Task[]    @relation("CreatedTasks")
+  assignedTasks    Task[]    @relation("AssignedTasks")
 
   teamLeader  User?  @relation("TeamMembers", fields: [teamLeaderId], references: [id], onDelete: SetNull)
   teamMembers User[] @relation("TeamMembers")
@@ -53,6 +55,7 @@ model Lead {
   logs              Log[]
   meetings          Meeting[]
   visits            Visit[]
+  tasks             Task[]
 }
 
 model Inventory {
@@ -85,6 +88,7 @@ model Inventory {
   leads       Lead[]
   meetings    Meeting[]
   visits      Visit[]
+  tasks       Task[]
 }
 
 model Project {
@@ -102,6 +106,7 @@ model Project {
   inventories  Inventory[]
   meetings     Meeting[]
   paymentPlans PaymentPlan[]
+  tasks        Task[]
   developer    Developer?    @relation(fields: [developerId], references: [id], onDelete: SetNull)
   zone         Zone?         @relation(fields: [zoneId], references: [id], onDelete: SetNull)
 }
@@ -288,4 +293,58 @@ enum InventoryStatus {
   reserved
   sold
   under_construction
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  dueDate     DateTime
+  priority    TaskPriority @default(medium)
+  status      TaskStatus   @default(pending)
+  type        TaskType
+  reminder    Boolean      @default(true)
+  reminderTime DateTime?
+  emailSent   Boolean      @default(false)
+  
+  // Relations
+  assignedToId String?
+  createdById  String?
+  leadId       String?
+  projectId    String?
+  inventoryId  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  assignedTo User?      @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User?      @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: SetNull)
+  lead      Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  project   Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  inventory Inventory?  @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+  cancelled
+  overdue
+}
+
+enum TaskType {
+  follow_up
+  meeting_preparation
+  contract_review
+  payment_reminder
+  visit_scheduling
+  lead_nurturing
+  general
 }
