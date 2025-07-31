@@ -26,8 +26,8 @@ date: string;
   notes?: string;
 
   @IsOptional()
-  @IsUUID()
-  project?: string;
+  @IsUUID('4', { message: 'Project ID must be a valid UUID' })
+  projectId?: string;
   
   // ✅ اسم الحقل يجب أن يكون مطابقاً للنموذج في Prisma
  @IsOptional()

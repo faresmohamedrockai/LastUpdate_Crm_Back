@@ -18,9 +18,9 @@ export class CallsService {
   if (!lead) throw new NotFoundException('Lead not found');
 
   
-  if (dto.project) {
+  if (dto.projectId && dto.projectId.trim()) {
     const project = await this.prisma.project.findUnique({
-      where: { id: dto.project },
+      where: { id: dto.projectId },
     });
     if (!project) {
       throw new NotFoundException('Project not found');
@@ -36,7 +36,7 @@ export class CallsService {
     duration: dto.duration,
     notes: dto.notes,
     leadId: dto.leadId,
-    projectId: dto.project,
+    projectId: dto.projectId?.trim() || undefined,
     createdBy:userId
   },
   include: {

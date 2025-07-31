@@ -78,7 +78,7 @@ async deleteUser(
 
 
 @UseGuards(AuthGuard("jwt"), RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
 @Patch('update-user/:id')
 
 async updateUser(
@@ -86,11 +86,14 @@ async updateUser(
 @Req() req: any,
   @Body() data: UpdateUserDto
 ) {
+  const {userId, role} = req.user;
 
+  // Allow users to update their own profile, or admins to update any profile
+  if (role !== Role.ADMIN && role !== Role.SALES_ADMIN && userId !== id) {
+    throw new ForbiddenException('You can only update your own profile');
+  }
 
-const {userId,role} = req.user
-
-  return this.authService.updateUser(id, data,userId,role);
+  return this.authService.updateUser(id, data, userId, role);
 }
 
 

@@ -180,6 +180,7 @@ async getLeads(id: string, email: string, userRole: string) {
       break;
 
     case Role.TEAM_LEADER:
+      // First, get team members
       const teamMembers = await this.prisma.user.findMany({
         where: { teamLeaderId: id },
         select: { id: true },
@@ -218,7 +219,6 @@ async getLeads(id: string, email: string, userRole: string) {
   const parsedLeads = leads.map(lead => ({
     ...lead,
     createdAt: lead.createdAt?.toISOString(),
-    updatedAt: lead.updatedAt?.toISOString?.(),
     owner: lead.owner
       ? {
           ...lead.owner,
@@ -233,6 +233,35 @@ async getLeads(id: string, email: string, userRole: string) {
 
   return { leads: parsedLeads };
 }
+
+  async getLeadsByOwnerId(userId: string) {
+    const leads = await this.prisma.lead.findMany({
+      where: { ownerId: userId },
+      include: {
+        owner: true,
+        calls: true,
+        inventoryInterest: true,
+      },
+    });
+
+    // Convert dates to ISO strings for consistent formatting
+    const parsedLeads = leads.map(lead => ({
+      ...lead,
+      createdAt: lead.createdAt?.toISOString(),
+      owner: lead.owner
+        ? {
+            ...lead.owner,
+            createdAt: lead.owner.createdAt?.toISOString?.(),
+          }
+        : null,
+      calls: lead.calls?.map(call => ({
+        ...call,
+        createdAt: call.createdAt?.toISOString?.(),
+      })) || [],
+    }));
+
+    return { leads: parsedLeads };
+  }
 
   async getLeadById(leadId: string, user: { id: string; role: Role }) {
     // 🔒 SECURITY FIX: Validate parameters
@@ -287,8 +316,8 @@ async getLeads(id: string, email: string, userRole: string) {
           select: { id: true },
         });
         const memberIds = teamMembers.map(member => member.id);
-        // Include team leader's own ID along with team members
-        const allIds = [...memberIds, userId].filter(id => id !== undefined && id !== null);
+        // Include team leader's own ID along with team members' IDs
+        const allIds = [...memberIds, userId];
         
         lead = await this.prisma.lead.findFirst({
           where: { 
@@ -648,6 +677,38 @@ async getLeads(id: string, email: string, userRole: string) {
 
     if (!existingLead) {
       throw new NotFoundException('Lead not found or access denied');
+    }
+
+    // Role-based access control for deletion
+    switch (role) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+        // Admins can delete any lead
+        break;
+
+      case Role.TEAM_LEADER:
+        // Team leaders can delete their own leads and their team members' leads
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: userId },
+          select: { id: true },
+        });
+        const memberIds = teamMembers.map(member => member.id);
+        const allIds = [...memberIds, userId];
+        
+        if (existingLead.ownerId && !allIds.includes(existingLead.ownerId)) {
+          throw new ForbiddenException('You can only delete leads owned by you or your team members');
+        }
+        break;
+
+      case Role.SALES_REP:
+        // Sales reps can only delete their own leads
+        if (existingLead.ownerId !== userId) {
+          throw new ForbiddenException('You can only delete your own leads');
+        }
+        break;
+
+      default:
+        throw new ForbiddenException('Access denied');
     }
 
     // Check if lead has related data

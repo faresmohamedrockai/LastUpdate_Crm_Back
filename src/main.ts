@@ -25,6 +25,8 @@ async function bootstrap() {
       'https://propai-crm-front-end-1.vercel.app',
       'https://propaicrm.rockaidev.com',
       'https://redocean.propaicrm.com',
+      'https://jamesmap.propaicrm.com',
+      'https://prodeal.propaicrm.com',
     ],
     credentials: true,
     methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',

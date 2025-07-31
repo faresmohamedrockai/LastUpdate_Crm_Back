@@ -8,19 +8,19 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  name         String     @default("user")
-  password     String
-  role         Role
-  refreshToken String?
-  createdAt    DateTime   @default(now())
-  image        String?
-  teamLeaderId String?
-  Contract     Contract[]
-  leads        Lead[]
-  logs         Log[]
-  visit        Visit[]
+  id               String     @id @default(uuid())
+  email            String     @unique
+  name             String     @default("user")
+  password         String
+  role             Role
+  refreshToken     String?
+  createdAt        DateTime   @default(now())
+  image            String?
+  teamLeaderId     String?
+  Contract         Contract[]
+  leads            Lead[]
+  logs             Log[]
+  visit            Visit[]
 
   createdMeetings  Meeting[] @relation("CreatedMeetings")
   assignedMeetings Meeting[] @relation("AssignedMeetings")
@@ -33,54 +33,52 @@ model User {
 
 model Lead {
   id                  String     @id @default(uuid())
-  nameEn              String?
   nameAr              String?
+  nameEn              String?
   contact             String     @unique
-  email               String?
-  budget              BigInt?
-  inventoryInterestId String?
-  source              String?
   status              LeadStatus
   lastCall            DateTime?
   lastVisit           DateTime?
   ownerId             String?
+  inventoryInterestId String?
   createdAt           DateTime   @default(now())
-
-  // العلاقات (ما اتغيرتش)
-  notes             String[]
-  calls             Call[]
-  Contract          Contract[]
-  inventoryInterest Inventory? @relation(fields: [inventoryInterestId], references: [id], onDelete: SetNull)
-  owner             User?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  logs              Log[]
-  meetings          Meeting[]
-  visits            Visit[]
-  tasks             Task[]
+  email               String?
+  notes               String[]
+  source              String?
+  budget              BigInt?
+  calls               Call[]
+  Contract            Contract[]
+  inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id], onDelete: SetNull)
+  owner               User?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  logs                Log[]
+  meetings            Meeting[]
+  visits              Visit[]
+  tasks               Task[]
 }
 
 model Inventory {
-  id             String   @id @default(uuid())
-  title          String?
-  titleEn        String?
-  titleAr        String?
-  type           String?
-  price          Float?
-  location       String?
-  area           Float?
-  bedrooms       Int?
-  bathrooms      Int?
-  parking        String?
-  amenities      String[] // مثل ['pool', 'gym']
-  typeOther      String?
-  amenitiesOther String?
-  images         String[] // أقصى 1 صورة بصيغة data URL
-  status         String? // نصي بدل enum لتطابق FormState
-  zoneId         String?
-  projectId      String?
-  developerId    String?
+  id               String     @id @default(uuid())
+  title            String?
+  titleEn          String?
+  titleAr          String?
+  type             String?
+  price            Float?
+  location         String?
+  area             Float?
+  bedrooms         Int?
+  bathrooms        Int?
+  parking          String?
+  amenities        String[] // مثل ['pool', 'gym']
+  typeOther        String?
+  amenitiesOther   String?
+  images           String[] // أقصى 1 صورة بصيغة data URL
+  status           String? // نصي بدل enum لتطابق FormState
+  zoneId           String?
+  projectId        String?
+  developerId      String?
   paymentPlanIndex Int?    // Index of selected payment plan in project's paymentPlans array
-
-  createdAt   DateTime     @default(now())
+  createdAt        DateTime @default(now())
+  
   project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
   developer   Developer?   @relation(fields: [developerId], references: [id], onDelete: SetNull)
   zone        Zone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
@@ -92,19 +90,19 @@ model Inventory {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  nameEn      String
-  nameAr      String?
-  type        String
-  description String?
-  images      String[]
-  developerId String?
-  zoneId      String?
-  createdAt   DateTime @default(now())
-  calls       Call[]
-
+  id           String        @id @default(uuid())
+  nameEn       String
+  nameAr       String?
+  type         String
+  description  String?
+  images       String[]
+  developerId  String?
+  zoneId       String?
+  createdAt    DateTime      @default(now())
+  calls        Call[]
   inventories  Inventory[]
   meetings     Meeting[]
+  visits       Visit[]
   paymentPlans PaymentPlan[]
   tasks        Task[]
   developer    Developer?    @relation(fields: [developerId], references: [id], onDelete: SetNull)
@@ -119,33 +117,30 @@ model PaymentPlan {
   schedule               String?
   description            String?
   yearsToPay             Int?
-  installmentMonthsCount Float?
-  firstInstallmentDate   DateTime?
-  deliveryDate           DateTime?
   projectId              String?
   createdAt              DateTime          @default(now())
   installmentPeriod      InstallmentPeriod
-  project                Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  deliveryDate           DateTime?
+  firstInstallmentDate   DateTime?
+  installmentMonthsCount Float?
+  project                Project?          @relation(fields: [projectId], references: [id])
 }
 
 model Visit {
-  id         String  @id @default(uuid())
-  date       String? // أو ممكن تغييره إلى DateTime لو تحب
-  status     String?
-  objections String?
-  notes      String?
-
-  // العلاقات
+  id          String     @id @default(uuid())
+  date        String?
+  status      String?
+  notes       String?
   leadId      String?
-  inventoryId String?
+  createdAt   DateTime   @default(now())
   createdById String?
-
-  createdAt DateTime @default(now())
-
-  // علاقات Prisma
-  lead      Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  inventory Inventory? @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
-  createdBy User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  objections  String?
+  inventoryId String?
+  projectId   String?
+  createdBy   User?      @relation(fields: [createdById], references: [id])
+  inventory   Inventory? @relation(fields: [inventoryId], references: [id])
+  lead        Lead?      @relation(fields: [leadId], references: [id])
+  project     Project?   @relation(fields: [projectId], references: [id])
 }
 
 model Call {
@@ -153,16 +148,14 @@ model Call {
   date      String?
   outcome   String?
   duration  String?
-  project   String?
+  projectId String?
   notes     String?
   leadId    String?
-  createdBy String?
   createdAt DateTime @default(now())
-
-  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  // لا يوجد علاقة واضحة مع Project، لذلك أزلناها
-  Project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  projectId String?
+  createdBy String?
+  project   String?
+  lead      Lead?    @relation(fields: [leadId], references: [id])
+  Project   Project? @relation(fields: [projectId], references: [id])
 }
 
 model Log {
@@ -177,8 +170,8 @@ model Log {
   ip          String?
   userAgent   String?
   createdAt   DateTime @default(now())
-  lead        Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
 }
 
 model Zone {
@@ -198,9 +191,9 @@ model Developer {
   location    String?
   established String?
   nameAr      String?
+  logo        String?
   email       String?
   phone       String?
-  logo        String?
   inventories Inventory[]
   projects    Project[]
 }
@@ -211,48 +204,45 @@ model Contract {
   inventoryId  String?
   dealValue    Float?
   contractDate String?
-  status       ContractStatus?
   createdById  String?
   notes        String?
   createdAt    DateTime        @default(now())
+  status       ContractStatus?
+  createdBy    User?           @relation(fields: [createdById], references: [id])
+  inventory    Inventory?      @relation(fields: [inventoryId], references: [id])
+  lead         Lead?           @relation(fields: [leadId], references: [id])
+}
 
-  // Relations
-  createdBy User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  inventory Inventory? @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
-  lead      Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+model Meeting {
+  id           String     @id @default(uuid())
+  date         String?
+  status       String?
+  notes        String?
+  objections   String?
+  location     String?
+  leadId       String?
+  createdById  String?
+  inventoryId  String?
+  projectId    String?
+  createdAt    DateTime   @default(now())
+  assignedToId String?
+  client       String?
+  duration     String?
+  time         String?
+  title        String?
+  type         String?
+  locationType String?
+  assignedTo   User?      @relation("AssignedMeetings", fields: [assignedToId], references: [id])
+  createdBy    User?      @relation("CreatedMeetings", fields: [createdById], references: [id])
+  inventory    Inventory? @relation(fields: [inventoryId], references: [id])
+  lead         Lead?      @relation(fields: [leadId], references: [id])
+  project      Project?   @relation(fields: [projectId], references: [id])
 }
 
 enum ContractStatus {
   Pending
   Signed
   Cancelled
-}
-
-model Meeting {
-  id           String   @id @default(uuid())
-  title        String?
-  client       String?
-  date         String?
-  time         String?
-  duration     String?
-  type         String?
-  status       String?
-  location     String?
-  locationType String?
-  notes        String?
-  objections   String?
-  leadId       String?
-  inventoryId  String?
-  projectId    String?
-  createdById  String?
-  assignedToId String?
-  createdAt    DateTime @default(now())
-
-  createdBy  User?      @relation("CreatedMeetings", fields: [createdById], references: [id], onDelete: SetNull)
-  assignedTo User?      @relation("AssignedMeetings", fields: [assignedToId], references: [id], onDelete: SetNull)
-  inventory  Inventory? @relation(fields: [inventoryId], references: [id])
-  lead       Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  project    Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
 }
 
 enum Role {
