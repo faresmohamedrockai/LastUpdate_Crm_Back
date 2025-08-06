@@ -32,11 +32,10 @@ const {  userId, email, role } = req.user;
   @Get('project/:projectId')
   async getMeetingsByProject(
     @Param('projectId') projectId: string,
-    @Request() req,
+    @Req() req,
   ) {
-    const { userId, userName, userRole } = req.user;
-    // TODO: Implement getMeetingsByProject method in service
-    throw new HttpException('Method not implemented yet', HttpStatus.NOT_IMPLEMENTED);
+    const { userId, email, role } = req.user;
+    return this.meetingsService.getMeetingsByProject(projectId, userId, email, role);
   }
 
 
