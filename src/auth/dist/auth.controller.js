@@ -61,6 +61,8 @@ var AuthController = /** @class */ (function () {
     };
     AuthController.prototype.GetUsrs = function (req) {
         var _a = req.user, role = _a.role, userId = _a.userId;
+        console.log('🔍 Controller - req.user:', req.user);
+        console.log('🔍 Controller - extracted role:', role, 'userId:', userId);
         return this.authService.GetUsers(role, userId);
     };
     AuthController.prototype.deleteUser = function (id, assignToId) {
@@ -75,6 +77,10 @@ var AuthController = /** @class */ (function () {
             var _a, userId, role;
             return __generator(this, function (_b) {
                 _a = req.user, userId = _a.userId, role = _a.role;
+                // Allow users to update their own profile, or admins to update any profile
+                if (role !== roles_enum_1.Role.ADMIN && role !== roles_enum_1.Role.SALES_ADMIN && userId !== id) {
+                    throw new common_1.ForbiddenException('You can only update your own profile');
+                }
                 return [2 /*return*/, this.authService.updateUser(id, data, userId, role)];
             });
         });
@@ -179,7 +185,7 @@ var AuthController = /** @class */ (function () {
     ], AuthController.prototype, "deleteUser");
     __decorate([
         common_1.UseGuards(passport_1.AuthGuard("jwt"), roles_gaurd_1.RolesGuard),
-        Role_decorator_1.Roles(roles_enum_1.Role.ADMIN),
+        Role_decorator_1.Roles(roles_enum_1.Role.ADMIN, roles_enum_1.Role.SALES_ADMIN, roles_enum_1.Role.TEAM_LEADER, roles_enum_1.Role.SALES_REP),
         common_1.Patch('update-user/:id'),
         __param(0, common_1.Param('id')),
         __param(1, common_1.Req()),

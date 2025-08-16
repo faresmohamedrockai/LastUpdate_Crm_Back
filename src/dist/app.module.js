@@ -23,6 +23,9 @@ var zones_module_1 = require("./zones/zones.module");
 var logs_module_1 = require("./logs/logs.module");
 var meetings_module_1 = require("./meetings/meetings.module");
 var contracts_module_1 = require("./contracts/contracts.module");
+var tasks_module_1 = require("./tasks/tasks.module");
+var email_module_1 = require("./email/email.module");
+var scheduler_module_1 = require("./scheduler/scheduler.module");
 var platform_express_1 = require("@nestjs/platform-express");
 var prisma_module_1 = require("./prisma/prisma.module");
 var jwt_1 = require("@nestjs/jwt");
@@ -53,6 +56,9 @@ var AppModule = /** @class */ (function () {
                 logs_module_1.LogsModule,
                 meetings_module_1.MeetingsModule,
                 contracts_module_1.ContractsModule,
+                tasks_module_1.TasksModule,
+                email_module_1.EmailModule,
+                scheduler_module_1.SchedulerModule,
                 platform_express_1.MulterModule.register({}),
             ],
             controllers: [app_controller_1.AppController],

@@ -6,8 +6,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 exports.__esModule = true;
-exports.UpdateLeadDto = exports.LeadStatus = void 0;
-// leads/dto/update-lead.dto.ts
+exports.UpdateLeadDto = exports.Tier = exports.Interest = exports.LeadStatus = void 0;
 var class_validator_1 = require("class-validator");
 var LeadStatus;
 (function (LeadStatus) {
@@ -17,16 +16,28 @@ var LeadStatus;
     LeadStatus["OPEN_DEAL"] = "open_deal";
     LeadStatus["CANCELLATION"] = "cancellation";
     LeadStatus["CLOSED_DEAL"] = "closed_deal";
+    LeadStatus["VIP"] = "vip";
+    LeadStatus["NON_STOP"] = "non_stop";
     LeadStatus["NO_ANSWER"] = "no_answer";
     LeadStatus["NOT_INTERSTED_NOW"] = "not_intersted_now";
+    LeadStatus["RESERVATION"] = "reservation";
 })(LeadStatus = exports.LeadStatus || (exports.LeadStatus = {}));
+var Interest;
+(function (Interest) {
+    Interest["HOT"] = "hot";
+    Interest["WARM"] = "warm";
+    Interest["UNDER_DECISION"] = "under_decision";
+})(Interest = exports.Interest || (exports.Interest = {}));
+var Tier;
+(function (Tier) {
+    Tier["BRONZE"] = "bronze";
+    Tier["SILVER"] = "silver";
+    Tier["GOLD"] = "gold";
+    Tier["PLATINUM"] = "platinum";
+})(Tier = exports.Tier || (exports.Tier = {}));
 var UpdateLeadDto = /** @class */ (function () {
     function UpdateLeadDto() {
     }
-    __decorate([
-        class_validator_1.IsOptional(),
-        class_validator_1.IsString()
-    ], UpdateLeadDto.prototype, "nameAr");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
@@ -34,35 +45,64 @@ var UpdateLeadDto = /** @class */ (function () {
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
-    ], UpdateLeadDto.prototype, "contact");
+    ], UpdateLeadDto.prototype, "nameAr");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsNumber()
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "familyName");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "email");
+    __decorate([
+        class_validator_1.IsOptional()
     ], UpdateLeadDto.prototype, "budget");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "inventoryInterestId");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
     ], UpdateLeadDto.prototype, "source");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsString()
-    ], UpdateLeadDto.prototype, "assignedToId");
-    __decorate([
-        class_validator_1.IsOptional()
+        class_validator_1.IsEnum(LeadStatus)
     ], UpdateLeadDto.prototype, "status");
     __decorate([
-        class_validator_1.IsOptional()
-    ], UpdateLeadDto.prototype, "lastCall");
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate()
+    ], UpdateLeadDto.prototype, "firstConection");
     __decorate([
-        class_validator_1.IsOptional()
-    ], UpdateLeadDto.prototype, "notes");
-    __decorate([
-        class_validator_1.IsOptional()
-    ], UpdateLeadDto.prototype, "lastVisit");
+        class_validator_1.IsOptional(),
+        class_validator_1.IsArray(),
+        class_validator_1.IsString({ each: true })
+    ], UpdateLeadDto.prototype, "contact");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
-    ], UpdateLeadDto.prototype, "inventoryInterestId");
+    ], UpdateLeadDto.prototype, "assignedToId");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate()
+    ], UpdateLeadDto.prototype, "lastCall");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsArray(),
+        class_validator_1.IsString({ each: true })
+    ], UpdateLeadDto.prototype, "notes");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate()
+    ], UpdateLeadDto.prototype, "lastVisit");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsEnum(Interest)
+    ], UpdateLeadDto.prototype, "interest");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsEnum(Tier)
+    ], UpdateLeadDto.prototype, "tier");
     return UpdateLeadDto;
 }());
 exports.UpdateLeadDto = UpdateLeadDto;

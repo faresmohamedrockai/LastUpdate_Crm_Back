@@ -67,6 +67,7 @@ exports.__esModule = true;
 exports.AuthService = void 0;
 var common_1 = require("@nestjs/common");
 var bcrypt = require("bcrypt");
+var library_1 = require("@prisma/client/runtime/library");
 var AuthService = /** @class */ (function () {
     function AuthService(prisma, jwtService, configService, logsService, cloudinaryService) {
         this.prisma = prisma;
@@ -76,55 +77,85 @@ var AuthService = /** @class */ (function () {
         this.cloudinaryService = cloudinaryService;
     }
     AuthService.prototype.register = function (userData) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var email, password, role, name, teamLeaderId, imageBase64, existingUser, existingAdmin, teamLeader, imageUrl, hashedPassword, user;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var email, password, role, name, teamLeaderId, imageBase64, existingUser, emailRegex, existingAdmin, teamLeader, imageUrl, imageError_1, hashedPassword, user, error_1, target;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         email = userData.email, password = userData.password, role = userData.role, name = userData.name, teamLeaderId = userData.teamLeaderId, imageBase64 = userData.imageBase64;
-                        return [4 /*yield*/, this.prisma.user.findUnique({ where: { email: email } })];
+                        _b.label = 1;
                     case 1:
-                        existingUser = _a.sent();
+                        _b.trys.push([1, 16, , 17]);
+                        return [4 /*yield*/, this.prisma.user.findUnique({ where: { email: email } })];
+                    case 2:
+                        existingUser = _b.sent();
                         if (existingUser) {
-                            throw new common_1.HttpException('User already exists. Please login.', common_1.HttpStatus.CONFLICT);
+                            throw new common_1.HttpException({
+                                statusCode: 409,
+                                error: 'Conflict',
+                                message: 'Account Already Exists',
+                                details: 'An account with this email address already exists. Please use a different email address or try logging in if this is your account.',
+                                suggestion: 'Use a different email or login with existing credentials'
+                            }, common_1.HttpStatus.CONFLICT);
                         }
-                        if (!(userData.role === 'admin')) return [3 /*break*/, 3];
+                        emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(email)) {
+                            throw new common_1.BadRequestException({
+                                statusCode: 400,
+                                error: 'Bad Request',
+                                message: 'Invalid Email Format',
+                                details: 'The email address format is not valid. Please provide a valid email address.',
+                                suggestion: 'Use format like: user@example.com',
+                                field: 'email'
+                            });
+                        }
+                        if (!(userData.role === 'admin')) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.prisma.user.findFirst({
                                 where: { role: 'admin' }
                             })];
-                    case 2:
-                        existingAdmin = _a.sent();
-                        if (existingAdmin) {
-                            throw new common_1.BadRequestException('Only one admin is allowed!');
-                        }
-                        _a.label = 3;
                     case 3:
-                        if (!(role === 'SALES_REP')) return [3 /*break*/, 5];
+                        existingAdmin = _b.sent();
+                        if (existingAdmin) {
+                            throw new common_1.BadRequestException('Only one admin is allowed in the system!');
+                        }
+                        _b.label = 4;
+                    case 4:
+                        if (!(role === 'sales_rep')) return [3 /*break*/, 6];
                         if (!teamLeaderId) {
                             throw new common_1.HttpException('Team leader ID is required for sales representatives.', common_1.HttpStatus.BAD_REQUEST);
                         }
                         return [4 /*yield*/, this.prisma.user.findUnique({
                                 where: { id: teamLeaderId }
                             })];
-                    case 4:
-                        teamLeader = _a.sent();
+                    case 5:
+                        teamLeader = _b.sent();
                         if (!teamLeader || teamLeader.role !== 'team_leader') {
                             throw new common_1.HttpException('Team leader not found or invalid role.', common_1.HttpStatus.BAD_REQUEST);
                         }
-                        _a.label = 5;
-                    case 5:
-                        if (!imageBase64) return [3 /*break*/, 7];
-                        return [4 /*yield*/, this.cloudinaryService.uploadImageFromBase64(imageBase64)];
+                        _b.label = 6;
                     case 6:
-                        imageUrl = _a.sent();
-                        console.log('✅ Image uploaded to Cloudinary:', imageUrl);
-                        return [3 /*break*/, 8];
+                        imageUrl = void 0;
+                        if (!imageBase64) return [3 /*break*/, 11];
+                        _b.label = 7;
                     case 7:
-                        console.log(' No image uploaded');
-                        _a.label = 8;
-                    case 8: return [4 /*yield*/, bcrypt.hash(password, 10)];
+                        _b.trys.push([7, 9, , 10]);
+                        return [4 /*yield*/, this.cloudinaryService.uploadImageFromBase64(imageBase64)];
+                    case 8:
+                        imageUrl = _b.sent();
+                        console.log('✅ Image uploaded to Cloudinary:', imageUrl);
+                        return [3 /*break*/, 10];
                     case 9:
-                        hashedPassword = _a.sent();
+                        imageError_1 = _b.sent();
+                        console.error('❌ Image upload failed:', imageError_1);
+                        throw new common_1.BadRequestException('Failed to upload image. Please try again with a valid image.');
+                    case 10: return [3 /*break*/, 12];
+                    case 11:
+                        console.log('ℹ️ No image uploaded');
+                        _b.label = 12;
+                    case 12: return [4 /*yield*/, bcrypt.hash(password, 10)];
+                    case 13:
+                        hashedPassword = _b.sent();
                         return [4 /*yield*/, this.prisma.user.create({
                                 data: {
                                     email: email,
@@ -133,24 +164,66 @@ var AuthService = /** @class */ (function () {
                                     role: role,
                                     teamLeaderId: role === 'sales_rep' ? teamLeaderId : undefined,
                                     image: imageUrl
+                                },
+                                select: {
+                                    id: true,
+                                    email: true,
+                                    name: true,
+                                    role: true,
+                                    teamLeaderId: true,
+                                    image: true,
+                                    createdAt: true
                                 }
                             })];
-                    case 10:
-                        user = _a.sent();
-                        // 🧾 تسجيل اللوج
-                        return [4 /*yield*/, this.logsService.createLog({
-                                userId: user.id,
-                                action: 'register',
-                                description: "User " + user.email + " registered",
-                                userName: user.name,
-                                userRole: user.role,
-                                ip: userData.ip,
-                                userAgent: userData.userAgent
-                            })];
-                    case 11:
-                        // 🧾 تسجيل اللوج
-                        _a.sent();
+                    case 14:
+                        user = _b.sent();
                         return [2 /*return*/, user];
+                    case 15:
+                        //  تسجيل اللوج
+                        _b.sent();
+                        return [2 /*return*/, user];
+                    case 16:
+                        error_1 = _b.sent();
+                        // Handle Prisma database constraint errors
+                        if (error_1 instanceof library_1.PrismaClientKnownRequestError) {
+                            if (error_1.code === 'P2002') {
+                                target = (_a = error_1.meta) === null || _a === void 0 ? void 0 : _a.target;
+                                if (target === null || target === void 0 ? void 0 : target.includes('email')) {
+                                    throw new common_1.HttpException({
+                                        statusCode: 409,
+                                        error: 'Conflict',
+                                        message: 'Email Already Registered',
+                                        details: 'This email address is already registered in our system. Each email can only be used for one account.',
+                                        suggestion: 'Please use a different email address or login if you already have an account',
+                                        field: 'email'
+                                    }, common_1.HttpStatus.CONFLICT);
+                                }
+                                throw new common_1.HttpException({
+                                    statusCode: 409,
+                                    error: 'Conflict',
+                                    message: 'Duplicate Information',
+                                    details: 'Some of the provided information conflicts with existing records.',
+                                    suggestion: 'Please check your information and try again'
+                                }, common_1.HttpStatus.CONFLICT);
+                            }
+                            if (error_1.code === 'P2003') {
+                                // Foreign key constraint violation
+                                throw new common_1.BadRequestException('Invalid team leader reference. Please select a valid team leader.');
+                            }
+                            if (error_1.code === 'P2025') {
+                                // Record not found
+                                throw new common_1.BadRequestException('Referenced record not found. Please check your input data.');
+                            }
+                        }
+                        // Re-throw known application errors
+                        if (error_1 instanceof common_1.HttpException || error_1 instanceof common_1.BadRequestException) {
+                            throw error_1;
+                        }
+                        // Log unexpected errors for debugging
+                        console.error('❌ Unexpected error during user registration:', error_1);
+                        // Return generic error for unknown issues
+                        throw new common_1.HttpException('Registration failed. Please try again later.', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+                    case 17: return [2 /*return*/];
                 }
             });
         });
@@ -216,6 +289,7 @@ var AuthService = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        console.log('🔍 GetUsers called with role:', role, 'userId:', userId);
                         defaultSelect = {
                             id: true,
                             name: true,
@@ -224,6 +298,7 @@ var AuthService = /** @class */ (function () {
                             createdAt: true
                         };
                         if (!(role === 'admin')) return [3 /*break*/, 2];
+                        console.log(' Admin access - fetching all users');
                         return [4 /*yield*/, this.prisma.user.findMany({
                                 include: {
                                     teamLeader: true
@@ -234,6 +309,7 @@ var AuthService = /** @class */ (function () {
                         return [3 /*break*/, 7];
                     case 2:
                         if (!(role === 'sales_admin')) return [3 /*break*/, 4];
+                        console.log(' Sales admin access - fetching sales users');
                         return [4 /*yield*/, this.prisma.user.findMany({
                                 where: {
                                     role: {
@@ -249,18 +325,27 @@ var AuthService = /** @class */ (function () {
                         return [3 /*break*/, 7];
                     case 4:
                         if (!(role === 'team_leader')) return [3 /*break*/, 6];
-                        if (!userId)
+                        console.log(' Team leader access - fetching team members and self');
+                        if (!userId) {
+                            console.log(' Missing team leader ID');
                             throw new common_1.ForbiddenException('Missing team leader ID');
+                        }
                         return [4 /*yield*/, this.prisma.user.findMany({
                                 where: {
-                                    teamLeaderId: userId
+                                    OR: [
+                                        { teamLeaderId: userId },
+                                        { id: userId }
+                                    ]
                                 },
                                 select: __assign(__assign({}, defaultSelect), { teamLeader: true })
                             })];
                     case 5:
                         users = _a.sent();
+                        console.log(" Found " + users.length + " users for team leader " + userId);
                         return [3 /*break*/, 7];
-                    case 6: throw new common_1.ForbiddenException('Unauthorized');
+                    case 6:
+                        console.log(' Unauthorized role:', role);
+                        throw new common_1.ForbiddenException('Unauthorized');
                     case 7: 
                     // ✅ تحويل createdAt إلى string
                     return [2 /*return*/, users.map(function (user) { return (__assign(__assign({}, user), { createdAt: user.createdAt.toISOString() })); })];
@@ -270,7 +355,7 @@ var AuthService = /** @class */ (function () {
     };
     AuthService.prototype.checkAuth = function (access_token) {
         return __awaiter(this, void 0, void 0, function () {
-            var payload, error_1;
+            var payload, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -300,7 +385,7 @@ var AuthService = /** @class */ (function () {
                         }
                         return [3 /*break*/, 3];
                     case 2:
-                        error_1 = _a.sent();
+                        error_2 = _a.sent();
                         return [2 /*return*/, {
                                 user: {
                                     ok: false,
@@ -315,7 +400,7 @@ var AuthService = /** @class */ (function () {
     };
     AuthService.prototype.refreshToken = function (refreshToken) {
         return __awaiter(this, void 0, void 0, function () {
-            var payload, user, access_token, error_2;
+            var payload, user, access_token, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -345,7 +430,7 @@ var AuthService = /** @class */ (function () {
                         access_token = _a.sent();
                         return [2 /*return*/, { access_token: access_token }];
                     case 4:
-                        error_2 = _a.sent();
+                        error_3 = _a.sent();
                         throw new common_1.ForbiddenException('Access Denied');
                     case 5: return [2 /*return*/];
                 }
@@ -444,68 +529,147 @@ var AuthService = /** @class */ (function () {
         });
     };
     //Update User Data Just Admin
-    //
     AuthService.prototype.updateUser = function (id, data, userId, currentRole) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var existingUser, emailExists, _a, uploadedImage, imageBase64, updateData, updatedUser;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, this.prisma.user.findUnique({
-                            where: { id: id }
-                        })];
+            var existingUser, emailRegex, emailExists, _b, uploadedImage, imageError_2, imageBase64, updateData_1, updatedUser, error_4, target;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _c.trys.push([0, 12, , 13]);
+                        return [4 /*yield*/, this.prisma.user.findUnique({
+                                where: { id: id }
+                            })];
                     case 1:
-                        existingUser = _b.sent();
+                        existingUser = _c.sent();
                         if (!existingUser) {
                             throw new common_1.NotFoundException("User not found");
                         }
+                        // Role-based restrictions
+                        if (currentRole !== 'admin' && currentRole !== 'sales_admin') {
+                            // Non-admin users can only update their own profile and cannot change role or teamLeaderId
+                            if (data.role !== undefined) {
+                                throw new common_1.ForbiddenException('You cannot change your role');
+                            }
+                            if (data.teamLeaderId !== undefined) {
+                                throw new common_1.ForbiddenException('You cannot change your team leader assignment');
+                            }
+                        }
                         if (data.role === "admin") {
-                            throw new common_1.BadRequestException("You Can't Make Than More Than one Admin For System");
+                            throw new common_1.BadRequestException("You cannot create more than one admin in the system");
                         }
                         if (!(data.email && data.email !== existingUser.email)) return [3 /*break*/, 3];
+                        emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(data.email)) {
+                            throw new common_1.BadRequestException({
+                                statusCode: 400,
+                                error: 'Bad Request',
+                                message: 'Invalid Email Format',
+                                details: 'The email address format is not valid. Please provide a valid email address.',
+                                suggestion: 'Use format like: user@example.com',
+                                field: 'email'
+                            });
+                        }
                         return [4 /*yield*/, this.prisma.user.findUnique({
                                 where: { email: data.email }
                             })];
                     case 2:
-                        emailExists = _b.sent();
+                        emailExists = _c.sent();
                         if (emailExists) {
-                            throw new common_1.HttpException('Email already exists', common_1.HttpStatus.CONFLICT);
+                            throw new common_1.HttpException({
+                                statusCode: 409,
+                                error: 'Conflict',
+                                message: 'Email Already In Use',
+                                details: 'This email address is already associated with another account. Please choose a different email address.',
+                                suggestion: 'Use a different email address for this account',
+                                field: 'email'
+                            }, common_1.HttpStatus.CONFLICT);
                         }
-                        _b.label = 3;
+                        _c.label = 3;
                     case 3:
                         if (!data.password) return [3 /*break*/, 5];
-                        _a = data;
+                        _b = data;
                         return [4 /*yield*/, bcrypt.hash(data.password, 10)];
                     case 4:
-                        _a.password = _b.sent();
-                        _b.label = 5;
+                        _b.password = _c.sent();
+                        _c.label = 5;
                     case 5:
-                        if (!data.imageBase64) return [3 /*break*/, 7];
-                        return [4 /*yield*/, this.cloudinaryService.uploadImageFromBase64(data.imageBase64)];
+                        if (!data.imageBase64) return [3 /*break*/, 9];
+                        _c.label = 6;
                     case 6:
-                        uploadedImage = _b.sent();
-                        data.image = uploadedImage;
-                        _b.label = 7;
+                        _c.trys.push([6, 8, , 9]);
+                        return [4 /*yield*/, this.cloudinaryService.uploadImageFromBase64(data.imageBase64)];
                     case 7:
-                        imageBase64 = data.imageBase64, updateData = __rest(data, ["imageBase64"]);
-                        // ✅ حذف المفاتيح الفارغة من البيانات
-                        Object.keys(updateData).forEach(function (key) {
-                            if (updateData[key] === undefined ||
-                                updateData[key] === null ||
-                                (typeof updateData[key] === 'string' && updateData[key].trim() === '')) {
-                                delete updateData[key];
+                        uploadedImage = _c.sent();
+                        data.image = uploadedImage;
+                        return [3 /*break*/, 9];
+                    case 8:
+                        imageError_2 = _c.sent();
+                        console.error('❌ Image upload failed during user update:', imageError_2);
+                        throw new common_1.BadRequestException('Failed to upload image. Please try again with a valid image.');
+                    case 9:
+                        imageBase64 = data.imageBase64, updateData_1 = __rest(data, ["imageBase64"]);
+                        Object.keys(updateData_1).forEach(function (key) {
+                            if (updateData_1[key] === undefined ||
+                                updateData_1[key] === null ||
+                                (typeof updateData_1[key] === 'string' && updateData_1[key].trim() === '')) {
+                                delete updateData_1[key];
                             }
                         });
                         return [4 /*yield*/, this.prisma.user.update({
                                 where: { id: id },
-                                data: updateData
+                                data: updateData_1
                             })];
-                    case 8:
-                        updatedUser = _b.sent();
+                    case 10:
+                        updatedUser = _c.sent();
+                        // Log the profile update
+                        return [4 /*yield*/, this.logsService.createLog({
+                                userId: userId,
+                                email: existingUser.email,
+                                userRole: currentRole,
+                                action: 'update_user_profile',
+                                description: "User profile updated: id=" + id + ", updatedBy=" + userId + ", role=" + currentRole
+                            })];
+                    case 11:
+                        // Log the profile update
+                        _c.sent();
                         return [2 /*return*/, {
                                 status: 200,
                                 message: "User updated successfully",
                                 user: updatedUser
                             }];
+                    case 12:
+                        error_4 = _c.sent();
+                        // Handle Prisma database constraint errors
+                        if (error_4 instanceof library_1.PrismaClientKnownRequestError) {
+                            if (error_4.code === 'P2002') {
+                                target = (_a = error_4.meta) === null || _a === void 0 ? void 0 : _a.target;
+                                if (target === null || target === void 0 ? void 0 : target.includes('email')) {
+                                    throw new common_1.HttpException('This email address is already in use by another account. Please use a different email.', common_1.HttpStatus.CONFLICT);
+                                }
+                                throw new common_1.HttpException('A user with this information already exists.', common_1.HttpStatus.CONFLICT);
+                            }
+                            if (error_4.code === 'P2003') {
+                                // Foreign key constraint violation
+                                throw new common_1.BadRequestException('Invalid team leader reference. Please select a valid team leader.');
+                            }
+                            if (error_4.code === 'P2025') {
+                                // Record not found
+                                throw new common_1.NotFoundException('User not found.');
+                            }
+                        }
+                        // Re-throw known application errors
+                        if (error_4 instanceof common_1.HttpException ||
+                            error_4 instanceof common_1.BadRequestException ||
+                            error_4 instanceof common_1.NotFoundException ||
+                            error_4 instanceof common_1.ForbiddenException) {
+                            throw error_4;
+                        }
+                        // Log unexpected errors for debugging
+                        console.error('❌ Unexpected error during user update:', error_4);
+                        // Return generic error for unknown issues
+                        throw new common_1.HttpException('User update failed. Please try again later.', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+                    case 13: return [2 /*return*/];
                 }
             });
         });

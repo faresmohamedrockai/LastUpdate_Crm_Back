@@ -6,7 +6,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 exports.__esModule = true;
-exports.CreateLeadDto = exports.LeadStatus = void 0;
+exports.CreateLeadDto = exports.Tier = exports.Interest = exports.LeadStatus = void 0;
 var class_validator_1 = require("class-validator");
 var LeadStatus;
 (function (LeadStatus) {
@@ -16,17 +16,32 @@ var LeadStatus;
     LeadStatus["OPEN_DEAL"] = "open_deal";
     LeadStatus["CANCELLATION"] = "cancellation";
     LeadStatus["CLOSED_DEAL"] = "closed_deal";
+    LeadStatus["VIP"] = "vip";
+    LeadStatus["NON_STOP"] = "non_stop";
     LeadStatus["NO_ANSWER"] = "no_answer";
     LeadStatus["NOT_INTERSTED_NOW"] = "not_intersted_now";
     LeadStatus["RESERVATION"] = "reservation";
 })(LeadStatus = exports.LeadStatus || (exports.LeadStatus = {}));
+var Interest;
+(function (Interest) {
+    Interest["HOT"] = "hot";
+    Interest["WARM"] = "warm";
+    Interest["UNDER_DECISION"] = "under_decision";
+})(Interest = exports.Interest || (exports.Interest = {}));
+var Tier;
+(function (Tier) {
+    Tier["BRONZE"] = "bronze";
+    Tier["SILVER"] = "silver";
+    Tier["GOLD"] = "gold";
+    Tier["PLATINUM"] = "platinum";
+})(Tier = exports.Tier || (exports.Tier = {}));
 var CreateLeadDto = /** @class */ (function () {
     function CreateLeadDto() {
     }
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
-    ], CreateLeadDto.prototype, "name");
+    ], CreateLeadDto.prototype, "familyName");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
@@ -37,19 +52,24 @@ var CreateLeadDto = /** @class */ (function () {
     ], CreateLeadDto.prototype, "nameEn");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsString()
+        class_validator_1.IsArray(),
+        class_validator_1.IsString({ each: true })
     ], CreateLeadDto.prototype, "contact");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], CreateLeadDto.prototype, "email");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
     ], CreateLeadDto.prototype, "assignedToId");
     __decorate([
-        class_validator_1.IsOptional(),
-        class_validator_1.IsNumber()
+        class_validator_1.IsOptional()
     ], CreateLeadDto.prototype, "budget");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsString()
+        class_validator_1.IsArray(),
+        class_validator_1.IsString({ each: true })
     ], CreateLeadDto.prototype, "notes");
     __decorate([
         class_validator_1.IsOptional(),
@@ -60,15 +80,29 @@ var CreateLeadDto = /** @class */ (function () {
         class_validator_1.IsEnum(LeadStatus)
     ], CreateLeadDto.prototype, "status");
     __decorate([
-        class_validator_1.IsOptional()
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate()
     ], CreateLeadDto.prototype, "lastCall");
     __decorate([
-        class_validator_1.IsOptional()
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate()
     ], CreateLeadDto.prototype, "lastVisit");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate()
+    ], CreateLeadDto.prototype, "firstConection");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
     ], CreateLeadDto.prototype, "inventoryInterestId");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsEnum(Interest)
+    ], CreateLeadDto.prototype, "interest");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsEnum(Tier)
+    ], CreateLeadDto.prototype, "tier");
     return CreateLeadDto;
 }());
 exports.CreateLeadDto = CreateLeadDto;

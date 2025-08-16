@@ -33,9 +33,13 @@ model Lead {
   id                  String     @id @default(uuid())
   nameAr              String?
   nameEn              String?
-  contact             String     @unique
+  familyName          String?
+  contact             String[]     
   status              LeadStatus
+  interest            Interest  @default(hot)
+  tier                Tier      @default(bronze)
   lastCall            DateTime?
+  firstConection      DateTime?
   lastVisit           DateTime?
   ownerId             String?
   inventoryInterestId String?
@@ -287,6 +291,8 @@ enum LeadStatus {
   closed_deal
   no_answer
   not_intersted_now
+  vip
+  non_stop
   reservation
 }
 
@@ -296,6 +302,20 @@ enum installmentPeriod {
   yearly
   custom
 }
+enum Interest {
+  hot
+  warm
+  under_decision
+}
+
+enum Tier {
+  bronze
+  silver
+  gold
+  platinum 
+}
+
+
 
 enum InventoryStatus {
   available

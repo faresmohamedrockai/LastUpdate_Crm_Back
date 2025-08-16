@@ -204,7 +204,7 @@ async function main() {
     data: {
       nameEn: 'Ahmed Al-Rashid',
       nameAr: 'أحمد الرشيد',
-      contact: '+966-50-123-4567',
+      contact: ['+966-50-123-4567'],
       email: 'ahmed@example.com',
       budget: 2000000,
       source: 'website',
@@ -219,7 +219,7 @@ async function main() {
     data: {
       nameEn: 'Fatima Al-Zahra',
       nameAr: 'فاطمة الزهراء',
-      contact: '+966-55-987-6543',
+      contact: ['+966-55-987-6543'],
       email: 'fatima@example.com',
       budget: 3000000,
       source: 'referral',

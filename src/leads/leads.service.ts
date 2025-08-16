@@ -21,7 +21,7 @@ export class LeadsService {
   ) { }
 
   async create(dto: CreateLeadDto, userId: string, email: string, userRole: string) {
-    // 🔒 SECURITY FIX: Validate parameters
+    // ✅ التحقق من المعطيات الأساسية
     if (!userId) {
       throw new BadRequestException('User ID is required to create a lead');
     }
@@ -29,12 +29,12 @@ export class LeadsService {
       throw new ForbiddenException('Email and user role are required');
     }
 
-    // Validate that the role is a valid enum value
+    // ✅ التحقق من صلاحية الدور
     if (!Object.values(Role).includes(userRole as Role)) {
       throw new ForbiddenException('Invalid user role');
     }
 
-    // 🔒 SECURITY FIX: Validate user exists and role matches database
+    // ✅ التحقق من وجود المستخدم في قاعدة البيانات ومطابقة بياناته
     const dbUser = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, role: true, email: true }
@@ -52,9 +52,7 @@ export class LeadsService {
       throw new ForbiddenException('Email mismatch with database - potential security breach');
     }
 
-    console.log(dto);
-
-    // Helper function to convert budget safely
+    // ✅ دالة تحويل الميزانية
     const convertBudget = (value: number | string | undefined): number => {
       if (value === undefined || value === null || value === '') return 0;
       if (typeof value === 'number') return value;
@@ -66,42 +64,54 @@ export class LeadsService {
     };
 
     const budget = convertBudget(dto.budget);
-    
-    // Validate budget is not negative
+
     if (budget < 0) {
       throw new BadRequestException('Budget must be greater than or equal to 0');
     }
 
-    const existingLead = await this.prisma.lead.findUnique({
-      where: { contact: dto.contact },
-    });
+    // ✅ التحقق من عدم وجود أي contact مكرر
+    if (dto.contact && dto.contact.length > 0) {
+      const existingLead = await this.prisma.lead.findFirst({
+        where: {
+          OR: dto.contact.map((c) => ({
+            contact: { has: c }
+          }))
+        }
+      });
 
-    if (existingLead) {
-      throw new ConflictException('Lead with this contact already exists');
+      if (existingLead) {
+        throw new ConflictException('Lead with one of these contacts already exists');
+      }
     }
 
+    // ✅ تجهيز بيانات الـ Lead
     const leadData: any = {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
-      contact: dto.contact,
+      familyName: dto.familyName,
+      contact: dto.contact ?? [],
       notes: dto.notes,
       email: dto.email,
+      interest: dto.interest,
+      tier: dto.tier,
       budget: budget,
       source: dto.source,
       status: dto.status,
-
-      owner: {
-        connect: { id: dto.assignedToId },
-      },
+      owner: dto.assignedToId
+        ? { connect: { id: dto.assignedToId } }
+        : undefined
     };
 
     if (dto.lastCall) {
       leadData.lastCall = new Date(dto.lastCall);
     }
-
+    if (dto.firstConection) {
+      leadData.firstConection = new Date(dto.firstConection);
+    }
     if (dto.lastVisit) {
       leadData.lastVisit = new Date(dto.lastVisit);
     }
+
     if (dto.inventoryInterestId) {
       const inventory = await this.prisma.inventory.findUnique({
         where: { id: dto.inventoryInterestId },
@@ -115,12 +125,22 @@ export class LeadsService {
       };
     }
 
+
+console.log("Data For Leads Create",leadData)
+
+
+
+    // ✅ إنشاء الـ Lead في قاعدة البيانات
     const lead = await this.prisma.lead.create({
       data: leadData,
       include: {
         inventoryInterest: true,
       },
     });
+
+
+
+
 
     return {
       status: 201,
@@ -129,110 +149,136 @@ export class LeadsService {
         ...lead,
         budget: lead.budget?.toString() ?? null,
         inventory: lead.inventoryInterest ?? null,
-        properties: [], // ⬅️ نجهزها لاحقًا أو تفضل فاضية
+        properties: [],
       },
     };
   }
 
 
-async getLeads(id: string, email: string, userRole: string) {
-  // 🔒 SECURITY FIX: Validate userRole parameter
-  if (!userRole) {
-    throw new ForbiddenException('User role is required');
+  async getLeads(id: string, email: string, userRole: string) {
+    // 🔒 SECURITY FIX: Validate userRole parameter
+    if (!userRole) {
+      throw new ForbiddenException('User role is required');
+    }
+
+    // Validate that the role is a valid enum value
+    if (!Object.values(Role).includes(userRole as Role)) {
+      throw new ForbiddenException('Invalid user role');
+    }
+
+    // 🔒 SECURITY FIX: Validate user exists and role matches
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true, email: true }
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.role !== userRole) {
+      throw new ForbiddenException('Role mismatch - potential security breach');
+    }
+
+    if (user.email !== email) {
+      throw new ForbiddenException('Email mismatch - potential security breach');
+    }
+
+    let leads;
+    let description;
+
+    switch (userRole) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+       leads = await this.prisma.lead.findMany({
+  include: {
+    owner: true,
+    calls: true,
+    inventoryInterest: {
+      include: { project: true }
+    },
+    meetings: {  
+      include: {
+        createdBy: true,
+        assignedTo: true,
+        project: true,
+        inventory: true
+      }
+    }
   }
+});
 
-  // Validate that the role is a valid enum value
-  if (!Object.values(Role).includes(userRole as Role)) {
-    throw new ForbiddenException('Invalid user role');
-  }
+description = `Admin retrieved ${leads.length} leads with meetings`;
 
-  // 🔒 SECURITY FIX: Validate user exists and role matches
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-    select: { id: true, role: true, email: true }
-  });
+        description = `Admin retrieved ${leads.length} leads`;
+        break;
 
-  if (!user) {
-    throw new ForbiddenException('User not found');
-  }
+      case Role.TEAM_LEADER:
+        // First, get team members
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: id },
+          select: { id: true },
+        });
 
-  if (user.role !== userRole) {
-    throw new ForbiddenException('Role mismatch - potential security breach');
-  }
+        const memberIds = teamMembers.map(member => member.id);
+        // Include team leader's own ID along with team members
+        const allIds = [...memberIds, id].filter(id => id !== undefined && id !== null);
 
-  if (user.email !== email) {
-    throw new ForbiddenException('Email mismatch - potential security breach');
-  }
+        leads = await this.prisma.lead.findMany({
+          where: { ownerId: { in: allIds } },
+          include: {
+            owner: true,
+            inventoryInterest: {
+              include:
+              {
+                project: {
+                  select: {
+                    nameEn: true,
+                    nameAr: true
+                  }
+                }
 
-  let leads;
-  let description;
+              }
+            },
+            calls: true,
+          },
+        });
+        description = `Team leader retrieved ${leads.length} leads for team and self`;
+        break;
 
-  switch (userRole) {
-    case Role.ADMIN:
-    case Role.SALES_ADMIN:
-      leads = await this.prisma.lead.findMany({
-        include: {
-          owner: true,
-          calls: true,
-        },
-      });
-      description = `Admin retrieved ${leads.length} leads`;
-      break;
+      case Role.SALES_REP:
+        leads = await this.prisma.lead.findMany({
+          where: { ownerId: id },
+          include: {
+            owner: true,
+            calls: true,
+          },
+        });
+        description = `Sales rep retrieved ${leads.length} leads`;
+        break;
 
-    case Role.TEAM_LEADER:
-      // First, get team members
-      const teamMembers = await this.prisma.user.findMany({
-        where: { teamLeaderId: id },
-        select: { id: true },
-      });
+      default:
+        throw new ForbiddenException('Access denied');
+    }
 
-      const memberIds = teamMembers.map(member => member.id);
-      // Include team leader's own ID along with team members
-      const allIds = [...memberIds, id].filter(id => id !== undefined && id !== null);
-
-      leads = await this.prisma.lead.findMany({
-        where: { ownerId: { in: allIds } },
-        include: {
-          owner: true,
-          calls: true, 
-        },
-      });
-      description = `Team leader retrieved ${leads.length} leads for team and self`;
-      break;
-
-    case Role.SALES_REP:
-      leads = await this.prisma.lead.findMany({
-        where: { ownerId: id },
-        include: {
-          owner: true,
-          calls: true, 
-        },
-      });
-      description = `Sales rep retrieved ${leads.length} leads`;
-      break;
-
-    default:
-      throw new ForbiddenException('Access denied');
-  }
-
-  // ✅ تحويل التواريخ كلها إلى toISOString()
-  const parsedLeads = leads.map(lead => ({
-    ...lead,
-    createdAt: lead.createdAt?.toISOString(),
-    owner: lead.owner
-      ? {
+    // ✅ تحويل التواريخ كلها إلى toISOString()
+    const parsedLeads = leads.map(lead => ({
+      ...lead,
+      createdAt: lead.createdAt?.toISOString(),
+      owner: lead.owner
+        ? {
           ...lead.owner,
           createdAt: lead.owner.createdAt?.toISOString?.(),
         }
-      : null,
-    calls: lead.calls?.map(call => ({
-      ...call,
-      createdAt: call.createdAt?.toISOString?.(),
-    })) || [],
-  }));
+        : null,
+      calls: lead.calls?.map(call => ({
+        ...call,
+        createdAt: call.createdAt?.toISOString?.(),
+      })) || [],
+    }));
 
-  return { leads: parsedLeads };
-}
+    return { leads: parsedLeads };
+  }
 
   async getLeadsByOwnerId(userId: string) {
     const leads = await this.prisma.lead.findMany({
@@ -250,9 +296,9 @@ async getLeads(id: string, email: string, userRole: string) {
       createdAt: lead.createdAt?.toISOString(),
       owner: lead.owner
         ? {
-            ...lead.owner,
-            createdAt: lead.owner.createdAt?.toISOString?.(),
-          }
+          ...lead.owner,
+          createdAt: lead.owner.createdAt?.toISOString?.(),
+        }
         : null,
       calls: lead.calls?.map(call => ({
         ...call,
@@ -289,9 +335,9 @@ async getLeads(id: string, email: string, userRole: string) {
     }
 
     const { role, id: userId } = user;
-    
+
     let lead;
-    
+
     switch (role) {
       case Role.ADMIN:
       case Role.SALES_ADMIN:
@@ -318,9 +364,9 @@ async getLeads(id: string, email: string, userRole: string) {
         const memberIds = teamMembers.map(member => member.id);
         // Include team leader's own ID along with team members' IDs
         const allIds = [...memberIds, userId];
-        
+
         lead = await this.prisma.lead.findFirst({
-          where: { 
+          where: {
             id: leadId,
             ownerId: { in: allIds }
           },
@@ -338,7 +384,7 @@ async getLeads(id: string, email: string, userRole: string) {
       case Role.SALES_REP:
         // Sales reps can only access their own leads
         lead = await this.prisma.lead.findFirst({
-          where: { 
+          where: {
             id: leadId,
             ownerId: userId
           },
@@ -385,89 +431,55 @@ async getLeads(id: string, email: string, userRole: string) {
   }
 
 
-  async updateLead(leadId: string, dto: UpdateLeadDto, user: { id: string; role: Role }, email: string, userRole: string) {
-    // 🔒 SECURITY FIX: Validate parameters
-    if (!email || !userRole) {
-      throw new ForbiddenException('Email and user role are required');
-    }
+  async updateLead(
+    leadId: string,
+    dto: UpdateLeadDto,
+    user: { id: string; role: Role },
+    email: string,
+    userRole: string
+  ) {
+    if (!email || !userRole) throw new ForbiddenException('Email and user role are required');
+    if (!Object.values(Role).includes(userRole as Role)) throw new ForbiddenException('Invalid user role');
+    if (user.role !== userRole) throw new ForbiddenException('User role mismatch');
 
-    // Validate that the role is a valid enum value
-    if (!Object.values(Role).includes(userRole as Role)) {
-      throw new ForbiddenException('Invalid user role');
-    }
-
-    // Validate that the user role matches the user object
-    if (user.role !== userRole) {
-      throw new ForbiddenException('User role mismatch');
-    }
-
-    // 🔒 SECURITY FIX: Validate user exists and role matches database
     const dbUser = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: { id: true, role: true, email: true }
     });
 
-    if (!dbUser) {
-      throw new ForbiddenException('User not found in database');
-    }
-
-    if (dbUser.role !== userRole) {
-      throw new ForbiddenException('Role mismatch with database - potential security breach');
-    }
-
-    if (dbUser.email !== email) {
-      throw new ForbiddenException('Email mismatch with database - potential security breach');
-    }
+    if (!dbUser) throw new ForbiddenException('User not found in database');
+    if (dbUser.role !== userRole) throw new ForbiddenException('Role mismatch with database');
+    if (dbUser.email !== email) throw new ForbiddenException('Email mismatch with database');
 
     const { role, id: userId } = user;
-
-    // 🔒 Access Control: Check if user can access this lead
     let lead;
-    
+
     switch (role) {
       case Role.ADMIN:
       case Role.SALES_ADMIN:
-        // Admins can access any lead
         lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
         break;
-
       case Role.TEAM_LEADER:
-        // Team leaders can access leads assigned to their team members and their own leads
         const teamMembers = await this.prisma.user.findMany({
           where: { teamLeaderId: userId },
           select: { id: true },
         });
-        const memberIds = teamMembers.map(member => member.id);
-        // Include team leader's own ID along with team members
-        const allIds = [...memberIds, userId];
-        
+        const allIds = [...teamMembers.map(m => m.id), userId];
         lead = await this.prisma.lead.findFirst({
-          where: { 
-            id: leadId,
-            ownerId: { in: allIds }
-          }
+          where: { id: leadId, ownerId: { in: allIds } }
         });
         break;
-
       case Role.SALES_REP:
-        // Sales reps can only access their own leads
         lead = await this.prisma.lead.findFirst({
-          where: { 
-            id: leadId,
-            ownerId: userId
-          }
+          where: { id: leadId, ownerId: userId }
         });
         break;
-
       default:
         throw new ForbiddenException('Access denied');
     }
 
-    if (!lead) {
-      throw new NotFoundException('Lead not found or access denied');
-    }
+    if (!lead) throw new NotFoundException('Lead not found or access denied');
 
-    // Helper function to convert budget safely
     const convertBudget = (value: number | string | undefined): number => {
       if (value === undefined || value === null || value === '') return 0;
       if (typeof value === 'number') return value;
@@ -478,126 +490,130 @@ async getLeads(id: string, email: string, userRole: string) {
       return 0;
     };
 
-    // Prepare update data with fallback values as requested
-    const updateData = {
-      nameEn: dto.nameEn !== undefined ? dto.nameEn || '' : lead.nameEn || '',
-      nameAr: dto.nameAr !== undefined ? dto.nameAr || '' : lead.nameAr || '',
-      contact: dto.contact !== undefined ? dto.contact || '' : lead.contact || '',
-      email: dto.email !== undefined ? dto.email || '' : lead.email || '',
-      budget: dto.budget !== undefined ? convertBudget(dto.budget) : Number(lead.budget) || 0,
-      inventoryInterestId: dto.inventoryInterestId !== undefined 
-        ? (dto.inventoryInterestId || null) 
-        : lead.inventoryInterestId || null,
-      source: dto.source !== undefined ? dto.source || '' : lead.source || '',
-      status: dto.status || lead.status || 'fresh_lead',
-      // Map assignedToId to ownerId for database
-      ownerId: dto.assignedToId !== undefined 
-        ? (dto.assignedToId || null) 
-        : lead.ownerId || null,
-    };
+    let updateData: any;
 
-    // Validate budget is not negative
-    if (updateData.budget < 0) {
-      throw new BadRequestException('Budget must be greater than or equal to 0');
+    if (["admin", "sales_admin", "team_leader"].includes(userRole)) {
+      updateData = {
+        nameEn: dto.nameEn ?? lead.nameEn ?? '',
+        nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        familyName: dto.familyName ?? lead.familyName ?? '',
+        firstConection: dto.firstConection ? new Date(dto.firstConection).toISOString() : lead.firstConection || null,
+        contact: dto.contact ?? lead.contact ?? [], // تعديل عشان تبقي مصفوفة
+        email: dto.email ?? lead.email ?? '',
+        interest: dto.interest ?? lead.interest ?? 'hot',
+        tier: dto.tier ?? lead.tier ?? 'bronze',
+        budget: dto.budget !== undefined ? convertBudget(dto.budget) : Number(lead.budget) || 0,
+        inventoryInterestId: dto.inventoryInterestId ?? lead.inventoryInterestId ?? null,
+        source: dto.source ?? lead.source ?? '',
+        status: dto.status || lead.status || 'fresh_lead',
+        ownerId: dto.assignedToId ?? lead.ownerId ?? null,
+      };
+    } else {
+      if (dto.nameEn === undefined && dto.nameAr === undefined && dto.inventoryInterestId === undefined) {
+        throw new ForbiddenException('You are only allowed to update the client name and the property they are interested in.');
+      }
+      updateData = {
+        nameEn: dto.nameEn ?? lead.nameEn ?? '',
+        nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        inventoryInterestId: dto.inventoryInterestId ?? lead.inventoryInterestId ?? null,
+      };
     }
 
-    // Sales Rep: limited update permissions
-    if (role === Role.SALES_REP) {
-      if (lead.ownerId !== userId) {
-        throw new ForbiddenException('You can only edit your own leads');
-      }
+    if (updateData.budget < 0) throw new BadRequestException('Budget must be >= 0');
 
-      // Sales Rep limited update - only specific fields
+    if (role === Role.SALES_REP) {
+      if (lead.ownerId !== userId) throw new ForbiddenException('You can only edit your own leads');
+
       const limitedUpdate: any = {};
-      
-      if (dto.status !== undefined) {
-        limitedUpdate.status = dto.status || lead.status || 'fresh_lead';
-      }
-      if (dto.notes !== undefined) {
-        limitedUpdate.notes = dto.notes;
-      }
+      if (dto.nameAr !== undefined) limitedUpdate.nameAr = dto.nameAr;
+      if (dto.nameEn !== undefined) limitedUpdate.nameEn = dto.nameEn;
+      if (dto.familyName !== undefined) limitedUpdate.familyName = dto.familyName;
+      if (dto.status !== undefined) limitedUpdate.status = dto.status || lead.status || 'fresh_lead';
+      if (dto.notes !== undefined) limitedUpdate.notes = dto.notes;
       if (dto.budget !== undefined) {
         const budgetValue = convertBudget(dto.budget);
-        if (budgetValue < 0) {
-          throw new BadRequestException('Budget must be greater than or equal to 0');
-        }
+        if (budgetValue < 0) throw new BadRequestException('Budget must be >= 0');
         limitedUpdate.budget = budgetValue;
       }
-      if (dto.inventoryInterestId !== undefined) {
-        limitedUpdate.inventoryInterestId = dto.inventoryInterestId || null;
-      }
+      if (dto.inventoryInterestId !== undefined) limitedUpdate.inventoryInterestId = dto.inventoryInterestId || null;
+      if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // إضافة دعم المصفوفة
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },
         data: limitedUpdate,
       });
 
-      // Log limited lead update
       await this.logsService.createLog({
         userId,
         email,
         userRole,
-        action: 'update_lead_limited',
+        action: 'Sales Rep Update',
         leadId: leadId,
-        description: `Sales rep updated lead: id=${leadId}, status=${dto.status || 'unchanged'}, notes=${dto.notes ? 'updated' : 'unchanged'}`,
+        description: `Sales rep : ${email} updated lead: name=${updatedLead.nameAr}`,
       });
 
       return updatedLead;
     }
 
-    // Admin/Sales Admin/Team Leader: full update permissions
-    // Validate assignedToId if provided
     if (updateData.ownerId) {
-      const assignedUser = await this.prisma.user.findUnique({
-        where: { id: updateData.ownerId },
-      });
-      if (!assignedUser) {
-        throw new NotFoundException('Assigned user not found');
-      }
+      const assignedUser = await this.prisma.user.findUnique({ where: { id: updateData.ownerId } });
+      if (!assignedUser) throw new NotFoundException('Assigned user Not Found');
     }
 
-    // Validate inventoryInterestId if provided
     if (updateData.inventoryInterestId) {
-      const inventory = await this.prisma.inventory.findUnique({
-        where: { id: updateData.inventoryInterestId },
-      });
-      if (!inventory) {
-        throw new NotFoundException('Inventory item not found');
-      }
+      const inventory = await this.prisma.inventory.findUnique({ where: { id: updateData.inventoryInterestId } });
+      if (!inventory) throw new NotFoundException('Inventory item not found');
     }
 
-    // Perform the update with all the prepared data
-    const updatedLead = await this.prisma.lead.update({
-      where: { id: leadId },
-      data: {
-        nameAr: updateData.nameAr,
-        nameEn: updateData.nameEn,
-        contact: updateData.contact,
-        email: updateData.email,
-        budget: updateData.budget,
-        source: updateData.source,
-        status: updateData.status,
-        ownerId: updateData.ownerId,
-        inventoryInterestId: updateData.inventoryInterestId,
-        // Handle additional fields if provided
-        ...(dto.notes !== undefined && { notes: dto.notes }),
-        ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
-        ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
-      },
-    });
+   const updatedLead = await this.prisma.lead.update({
+  where: { id: leadId },
+  data: {
+    nameAr: updateData.nameAr,
+    nameEn: updateData.nameEn,
+    familyName: updateData.familyName,
+    firstConection: updateData.firstConection,
+    contact: updateData.contact, // مصفوفة
+    email: updateData.email,
+    interest: updateData.interest,   // ✅ صح
+    tier: updateData.tier,           // ✅ أضفنا الـ tier
+    budget: updateData.budget,
+    source: updateData.source,
+    status: updateData.status,
+    ownerId: updateData.ownerId,
+    inventoryInterestId: updateData.inventoryInterestId,
+    ...(dto.notes !== undefined && { notes: dto.notes }),
+    ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
+    ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
+  },
+});
 
-    // Log full lead update
     await this.logsService.createLog({
       userId,
       email,
       userRole,
       action: 'update_lead',
       leadId: leadId,
-      description: `Updated lead: id=${leadId}, name=${updateData.nameEn}, contact=${updateData.contact}, status=${updateData.status}`,
+      description: `Updated lead: id=${leadId}, name=${updateData.nameEn}`,
     });
 
     return updatedLead;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   async deleteLead(leadId: string, userId: string, email: string, role: string) {
     // 🔒 SECURITY FIX: Validate parameters
@@ -630,7 +646,7 @@ async getLeads(id: string, email: string, userRole: string) {
 
     // 🔒 Access Control: Check if user can access this lead
     let existingLead;
-    
+
     switch (role) {
       case Role.ADMIN:
       case Role.SALES_ADMIN:
@@ -650,9 +666,9 @@ async getLeads(id: string, email: string, userRole: string) {
         const memberIds = teamMembers.map(member => member.id);
         // Include team leader's own ID along with team members
         const allIds = [...memberIds, userId];
-        
+
         existingLead = await this.prisma.lead.findFirst({
-          where: { 
+          where: {
             id: leadId,
             ownerId: { in: allIds }
           },
@@ -663,7 +679,7 @@ async getLeads(id: string, email: string, userRole: string) {
       case Role.SALES_REP:
         // Sales reps can only access their own leads
         existingLead = await this.prisma.lead.findFirst({
-          where: { 
+          where: {
             id: leadId,
             ownerId: userId
           },
@@ -694,7 +710,7 @@ async getLeads(id: string, email: string, userRole: string) {
         });
         const memberIds = teamMembers.map(member => member.id);
         const allIds = [...memberIds, userId];
-        
+
         if (existingLead.ownerId && !allIds.includes(existingLead.ownerId)) {
           throw new ForbiddenException('You can only delete leads owned by you or your team members');
         }
@@ -719,7 +735,7 @@ async getLeads(id: string, email: string, userRole: string) {
     await this.logsService.createLog({
       userId,
       email,
-      userRole:role,
+      userRole: role,
       action: 'delete_lead',
       leadId: leadId,
       description: `Deleted lead: id=${leadId}, name=${existingLead.nameEn}, contact=${existingLead.contact}`,

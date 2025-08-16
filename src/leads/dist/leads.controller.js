@@ -57,36 +57,39 @@ var LeadsController = /** @class */ (function () {
     }
     LeadsController.prototype.createLead = function (dto, req) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, userId, email, role;
+            var _a, id, email, role;
             return __generator(this, function (_b) {
-                _a = req.user, userId = _a.userId, email = _a.email, role = _a.role;
-                if (!userId) {
+                _a = req.user, id = _a.id, email = _a.email, role = _a.role;
+                if (!id) {
                     throw new common_1.BadRequestException('User ID not found in request');
                 }
-                return [2 /*return*/, this.leadsService.create(dto, userId, email, role)];
+                return [2 /*return*/, this.leadsService.create(dto, id, email, role)];
             });
         });
     };
     LeadsController.prototype.getLeads = function (req) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, userId, email, role;
+            var _a, id, email, role;
             return __generator(this, function (_b) {
-                _a = req.user, userId = _a.userId, email = _a.email, role = _a.role;
-                return [2 /*return*/, this.leadsService.getLeads(userId, email, role)];
+                _a = req.user, id = _a.id, email = _a.email, role = _a.role;
+                return [2 /*return*/, this.leadsService.getLeads(id, email, role)];
             });
         });
     };
-    // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-    // @Get(':id')
-    // async getLeadById(@Param('id') id: string, @Req() req) {
-    //   const { id: userId, name: userName, role: userRole } = req.user;
-    //   return this.leadsService.getLeadById(id, userId, userName, userRole);
-    // }
+    LeadsController.prototype.getLeadById = function (id, req) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, userId, email, role;
+            return __generator(this, function (_b) {
+                _a = req.user, userId = _a.id, email = _a.email, role = _a.role;
+                return [2 /*return*/, this.leadsService.getLeadById(id, { id: userId, role: role })];
+            });
+        });
+    };
     LeadsController.prototype.updateLead = function (id, dto, req) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, userId, email, role;
             return __generator(this, function (_b) {
-                _a = req.user, userId = _a.userId, email = _a.email, role = _a.role;
+                _a = req.user, userId = _a.id, email = _a.email, role = _a.role;
                 return [2 /*return*/, this.leadsService.updateLead(id, dto, { id: userId, role: role }, email, role)];
             });
         });
@@ -95,7 +98,7 @@ var LeadsController = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var _a, userId, email, role;
             return __generator(this, function (_b) {
-                _a = req.user, userId = _a.userId, email = _a.email, role = _a.role;
+                _a = req.user, userId = _a.id, email = _a.email, role = _a.role;
                 return [2 /*return*/, this.leadsService.deleteLead(id, userId, email, role)];
             });
         });
@@ -110,6 +113,11 @@ var LeadsController = /** @class */ (function () {
         common_1.Get(),
         __param(0, common_1.Req())
     ], LeadsController.prototype, "getLeads");
+    __decorate([
+        Role_decorator_1.Roles(roles_enum_1.Role.ADMIN, roles_enum_1.Role.SALES_ADMIN, roles_enum_1.Role.TEAM_LEADER, roles_enum_1.Role.SALES_REP),
+        common_1.Get(':id'),
+        __param(0, common_1.Param('id')), __param(1, common_1.Req())
+    ], LeadsController.prototype, "getLeadById");
     __decorate([
         Role_decorator_1.Roles(roles_enum_1.Role.ADMIN, roles_enum_1.Role.SALES_ADMIN, roles_enum_1.Role.TEAM_LEADER, roles_enum_1.Role.SALES_REP),
         common_1.Patch(':id'),

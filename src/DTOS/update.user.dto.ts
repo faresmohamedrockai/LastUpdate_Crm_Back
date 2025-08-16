@@ -44,7 +44,7 @@ export class UpdateUserDto {
   @MaxLength(100, { message: 'Password cannot exceed 100 characters' })
   @Matches(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    { message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' }
+    { message:  'Password must be 6+ chars with uppercase, lowercase, number & symbol' }
   )
   password?: string;
 

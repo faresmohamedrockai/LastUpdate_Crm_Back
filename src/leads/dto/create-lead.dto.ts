@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { 
+  IsString, 
+  IsOptional, 
+  IsUUID, 
+  IsEnum,
+  IsArray,
+  IsDate 
+} from 'class-validator';
 
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
@@ -7,14 +14,31 @@ export enum LeadStatus {
   OPEN_DEAL = 'open_deal',
   CANCELLATION = 'cancellation',
   CLOSED_DEAL = 'closed_deal',
+  VIP = 'vip',
+  NON_STOP = 'non_stop',
   NO_ANSWER = 'no_answer',
   NOT_INTERSTED_NOW = 'not_intersted_now',
   RESERVATION = 'reservation',
 }
+
+export enum Interest {
+  HOT = 'hot',
+  WARM = 'warm',
+  UNDER_DECISION = 'under_decision',
+}
+
+export enum Tier {
+  BRONZE = 'bronze',
+  SILVER = 'silver',
+  GOLD = 'gold',
+  PLATINUM = 'platinum',
+}
+
 export class CreateLeadDto {
+
   @IsOptional()
   @IsString()
-  name?: string;
+  familyName?: string;
 
   @IsOptional()
   @IsString()
@@ -25,8 +49,9 @@ export class CreateLeadDto {
   nameEn?: string;
 
   @IsOptional()
-  @IsString()
-  contact?: string;
+  @IsArray()
+  @IsString({ each: true }) 
+  contact?: string[];
 
   @IsOptional()
   @IsString()
@@ -37,11 +62,12 @@ export class CreateLeadDto {
   assignedToId?: string;
 
   @IsOptional()
-  budget?: number | string; // Allow both number and string
+  budget?: number | string; 
 
   @IsOptional()
-  @IsString()
-  notes?: String[];
+  @IsArray()
+  @IsString({ each: true })
+  notes?: string[];
 
   @IsOptional()
   @IsString()
@@ -52,12 +78,27 @@ export class CreateLeadDto {
   status?: LeadStatus;
 
   @IsOptional()
+  @IsDate()
   lastCall?: Date;
 
   @IsOptional()
+  @IsDate()
   lastVisit?: Date;
+
+  @IsOptional()
+  @IsDate()
+  firstConection?: Date;
 
   @IsOptional()
   @IsString()
   inventoryInterestId?: string;
+
+  // ✅ Enums الجديدة
+  @IsOptional()
+  @IsEnum(Interest)
+  interest?: Interest;
+
+  @IsOptional()
+  @IsEnum(Tier)
+  tier?: Tier;
 }

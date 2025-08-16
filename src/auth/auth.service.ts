@@ -92,7 +92,6 @@ export class AuthService {
       // 🔐 هاش كلمة السر
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // 📝 إنشاء المستخدم
       const user = await this.prisma.user.create({
         data: {
           email,
@@ -102,9 +101,22 @@ export class AuthService {
           teamLeaderId: role === 'sales_rep' ? teamLeaderId : undefined,
           image: imageUrl,
         },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          teamLeaderId: true,
+          image: true,
+          createdAt: true,
+          // updatedAt: true,
+          // مفيش password هنا
+        },
       });
 
-      // 🧾 تسجيل اللوج
+      return user;
+
+      //  تسجيل اللوج
       await this.logsService.createLog({
         userId: user.id,
         action: 'register',
@@ -116,7 +128,7 @@ export class AuthService {
       });
 
       return user;
-      
+
     } catch (error) {
       // Handle Prisma database constraint errors
       if (error instanceof PrismaClientKnownRequestError) {
@@ -150,15 +162,15 @@ export class AuthService {
           throw new BadRequestException('Referenced record not found. Please check your input data.');
         }
       }
-      
+
       // Re-throw known application errors
       if (error instanceof HttpException || error instanceof BadRequestException) {
         throw error;
       }
-      
+
       // Log unexpected errors for debugging
       console.error('❌ Unexpected error during user registration:', error);
-      
+
       // Return generic error for unknown issues
       throw new HttpException(
         'Registration failed. Please try again later.',
@@ -214,7 +226,7 @@ export class AuthService {
 
   async GetUsers(role: string, userId?: string) {
     console.log('🔍 GetUsers called with role:', role, 'userId:', userId);
-    
+
     const defaultSelect = {
       id: true,
       name: true,
@@ -225,14 +237,14 @@ export class AuthService {
 
     let users;
     if (role === 'admin') {
-      console.log('👑 Admin access - fetching all users');
+      console.log(' Admin access - fetching all users');
       users = await this.prisma.user.findMany({
         include: {
           teamLeader: true
         },
       });
     } else if (role === 'sales_admin') {
-      console.log('📊 Sales admin access - fetching sales users');
+      console.log(' Sales admin access - fetching sales users');
       users = await this.prisma.user.findMany({
         where: {
           role: {
@@ -244,9 +256,9 @@ export class AuthService {
         },
       });
     } else if (role === 'team_leader') {
-      console.log('👥 Team leader access - fetching team members and self');
+      console.log(' Team leader access - fetching team members and self');
       if (!userId) {
-        console.log('❌ Missing team leader ID');
+        console.log(' Missing team leader ID');
         throw new ForbiddenException('Missing team leader ID');
       }
 
@@ -262,9 +274,9 @@ export class AuthService {
           teamLeader: true,
         },
       });
-      console.log(`✅ Found ${users.length} users for team leader ${userId}`);
+      console.log(` Found ${users.length} users for team leader ${userId}`);
     } else {
-      console.log('❌ Unauthorized role:', role);
+      console.log(' Unauthorized role:', role);
       throw new ForbiddenException('Unauthorized');
     }
 
@@ -421,10 +433,15 @@ export class AuthService {
 
       // Role-based restrictions
       if (currentRole !== 'admin' && currentRole !== 'sales_admin') {
+
+
+
         // Non-admin users can only update their own profile and cannot change role or teamLeaderId
         if (data.role !== undefined) {
           throw new ForbiddenException('You cannot change your role');
         }
+
+        
         if (data.teamLeaderId !== undefined) {
           throw new ForbiddenException('You cannot change your team leader assignment');
         }
@@ -480,7 +497,7 @@ export class AuthService {
 
       const { imageBase64, ...updateData } = data;
 
-      // ✅ حذف المفاتيح الفارغة من البيانات
+     
       Object.keys(updateData).forEach((key) => {
         if (
           updateData[key] === undefined ||
@@ -510,7 +527,7 @@ export class AuthService {
         message: "User updated successfully",
         user: updatedUser,
       };
-      
+
     } catch (error) {
       // Handle Prisma database constraint errors
       if (error instanceof PrismaClientKnownRequestError) {
@@ -537,18 +554,18 @@ export class AuthService {
           throw new NotFoundException('User not found.');
         }
       }
-      
+
       // Re-throw known application errors
-      if (error instanceof HttpException || 
-          error instanceof BadRequestException || 
-          error instanceof NotFoundException || 
-          error instanceof ForbiddenException) {
+      if (error instanceof HttpException ||
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException) {
         throw error;
       }
-      
+
       // Log unexpected errors for debugging
       console.error('❌ Unexpected error during user update:', error);
-      
+
       // Return generic error for unknown issues
       throw new HttpException(
         'User update failed. Please try again later.',

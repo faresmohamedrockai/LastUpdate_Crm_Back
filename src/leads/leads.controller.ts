@@ -16,8 +16,6 @@ export class LeadsController {
   
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Post("create")
-
-
 async createLead(@Body() dto: CreateLeadDto, @Req() req) {
   const { id, email, role } = req.user;
 
@@ -28,6 +26,10 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
   return this.leadsService.create(dto, id, email, role);
 }
 
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get()
   async getLeads(@Req() req) {
@@ -36,12 +38,20 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
     return this.leadsService.getLeads(id, email, role);
   }
 
+
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get(':id')
   async getLeadById(@Param('id') id: string, @Req() req) {
     const { id: userId, email, role } = req.user;
     return this.leadsService.getLeadById(id, { id: userId, role: role });
   }
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Patch(':id')
@@ -53,6 +63,10 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
     const { id: userId, email, role } = req.user;
     return this.leadsService.updateLead(id, dto, { id: userId, role: role }, email, role);
   }
+
+
+
+
 
   @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
