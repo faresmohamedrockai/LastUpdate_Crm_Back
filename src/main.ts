@@ -34,6 +34,7 @@ async function bootstrap() {
       'https://jamesmap.propaicrm.com',
       'https://prodeal.propaicrm.com',
       'https://redoceanalex.propaicrm.com',
+      'https://eliterealestate.propaicrm.com',
     ],
     credentials: true,
     methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
