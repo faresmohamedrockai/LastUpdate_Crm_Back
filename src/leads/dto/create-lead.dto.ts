@@ -4,9 +4,10 @@ import {
   IsUUID, 
   IsEnum,
   IsArray,
+  
   IsDate 
 } from 'class-validator';
-
+import { Type } from 'class-transformer';
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
   FOLLOW_UP = 'follow_up',
@@ -51,7 +52,7 @@ export class CreateLeadDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true }) 
-  contact?: string[];
+  contacts?: string[];
 
   @IsOptional()
   @IsString()
@@ -85,13 +86,22 @@ export class CreateLeadDto {
   @IsDate()
   lastVisit?: Date;
 
-  @IsOptional()
+ @IsOptional()
   @IsDate()
+  @Type(() => Date)   // يحول النص لـ Date
   firstConection?: Date;
 
   @IsOptional()
   @IsString()
   inventoryInterestId?: string;
+
+
+  @IsOptional()
+  @IsString()
+ contact?:string
+
+
+
 
   // ✅ Enums الجديدة
   @IsOptional()

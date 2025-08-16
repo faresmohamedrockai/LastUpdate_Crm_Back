@@ -22,66 +22,55 @@ export class LeadsService {
 
   async create(dto: CreateLeadDto, userId: string, email: string, userRole: string) {
     // ✅ التحقق من المعطيات الأساسية
-    if (!userId) {
-      throw new BadRequestException('User ID is required to create a lead');
-    }
-    if (!email || !userRole) {
-      throw new ForbiddenException('Email and user role are required');
-    }
+    if (!userId) throw new BadRequestException('User ID is required to create a lead');
+    if (!email || !userRole) throw new ForbiddenException('Email and user role are required');
 
     // ✅ التحقق من صلاحية الدور
     if (!Object.values(Role).includes(userRole as Role)) {
       throw new ForbiddenException('Invalid user role');
     }
 
-    // ✅ التحقق من وجود المستخدم في قاعدة البيانات ومطابقة بياناته
+    // ✅ التحقق من وجود المستخدم في قاعدة البيانات
     const dbUser = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, role: true, email: true }
     });
 
-    if (!dbUser) {
-      throw new ForbiddenException('User not found in database');
-    }
-
-    if (dbUser.role !== userRole) {
-      throw new ForbiddenException('Role mismatch with database - potential security breach');
-    }
-
-    if (dbUser.email !== email) {
-      throw new ForbiddenException('Email mismatch with database - potential security breach');
-    }
+    if (!dbUser) throw new ForbiddenException('User not found in database');
+    if (dbUser.role !== userRole) throw new ForbiddenException('Role mismatch');
+    if (dbUser.email !== email) throw new ForbiddenException('Email mismatch');
 
     // ✅ دالة تحويل الميزانية
     const convertBudget = (value: number | string | undefined): number => {
       if (value === undefined || value === null || value === '') return 0;
       if (typeof value === 'number') return value;
-      if (typeof value === 'string') {
-        const parsed = parseFloat(value);
-        return isNaN(parsed) ? 0 : parsed;
-      }
-      return 0;
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? 0 : parsed;
     };
 
     const budget = convertBudget(dto.budget);
+    if (budget < 0) throw new BadRequestException('Budget must be >= 0');
 
-    if (budget < 0) {
-      throw new BadRequestException('Budget must be greater than or equal to 0');
-    }
-
-    // ✅ التحقق من عدم وجود أي contact مكرر
-    if (dto.contact && dto.contact.length > 0) {
+    // ✅ التحقق من عدم وجود أي contact مكرر في contacts array
+    if (dto.contacts && dto.contacts.length > 0) {
       const existingLead = await this.prisma.lead.findFirst({
         where: {
-          OR: dto.contact.map((c) => ({
-            contact: { has: c }
+          OR: dto.contacts.map(c => ({
+            contacts: { has: c } // لو contact في DB عبارة عن array
           }))
         }
       });
+      if (existingLead) throw new ConflictException('Lead with one of these contacts already exists');
+    }
 
-      if (existingLead) {
-        throw new ConflictException('Lead with one of these contacts already exists');
-      }
+    // ✅ التحقق من contact الفردي
+    if (dto.contact) {
+      const existingLead = await this.prisma.lead.findFirst({
+        where: {
+          contact: dto.contact
+        }
+      });
+      if (existingLead) throw new ConflictException('Lead with this contact already exists');
     }
 
     // ✅ تجهيز بيانات الـ Lead
@@ -89,58 +78,35 @@ export class LeadsService {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
       familyName: dto.familyName,
-      contact: dto.contact ?? [],
+      contact: dto.contact ?? '',
+      contacts: dto.contacts ?? [],
       notes: dto.notes,
       email: dto.email,
       interest: dto.interest,
       tier: dto.tier,
-      budget: budget,
+      budget,
       source: dto.source,
       status: dto.status,
-      owner: dto.assignedToId
-        ? { connect: { id: dto.assignedToId } }
-        : undefined
+      owner: dto.assignedToId ? { connect: { id: dto.assignedToId } } : undefined
     };
 
-    if (dto.lastCall) {
-      leadData.lastCall = new Date(dto.lastCall);
-    }
-    if (dto.firstConection) {
-      leadData.firstConection = new Date(dto.firstConection);
-    }
-    if (dto.lastVisit) {
-      leadData.lastVisit = new Date(dto.lastVisit);
-    }
+    if (dto.lastCall) leadData.lastCall = new Date(dto.lastCall);
+    if (dto.firstConection) leadData.firstConection = new Date(dto.firstConection);
+    if (dto.lastVisit) leadData.lastVisit = new Date(dto.lastVisit);
 
     if (dto.inventoryInterestId) {
-      const inventory = await this.prisma.inventory.findUnique({
-        where: { id: dto.inventoryInterestId },
-      });
-      if (!inventory) {
-        throw new NotFoundException('Inventory item not found');
-      }
-
-      leadData.inventoryInterest = {
-        connect: { id: dto.inventoryInterestId },
-      };
+      const inventory = await this.prisma.inventory.findUnique({ where: { id: dto.inventoryInterestId } });
+      if (!inventory) throw new NotFoundException('Inventory item not found');
+      leadData.inventoryInterest = { connect: { id: dto.inventoryInterestId } };
     }
 
-
-console.log("Data For Leads Create",leadData)
-
-
+    console.log("Data For Leads Create", leadData);
 
     // ✅ إنشاء الـ Lead في قاعدة البيانات
     const lead = await this.prisma.lead.create({
       data: leadData,
-      include: {
-        inventoryInterest: true,
-      },
+      include: { inventoryInterest: true },
     });
-
-
-
-
 
     return {
       status: 201,
@@ -153,6 +119,7 @@ console.log("Data For Leads Create",leadData)
       },
     };
   }
+
 
 
   async getLeads(id: string, email: string, userRole: string) {
@@ -190,25 +157,25 @@ console.log("Data For Leads Create",leadData)
     switch (userRole) {
       case Role.ADMIN:
       case Role.SALES_ADMIN:
-       leads = await this.prisma.lead.findMany({
-  include: {
-    owner: true,
-    calls: true,
-    inventoryInterest: {
-      include: { project: true }
-    },
-    meetings: {  
-      include: {
-        createdBy: true,
-        assignedTo: true,
-        project: true,
-        inventory: true
-      }
-    }
-  }
-});
+        leads = await this.prisma.lead.findMany({
+          include: {
+            owner: true,
+            calls: true,
+            inventoryInterest: {
+              include: { project: true }
+            },
+            meetings: {
+              include: {
+                createdBy: true,
+                assignedTo: true,
+                project: true,
+                inventory: true
+              }
+            }
+          }
+        });
 
-description = `Admin retrieved ${leads.length} leads with meetings`;
+        description = `Admin retrieved ${leads.length} leads with meetings`;
 
         description = `Admin retrieved ${leads.length} leads`;
         break;
@@ -264,7 +231,10 @@ description = `Admin retrieved ${leads.length} leads with meetings`;
     // ✅ تحويل التواريخ كلها إلى toISOString()
     const parsedLeads = leads.map(lead => ({
       ...lead,
-      createdAt: lead.createdAt?.toISOString(),
+      createdAt: lead.createdAt? lead.createdAt?.toLocaleDateString('en-GB') : null,
+      firstConection: lead.firstConection ? lead.firstConection.toLocaleDateString('en-GB') : null
+      ,
+
       owner: lead.owner
         ? {
           ...lead.owner,
@@ -273,7 +243,7 @@ description = `Admin retrieved ${leads.length} leads with meetings`;
         : null,
       calls: lead.calls?.map(call => ({
         ...call,
-        createdAt: call.createdAt?.toISOString?.(),
+        createdAt:call.createdAt ?    call.createdAt?.toLocaleDateString('en-GB') : null,
       })) || [],
     }));
 
@@ -498,7 +468,8 @@ description = `Admin retrieved ${leads.length} leads with meetings`;
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
         familyName: dto.familyName ?? lead.familyName ?? '',
         firstConection: dto.firstConection ? new Date(dto.firstConection).toISOString() : lead.firstConection || null,
-        contact: dto.contact ?? lead.contact ?? [], // تعديل عشان تبقي مصفوفة
+        contact: dto.contact ?? lead.contact ?? '',        // string منفرد
+        contacts: dto.contacts ?? lead.contacts ?? [],    // array من strings 
         email: dto.email ?? lead.email ?? '',
         interest: dto.interest ?? lead.interest ?? 'hot',
         tier: dto.tier ?? lead.tier ?? 'bronze',
@@ -536,7 +507,8 @@ description = `Admin retrieved ${leads.length} leads with meetings`;
         limitedUpdate.budget = budgetValue;
       }
       if (dto.inventoryInterestId !== undefined) limitedUpdate.inventoryInterestId = dto.inventoryInterestId || null;
-      if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // إضافة دعم المصفوفة
+      if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // string
+      if (dto.contacts !== undefined) limitedUpdate.contacts = dto.contacts; // array
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },
@@ -565,27 +537,28 @@ description = `Admin retrieved ${leads.length} leads with meetings`;
       if (!inventory) throw new NotFoundException('Inventory item not found');
     }
 
-   const updatedLead = await this.prisma.lead.update({
-  where: { id: leadId },
-  data: {
-    nameAr: updateData.nameAr,
-    nameEn: updateData.nameEn,
-    familyName: updateData.familyName,
-    firstConection: updateData.firstConection,
-    contact: updateData.contact, // مصفوفة
-    email: updateData.email,
-    interest: updateData.interest,   // ✅ صح
-    tier: updateData.tier,           // ✅ أضفنا الـ tier
-    budget: updateData.budget,
-    source: updateData.source,
-    status: updateData.status,
-    ownerId: updateData.ownerId,
-    inventoryInterestId: updateData.inventoryInterestId,
-    ...(dto.notes !== undefined && { notes: dto.notes }),
-    ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
-    ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
-  },
-});
+    const updatedLead = await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        nameAr: updateData.nameAr,
+        nameEn: updateData.nameEn,
+        familyName: updateData.familyName,
+        firstConection: updateData.firstConection,
+        contact: dto.contact ?? lead.contact ?? '',        // string منفرد
+        contacts: dto.contacts ?? lead.contacts ?? [],    // array من strings
+        email: updateData.email,
+        interest: updateData.interest,   // ✅ صح
+        tier: updateData.tier,           // ✅ أضفنا الـ tier
+        budget: updateData.budget,
+        source: updateData.source,
+        status: updateData.status,
+        ownerId: updateData.ownerId,
+        inventoryInterestId: updateData.inventoryInterestId,
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
+        ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
+      },
+    });
 
     await this.logsService.createLog({
       userId,

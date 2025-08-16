@@ -34,7 +34,8 @@ model Lead {
   nameAr              String?
   nameEn              String?
   familyName          String?
-  contact             String[]     
+  contact             String?
+  contacts            String[]     
   status              LeadStatus
   interest            Interest  @default(hot)
   tier                Tier      @default(bronze)

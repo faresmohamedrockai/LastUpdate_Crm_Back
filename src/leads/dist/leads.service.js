@@ -70,19 +70,17 @@ var LeadsService = /** @class */ (function () {
         this.logsService = logsService;
     }
     LeadsService.prototype.create = function (dto, userId, email, userRole) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function () {
-            var dbUser, convertBudget, budget, existingLead, leadData, inventory, lead;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var dbUser, convertBudget, budget, existingLead, existingLead, leadData, inventory, lead;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         // ✅ التحقق من المعطيات الأساسية
-                        if (!userId) {
+                        if (!userId)
                             throw new common_1.BadRequestException('User ID is required to create a lead');
-                        }
-                        if (!email || !userRole) {
+                        if (!email || !userRole)
                             throw new common_1.ForbiddenException('Email and user role are required');
-                        }
                         // ✅ التحقق من صلاحية الدور
                         if (!Object.values(roles_enum_1.Role).includes(userRole)) {
                             throw new common_1.ForbiddenException('Invalid user role');
@@ -92,51 +90,56 @@ var LeadsService = /** @class */ (function () {
                                 select: { id: true, role: true, email: true }
                             })];
                     case 1:
-                        dbUser = _e.sent();
-                        if (!dbUser) {
+                        dbUser = _f.sent();
+                        if (!dbUser)
                             throw new common_1.ForbiddenException('User not found in database');
-                        }
-                        if (dbUser.role !== userRole) {
-                            throw new common_1.ForbiddenException('Role mismatch with database - potential security breach');
-                        }
-                        if (dbUser.email !== email) {
-                            throw new common_1.ForbiddenException('Email mismatch with database - potential security breach');
-                        }
+                        if (dbUser.role !== userRole)
+                            throw new common_1.ForbiddenException('Role mismatch');
+                        if (dbUser.email !== email)
+                            throw new common_1.ForbiddenException('Email mismatch');
                         convertBudget = function (value) {
                             if (value === undefined || value === null || value === '')
                                 return 0;
                             if (typeof value === 'number')
                                 return value;
-                            if (typeof value === 'string') {
-                                var parsed = parseFloat(value);
-                                return isNaN(parsed) ? 0 : parsed;
-                            }
-                            return 0;
+                            var parsed = parseFloat(value);
+                            return isNaN(parsed) ? 0 : parsed;
                         };
                         budget = convertBudget(dto.budget);
-                        if (budget < 0) {
-                            throw new common_1.BadRequestException('Budget must be greater than or equal to 0');
-                        }
-                        if (!(dto.contact && dto.contact.length > 0)) return [3 /*break*/, 3];
+                        if (budget < 0)
+                            throw new common_1.BadRequestException('Budget must be >= 0');
+                        if (!(dto.contacts && dto.contacts.length > 0)) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.prisma.lead.findFirst({
                                 where: {
-                                    OR: dto.contact.map(function (c) { return ({
-                                        contact: { has: c }
+                                    OR: dto.contacts.map(function (c) { return ({
+                                        contacts: { has: c } // لو contact في DB عبارة عن array
                                     }); })
                                 }
                             })];
                     case 2:
-                        existingLead = _e.sent();
-                        if (existingLead) {
+                        existingLead = _f.sent();
+                        if (existingLead)
                             throw new common_1.ConflictException('Lead with one of these contacts already exists');
-                        }
-                        _e.label = 3;
+                        _f.label = 3;
                     case 3:
+                        if (!dto.contact) return [3 /*break*/, 5];
+                        return [4 /*yield*/, this.prisma.lead.findFirst({
+                                where: {
+                                    contact: dto.contact
+                                }
+                            })];
+                    case 4:
+                        existingLead = _f.sent();
+                        if (existingLead)
+                            throw new common_1.ConflictException('Lead with this contact already exists');
+                        _f.label = 5;
+                    case 5:
                         leadData = {
                             nameEn: dto.nameEn,
                             nameAr: dto.nameAr,
                             familyName: dto.familyName,
-                            contact: (_a = dto.contact) !== null && _a !== void 0 ? _a : [],
+                            contact: (_a = dto.contact) !== null && _a !== void 0 ? _a : '',
+                            contacts: (_b = dto.contacts) !== null && _b !== void 0 ? _b : [],
                             notes: dto.notes,
                             email: dto.email,
                             interest: dto.interest,
@@ -144,46 +147,34 @@ var LeadsService = /** @class */ (function () {
                             budget: budget,
                             source: dto.source,
                             status: dto.status,
-                            owner: dto.assignedToId
-                                ? { connect: { id: dto.assignedToId } }
-                                : undefined
+                            owner: dto.assignedToId ? { connect: { id: dto.assignedToId } } : undefined
                         };
-                        if (dto.lastCall) {
+                        if (dto.lastCall)
                             leadData.lastCall = new Date(dto.lastCall);
-                        }
-                        if (dto.firstConection) {
+                        if (dto.firstConection)
                             leadData.firstConection = new Date(dto.firstConection);
-                        }
-                        if (dto.lastVisit) {
+                        if (dto.lastVisit)
                             leadData.lastVisit = new Date(dto.lastVisit);
-                        }
-                        if (!dto.inventoryInterestId) return [3 /*break*/, 5];
-                        return [4 /*yield*/, this.prisma.inventory.findUnique({
-                                where: { id: dto.inventoryInterestId }
-                            })];
-                    case 4:
-                        inventory = _e.sent();
-                        if (!inventory) {
+                        if (!dto.inventoryInterestId) return [3 /*break*/, 7];
+                        return [4 /*yield*/, this.prisma.inventory.findUnique({ where: { id: dto.inventoryInterestId } })];
+                    case 6:
+                        inventory = _f.sent();
+                        if (!inventory)
                             throw new common_1.NotFoundException('Inventory item not found');
-                        }
-                        leadData.inventoryInterest = {
-                            connect: { id: dto.inventoryInterestId }
-                        };
-                        _e.label = 5;
-                    case 5:
+                        leadData.inventoryInterest = { connect: { id: dto.inventoryInterestId } };
+                        _f.label = 7;
+                    case 7:
                         console.log("Data For Leads Create", leadData);
                         return [4 /*yield*/, this.prisma.lead.create({
                                 data: leadData,
-                                include: {
-                                    inventoryInterest: true
-                                }
+                                include: { inventoryInterest: true }
                             })];
-                    case 6:
-                        lead = _e.sent();
+                    case 8:
+                        lead = _f.sent();
                         return [2 /*return*/, {
                                 status: 201,
                                 message: 'Lead created successfully',
-                                data: __assign(__assign({}, lead), { budget: (_c = (_b = lead.budget) === null || _b === void 0 ? void 0 : _b.toString()) !== null && _c !== void 0 ? _c : null, inventory: (_d = lead.inventoryInterest) !== null && _d !== void 0 ? _d : null, properties: [] })
+                                data: __assign(__assign({}, lead), { budget: (_d = (_c = lead.budget) === null || _c === void 0 ? void 0 : _c.toString()) !== null && _d !== void 0 ? _d : null, inventory: (_e = lead.inventoryInterest) !== null && _e !== void 0 ? _e : null, properties: [] })
                             }];
                 }
             });
@@ -292,10 +283,10 @@ var LeadsService = /** @class */ (function () {
                     case 10:
                         parsedLeads = leads.map(function (lead) {
                             var _a, _b, _c, _d;
-                            return (__assign(__assign({}, lead), { createdAt: (_a = lead.createdAt) === null || _a === void 0 ? void 0 : _a.toISOString(), owner: lead.owner
+                            return (__assign(__assign({}, lead), { createdAt: lead.createdAt ? (_a = lead.createdAt) === null || _a === void 0 ? void 0 : _a.toLocaleDateString('en-GB') : null, firstConection: lead.firstConection ? lead.firstConection.toLocaleDateString('en-GB') : null, owner: lead.owner
                                     ? __assign(__assign({}, lead.owner), { createdAt: (_c = (_b = lead.owner.createdAt) === null || _b === void 0 ? void 0 : _b.toISOString) === null || _c === void 0 ? void 0 : _c.call(_b) }) : null, calls: ((_d = lead.calls) === null || _d === void 0 ? void 0 : _d.map(function (call) {
-                                    var _a, _b;
-                                    return (__assign(__assign({}, call), { createdAt: (_b = (_a = call.createdAt) === null || _a === void 0 ? void 0 : _a.toISOString) === null || _b === void 0 ? void 0 : _b.call(_a) }));
+                                    var _a;
+                                    return (__assign(__assign({}, call), { createdAt: call.createdAt ? (_a = call.createdAt) === null || _a === void 0 ? void 0 : _a.toLocaleDateString('en-GB') : null }));
                                 })) || [] }));
                         });
                         return [2 /*return*/, { leads: parsedLeads }];
@@ -456,11 +447,11 @@ var LeadsService = /** @class */ (function () {
         });
     };
     LeadsService.prototype.updateLead = function (leadId, dto, user, email, userRole) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7;
         return __awaiter(this, void 0, void 0, function () {
-            var dbUser, role, userId, lead, _2, teamMembers, allIds, convertBudget, updateData, limitedUpdate, budgetValue, updatedLead_1, assignedUser, inventory, updatedLead;
-            return __generator(this, function (_3) {
-                switch (_3.label) {
+            var dbUser, role, userId, lead, _8, teamMembers, allIds, convertBudget, updateData, limitedUpdate, budgetValue, updatedLead_1, assignedUser, inventory, updatedLead;
+            return __generator(this, function (_9) {
+                switch (_9.label) {
                     case 0:
                         if (!email || !userRole)
                             throw new common_1.ForbiddenException('Email and user role are required');
@@ -473,7 +464,7 @@ var LeadsService = /** @class */ (function () {
                                 select: { id: true, role: true, email: true }
                             })];
                     case 1:
-                        dbUser = _3.sent();
+                        dbUser = _9.sent();
                         if (!dbUser)
                             throw new common_1.ForbiddenException('User not found in database');
                         if (dbUser.role !== userRole)
@@ -481,8 +472,8 @@ var LeadsService = /** @class */ (function () {
                         if (dbUser.email !== email)
                             throw new common_1.ForbiddenException('Email mismatch with database');
                         role = user.role, userId = user.id;
-                        _2 = role;
-                        switch (_2) {
+                        _8 = role;
+                        switch (_8) {
                             case roles_enum_1.Role.ADMIN: return [3 /*break*/, 2];
                             case roles_enum_1.Role.SALES_ADMIN: return [3 /*break*/, 2];
                             case roles_enum_1.Role.TEAM_LEADER: return [3 /*break*/, 4];
@@ -491,26 +482,26 @@ var LeadsService = /** @class */ (function () {
                         return [3 /*break*/, 9];
                     case 2: return [4 /*yield*/, this.prisma.lead.findUnique({ where: { id: leadId } })];
                     case 3:
-                        lead = _3.sent();
+                        lead = _9.sent();
                         return [3 /*break*/, 10];
                     case 4: return [4 /*yield*/, this.prisma.user.findMany({
                             where: { teamLeaderId: userId },
                             select: { id: true }
                         })];
                     case 5:
-                        teamMembers = _3.sent();
+                        teamMembers = _9.sent();
                         allIds = __spreadArrays(teamMembers.map(function (m) { return m.id; }), [userId]);
                         return [4 /*yield*/, this.prisma.lead.findFirst({
                                 where: { id: leadId, ownerId: { "in": allIds } }
                             })];
                     case 6:
-                        lead = _3.sent();
+                        lead = _9.sent();
                         return [3 /*break*/, 10];
                     case 7: return [4 /*yield*/, this.prisma.lead.findFirst({
                             where: { id: leadId, ownerId: userId }
                         })];
                     case 8:
-                        lead = _3.sent();
+                        lead = _9.sent();
                         return [3 /*break*/, 10];
                     case 9: throw new common_1.ForbiddenException('Access denied');
                     case 10:
@@ -533,15 +524,16 @@ var LeadsService = /** @class */ (function () {
                                 nameAr: (_d = (_c = dto.nameAr) !== null && _c !== void 0 ? _c : lead.nameAr) !== null && _d !== void 0 ? _d : '',
                                 familyName: (_f = (_e = dto.familyName) !== null && _e !== void 0 ? _e : lead.familyName) !== null && _f !== void 0 ? _f : '',
                                 firstConection: dto.firstConection ? new Date(dto.firstConection).toISOString() : lead.firstConection || null,
-                                contact: (_h = (_g = dto.contact) !== null && _g !== void 0 ? _g : lead.contact) !== null && _h !== void 0 ? _h : [],
-                                email: (_k = (_j = dto.email) !== null && _j !== void 0 ? _j : lead.email) !== null && _k !== void 0 ? _k : '',
-                                interest: (_m = (_l = dto.interest) !== null && _l !== void 0 ? _l : lead.interest) !== null && _m !== void 0 ? _m : 'hot',
-                                tier: (_p = (_o = dto.tier) !== null && _o !== void 0 ? _o : lead.tier) !== null && _p !== void 0 ? _p : 'bronze',
+                                contact: (_h = (_g = dto.contact) !== null && _g !== void 0 ? _g : lead.contact) !== null && _h !== void 0 ? _h : '',
+                                contacts: (_k = (_j = dto.contacts) !== null && _j !== void 0 ? _j : lead.contacts) !== null && _k !== void 0 ? _k : [],
+                                email: (_m = (_l = dto.email) !== null && _l !== void 0 ? _l : lead.email) !== null && _m !== void 0 ? _m : '',
+                                interest: (_p = (_o = dto.interest) !== null && _o !== void 0 ? _o : lead.interest) !== null && _p !== void 0 ? _p : 'hot',
+                                tier: (_r = (_q = dto.tier) !== null && _q !== void 0 ? _q : lead.tier) !== null && _r !== void 0 ? _r : 'bronze',
                                 budget: dto.budget !== undefined ? convertBudget(dto.budget) : Number(lead.budget) || 0,
-                                inventoryInterestId: (_r = (_q = dto.inventoryInterestId) !== null && _q !== void 0 ? _q : lead.inventoryInterestId) !== null && _r !== void 0 ? _r : null,
-                                source: (_t = (_s = dto.source) !== null && _s !== void 0 ? _s : lead.source) !== null && _t !== void 0 ? _t : '',
+                                inventoryInterestId: (_t = (_s = dto.inventoryInterestId) !== null && _s !== void 0 ? _s : lead.inventoryInterestId) !== null && _t !== void 0 ? _t : null,
+                                source: (_v = (_u = dto.source) !== null && _u !== void 0 ? _u : lead.source) !== null && _v !== void 0 ? _v : '',
                                 status: dto.status || lead.status || 'fresh_lead',
-                                ownerId: (_v = (_u = dto.assignedToId) !== null && _u !== void 0 ? _u : lead.ownerId) !== null && _v !== void 0 ? _v : null
+                                ownerId: (_x = (_w = dto.assignedToId) !== null && _w !== void 0 ? _w : lead.ownerId) !== null && _x !== void 0 ? _x : null
                             };
                         }
                         else {
@@ -549,9 +541,9 @@ var LeadsService = /** @class */ (function () {
                                 throw new common_1.ForbiddenException('You are only allowed to update the client name and the property they are interested in.');
                             }
                             updateData = {
-                                nameEn: (_x = (_w = dto.nameEn) !== null && _w !== void 0 ? _w : lead.nameEn) !== null && _x !== void 0 ? _x : '',
-                                nameAr: (_z = (_y = dto.nameAr) !== null && _y !== void 0 ? _y : lead.nameAr) !== null && _z !== void 0 ? _z : '',
-                                inventoryInterestId: (_1 = (_0 = dto.inventoryInterestId) !== null && _0 !== void 0 ? _0 : lead.inventoryInterestId) !== null && _1 !== void 0 ? _1 : null
+                                nameEn: (_z = (_y = dto.nameEn) !== null && _y !== void 0 ? _y : lead.nameEn) !== null && _z !== void 0 ? _z : '',
+                                nameAr: (_1 = (_0 = dto.nameAr) !== null && _0 !== void 0 ? _0 : lead.nameAr) !== null && _1 !== void 0 ? _1 : '',
+                                inventoryInterestId: (_3 = (_2 = dto.inventoryInterestId) !== null && _2 !== void 0 ? _2 : lead.inventoryInterestId) !== null && _3 !== void 0 ? _3 : null
                             };
                         }
                         if (updateData.budget < 0)
@@ -579,13 +571,15 @@ var LeadsService = /** @class */ (function () {
                         if (dto.inventoryInterestId !== undefined)
                             limitedUpdate.inventoryInterestId = dto.inventoryInterestId || null;
                         if (dto.contact !== undefined)
-                            limitedUpdate.contact = dto.contact; // إضافة دعم المصفوفة
+                            limitedUpdate.contact = dto.contact; // string
+                        if (dto.contacts !== undefined)
+                            limitedUpdate.contacts = dto.contacts; // array
                         return [4 /*yield*/, this.prisma.lead.update({
                                 where: { id: leadId },
                                 data: limitedUpdate
                             })];
                     case 11:
-                        updatedLead_1 = _3.sent();
+                        updatedLead_1 = _9.sent();
                         return [4 /*yield*/, this.logsService.createLog({
                                 userId: userId,
                                 email: email,
@@ -595,30 +589,30 @@ var LeadsService = /** @class */ (function () {
                                 description: "Sales rep : " + email + " updated lead: name=" + updatedLead_1.nameAr
                             })];
                     case 12:
-                        _3.sent();
+                        _9.sent();
                         return [2 /*return*/, updatedLead_1];
                     case 13:
                         if (!updateData.ownerId) return [3 /*break*/, 15];
                         return [4 /*yield*/, this.prisma.user.findUnique({ where: { id: updateData.ownerId } })];
                     case 14:
-                        assignedUser = _3.sent();
+                        assignedUser = _9.sent();
                         if (!assignedUser)
                             throw new common_1.NotFoundException('Assigned user Not Found');
-                        _3.label = 15;
+                        _9.label = 15;
                     case 15:
                         if (!updateData.inventoryInterestId) return [3 /*break*/, 17];
                         return [4 /*yield*/, this.prisma.inventory.findUnique({ where: { id: updateData.inventoryInterestId } })];
                     case 16:
-                        inventory = _3.sent();
+                        inventory = _9.sent();
                         if (!inventory)
                             throw new common_1.NotFoundException('Inventory item not found');
-                        _3.label = 17;
+                        _9.label = 17;
                     case 17: return [4 /*yield*/, this.prisma.lead.update({
                             where: { id: leadId },
-                            data: __assign(__assign(__assign({ nameAr: updateData.nameAr, nameEn: updateData.nameEn, familyName: updateData.familyName, firstConection: updateData.firstConection, contact: updateData.contact, email: updateData.email, interest: updateData.interest, tier: updateData.tier, budget: updateData.budget, source: updateData.source, status: updateData.status, ownerId: updateData.ownerId, inventoryInterestId: updateData.inventoryInterestId }, (dto.notes !== undefined && { notes: dto.notes })), (dto.lastCall !== undefined && { lastCall: dto.lastCall })), (dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }))
+                            data: __assign(__assign(__assign({ nameAr: updateData.nameAr, nameEn: updateData.nameEn, familyName: updateData.familyName, firstConection: updateData.firstConection, contact: (_5 = (_4 = dto.contact) !== null && _4 !== void 0 ? _4 : lead.contact) !== null && _5 !== void 0 ? _5 : '', contacts: (_7 = (_6 = dto.contacts) !== null && _6 !== void 0 ? _6 : lead.contacts) !== null && _7 !== void 0 ? _7 : [], email: updateData.email, interest: updateData.interest, tier: updateData.tier, budget: updateData.budget, source: updateData.source, status: updateData.status, ownerId: updateData.ownerId, inventoryInterestId: updateData.inventoryInterestId }, (dto.notes !== undefined && { notes: dto.notes })), (dto.lastCall !== undefined && { lastCall: dto.lastCall })), (dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }))
                         })];
                     case 18:
-                        updatedLead = _3.sent();
+                        updatedLead = _9.sent();
                         return [4 /*yield*/, this.logsService.createLog({
                                 userId: userId,
                                 email: email,
@@ -628,7 +622,7 @@ var LeadsService = /** @class */ (function () {
                                 description: "Updated lead: id=" + leadId + ", name=" + updateData.nameEn
                             })];
                     case 19:
-                        _3.sent();
+                        _9.sent();
                         return [2 /*return*/, updatedLead];
                 }
             });

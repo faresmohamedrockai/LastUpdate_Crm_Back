@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 exports.__esModule = true;
 exports.UpdateLeadDto = exports.Tier = exports.Interest = exports.LeadStatus = void 0;
 var class_validator_1 = require("class-validator");
+var class_transformer_1 = require("class-transformer");
 var LeadStatus;
 (function (LeadStatus) {
     LeadStatus["FRESH_LEAD"] = "fresh_lead";
@@ -71,13 +72,18 @@ var UpdateLeadDto = /** @class */ (function () {
     ], UpdateLeadDto.prototype, "status");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsDate()
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "contact");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsDate(),
+        class_transformer_1.Type(function () { return Date; }) // يحول النص لـ Date
     ], UpdateLeadDto.prototype, "firstConection");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsArray(),
         class_validator_1.IsString({ each: true })
-    ], UpdateLeadDto.prototype, "contact");
+    ], UpdateLeadDto.prototype, "contacts");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
