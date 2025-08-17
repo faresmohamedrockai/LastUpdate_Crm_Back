@@ -23,7 +23,6 @@ export class CreateDeveloperDto {
   @IsString()
   phone?: string; 
 
-
   @IsOptional()
   @IsString()
   image?: string;
