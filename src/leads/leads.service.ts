@@ -77,6 +77,7 @@ export class LeadsService {
     const leadData: any = {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
+      otherProject: dto.otherProject,
       familyName: dto.familyName,
       contact: dto.contact ?? '',
       contacts: dto.contacts ?? [],
@@ -99,13 +100,17 @@ export class LeadsService {
       if (!inventory) throw new NotFoundException('Inventory item not found');
       leadData.inventoryInterest = { connect: { id: dto.inventoryInterestId } };
     }
-
+    if (dto.projectInterestId) {
+      const project = await this.prisma.project.findUnique({ where: { id: dto.projectInterestId } });
+      if (!project) throw new NotFoundException('Project not found');
+      leadData.projectInterest = { connect: { id: dto.projectInterestId } };
+    }
     console.log("Data For Leads Create", leadData);
 
     // ✅ إنشاء الـ Lead في قاعدة البيانات
     const lead = await this.prisma.lead.create({
       data: leadData,
-      include: { inventoryInterest: true },
+      include: { inventoryInterest: true, projectInterest: true },
     });
 
     return {
@@ -115,6 +120,7 @@ export class LeadsService {
         ...lead,
         budget: lead.budget?.toString() ?? null,
         inventory: lead.inventoryInterest ?? null,
+        projectInterest: lead.projectInterest ?? null,
         properties: [],
       },
     };
@@ -164,6 +170,8 @@ export class LeadsService {
             inventoryInterest: {
               include: { project: true }
             },
+            projectInterest:true
+            ,
             meetings: {
               include: {
                 createdBy: true,
@@ -231,7 +239,7 @@ export class LeadsService {
     // ✅ تحويل التواريخ كلها إلى toISOString()
     const parsedLeads = leads.map(lead => ({
       ...lead,
-      createdAt: lead.createdAt? lead.createdAt?.toLocaleDateString('en-GB') : null,
+      createdAt: lead.createdAt ? lead.createdAt?.toLocaleDateString('en-GB') : null,
       firstConection: lead.firstConection ? lead.firstConection.toLocaleDateString('en-GB') : null
       ,
 
@@ -243,7 +251,7 @@ export class LeadsService {
         : null,
       calls: lead.calls?.map(call => ({
         ...call,
-        createdAt:call.createdAt ?    call.createdAt?.toLocaleDateString('en-GB') : null,
+        createdAt: call.createdAt ? call.createdAt?.toLocaleDateString('en-GB') : null,
       })) || [],
     }));
 
@@ -466,6 +474,7 @@ export class LeadsService {
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        otherProject: dto.otherProject ?? lead.otherProject ?? '',
         familyName: dto.familyName ?? lead.familyName ?? '',
         firstConection: dto.firstConection ? new Date(dto.firstConection).toISOString() : lead.firstConection || null,
         contact: dto.contact ?? lead.contact ?? '',        // string منفرد
@@ -475,6 +484,7 @@ export class LeadsService {
         tier: dto.tier ?? lead.tier ?? 'bronze',
         budget: dto.budget !== undefined ? convertBudget(dto.budget) : Number(lead.budget) || 0,
         inventoryInterestId: dto.inventoryInterestId ?? lead.inventoryInterestId ?? null,
+        projectInterestId: dto.projectInterestId ?? lead.projectInterestId ?? null,
         source: dto.source ?? lead.source ?? '',
         status: dto.status || lead.status || 'fresh_lead',
         ownerId: dto.assignedToId ?? lead.ownerId ?? null,
@@ -486,7 +496,8 @@ export class LeadsService {
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
-        inventoryInterestId: dto.inventoryInterestId ?? lead.inventoryInterestId ?? null,
+        projectInterestId: dto.projectInterestId ?? lead.projectInterestId ?? null,
+        otherProject: dto.otherProject ?? lead.otherProject ?? '',
       };
     }
 
@@ -498,6 +509,7 @@ export class LeadsService {
       const limitedUpdate: any = {};
       if (dto.nameAr !== undefined) limitedUpdate.nameAr = dto.nameAr;
       if (dto.nameEn !== undefined) limitedUpdate.nameEn = dto.nameEn;
+      if (dto.otherProject !== undefined) limitedUpdate.otherProject = dto.otherProject;
       if (dto.familyName !== undefined) limitedUpdate.familyName = dto.familyName;
       if (dto.status !== undefined) limitedUpdate.status = dto.status || lead.status || 'fresh_lead';
       if (dto.notes !== undefined) limitedUpdate.notes = dto.notes;
@@ -507,8 +519,14 @@ export class LeadsService {
         limitedUpdate.budget = budgetValue;
       }
       if (dto.inventoryInterestId !== undefined) limitedUpdate.inventoryInterestId = dto.inventoryInterestId || null;
+      if (dto.projectInterestId !== undefined) limitedUpdate.projectInterestId = dto.projectInterestId || null;
       if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // string
       if (dto.contacts !== undefined) limitedUpdate.contacts = dto.contacts; // array
+
+
+
+
+
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },
@@ -527,6 +545,12 @@ export class LeadsService {
       return updatedLead;
     }
 
+
+
+
+
+
+
     if (updateData.ownerId) {
       const assignedUser = await this.prisma.user.findUnique({ where: { id: updateData.ownerId } });
       if (!assignedUser) throw new NotFoundException('Assigned user Not Found');
@@ -537,28 +561,31 @@ export class LeadsService {
       if (!inventory) throw new NotFoundException('Inventory item not found');
     }
 
-    const updatedLead = await this.prisma.lead.update({
-      where: { id: leadId },
-      data: {
-        nameAr: updateData.nameAr,
-        nameEn: updateData.nameEn,
-        familyName: updateData.familyName,
-        firstConection: updateData.firstConection,
-        contact: dto.contact ?? lead.contact ?? '',        // string منفرد
-        contacts: dto.contacts ?? lead.contacts ?? [],    // array من strings
-        email: updateData.email,
-        interest: updateData.interest,   // ✅ صح
-        tier: updateData.tier,           // ✅ أضفنا الـ tier
-        budget: updateData.budget,
-        source: updateData.source,
-        status: updateData.status,
-        ownerId: updateData.ownerId,
-        inventoryInterestId: updateData.inventoryInterestId,
-        ...(dto.notes !== undefined && { notes: dto.notes }),
-        ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
-        ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
-      },
-    });
+   const updatedLead = await this.prisma.lead.update({
+  where: { id: leadId },
+  data: {
+    nameAr: updateData.nameAr,
+    nameEn: updateData.nameEn,
+    familyName: updateData.familyName,
+    firstConection: updateData.firstConection,
+    contact: dto.contact ?? lead.contact ?? '',
+    contacts: dto.contacts ?? lead.contacts ?? [],
+    email: updateData.email,
+    otherProject: updateData.otherProject,
+    interest: updateData.interest,
+    tier: updateData.tier,
+    budget: updateData.budget,
+    source: updateData.source,
+    status: updateData.status,
+    ownerId: updateData.ownerId,
+    inventoryInterestId: updateData.inventoryInterestId,
+    projectInterestId: updateData.projectInterestId, // 👈 ضيف دي
+    ...(dto.notes !== undefined && { notes: dto.notes }),
+    ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
+    ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
+  },
+});
+
 
     await this.logsService.createLog({
       userId,

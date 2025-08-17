@@ -69,6 +69,10 @@ var CreateLeadDto = /** @class */ (function () {
     ], CreateLeadDto.prototype, "budget");
     __decorate([
         class_validator_1.IsOptional(),
+        class_validator_1.IsBoolean()
+    ], CreateLeadDto.prototype, "cil");
+    __decorate([
+        class_validator_1.IsOptional(),
         class_validator_1.IsArray(),
         class_validator_1.IsString({ each: true })
     ], CreateLeadDto.prototype, "notes");

@@ -4,7 +4,7 @@ import {
   IsUUID, 
   IsEnum,
   IsArray,
-  
+  IsBoolean,
   IsDate 
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -48,6 +48,9 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   nameEn?: string;
+  @IsOptional()
+  @IsString()
+  otherProject?: string;
 
   @IsOptional()
   @IsArray()
@@ -64,6 +67,11 @@ export class CreateLeadDto {
 
   @IsOptional()
   budget?: number | string; 
+
+  @IsOptional()
+  @IsBoolean()
+  cil?: boolean 
+
 
   @IsOptional()
   @IsArray()
@@ -94,6 +102,10 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   inventoryInterestId?: string;
+
+  @IsOptional()
+  @IsString()
+  projectInterestId?: string;
 
 
   @IsOptional()

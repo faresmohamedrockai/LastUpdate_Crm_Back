@@ -1,6 +1,9 @@
 generator client {
   provider = "prisma-client-js"
 }
+generator erd {
+  provider = "prisma-erd-generator"
+}
 
 datasource db {
   provider = "postgresql"
@@ -37,28 +40,31 @@ model Lead {
   contact             String?
   contacts            String[]     
   status              LeadStatus
-  interest            Interest  @default(hot)
+  interest            Interest  @default(under_decision)
   tier                Tier      @default(bronze)
   lastCall            DateTime?
   firstConection      DateTime?
+  cil                 Boolean?   @default(false)
   lastVisit           DateTime?
   ownerId             String?
   inventoryInterestId String?
+  projectInterestId   String?
   createdAt           DateTime   @default(now())
   email               String?
   notes               String[]
   source              String?
   budget              BigInt?
+  otherProject        String?
   calls               Call[]
   Contract            Contract[]
   inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id])
+  projectInterest     Project?   @relation("LeadProjectInterest", fields: [projectInterestId], references: [id])
   owner               User?      @relation(fields: [ownerId], references: [id])
   logs                Log[]
   meetings            Meeting[]
   tasks               Task[]
   visits              Visit[]
 }
-
 model Inventory {
   id               String     @id @default(uuid())
   title            String?
@@ -107,6 +113,8 @@ model Project {
   paymentPlans PaymentPlan[]
   developer    Developer?    @relation(fields: [developerId], references: [id])
   zone         Zone?         @relation(fields: [zoneId], references: [id])
+  
+  leadsInterest Lead[] @relation("LeadProjectInterest")
   tasks        Task[]
 }
 
@@ -297,12 +305,7 @@ enum LeadStatus {
   reservation
 }
 
-enum installmentPeriod {
-  monthly
-  quarterly
-  yearly
-  custom
-}
+
 enum Interest {
   hot
   warm

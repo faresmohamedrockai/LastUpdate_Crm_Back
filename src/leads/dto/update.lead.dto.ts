@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsArray, IsDate } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsArray, IsDate,IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 export enum LeadStatus {
   FRESH_LEAD = 'fresh_lead',
@@ -44,12 +44,27 @@ export class UpdateLeadDto {
   @IsString()
   email?: string;
 
+
+
+  @IsOptional()
+  @IsString()
+  otherProject?: string;
+
+
+
+
   @IsOptional()
   budget?: number | string;
 
   @IsOptional()
   @IsString()
   inventoryInterestId?: string;
+
+
+  @IsOptional()
+  @IsString()
+  projectInterestId?: string;
+
 
   @IsOptional()
   @IsString()
@@ -63,6 +78,10 @@ export class UpdateLeadDto {
   @IsOptional()
   @IsString()
   contact?: string
+
+  @IsOptional()
+  @IsBoolean()
+  cil?: boolean 
 
   @IsOptional()
    @IsDate()

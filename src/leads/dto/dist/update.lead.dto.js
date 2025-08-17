@@ -76,6 +76,10 @@ var UpdateLeadDto = /** @class */ (function () {
     ], UpdateLeadDto.prototype, "contact");
     __decorate([
         class_validator_1.IsOptional(),
+        class_validator_1.IsBoolean()
+    ], UpdateLeadDto.prototype, "cil");
+    __decorate([
+        class_validator_1.IsOptional(),
         class_validator_1.IsDate(),
         class_transformer_1.Type(function () { return Date; }) // يحول النص لـ Date
     ], UpdateLeadDto.prototype, "firstConection");
