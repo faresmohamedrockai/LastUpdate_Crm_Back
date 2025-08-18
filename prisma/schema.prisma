@@ -45,6 +45,7 @@ model Lead {
   lastCall            DateTime?
   firstConection      DateTime?
   cil                 Boolean?   @default(false)
+  description         String?
   lastVisit           DateTime?
   ownerId             String?
   inventoryInterestId String?

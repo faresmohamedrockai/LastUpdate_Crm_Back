@@ -52,6 +52,9 @@ export class UpdateLeadDto {
 
 
 
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @IsOptional()
   budget?: number | string;

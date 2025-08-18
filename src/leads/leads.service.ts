@@ -77,12 +77,14 @@ export class LeadsService {
     const leadData: any = {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
+      description: dto.description,
       otherProject: dto.otherProject,
       familyName: dto.familyName,
       contact: dto.contact ?? '',
       contacts: dto.contacts ?? [],
       notes: dto.notes,
       email: dto.email,
+      cil:dto.cil,
       interest: dto.interest,
       tier: dto.tier,
       budget,
@@ -474,12 +476,14 @@ export class LeadsService {
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        description: dto.description ?? lead.description ?? '',
         otherProject: dto.otherProject ?? lead.otherProject ?? '',
         familyName: dto.familyName ?? lead.familyName ?? '',
-        firstConection: dto.firstConection ? new Date(dto.firstConection).toISOString() : lead.firstConection || null,
+        // firstConection: dto.firstConection && new Date(dto.firstConection) ,
         contact: dto.contact ?? lead.contact ?? '',        // string منفرد
         contacts: dto.contacts ?? lead.contacts ?? [],    // array من strings 
         email: dto.email ?? lead.email ?? '',
+        cil: dto.cil ?? lead.cil ?? false,
         interest: dto.interest ?? lead.interest ?? 'hot',
         tier: dto.tier ?? lead.tier ?? 'bronze',
         budget: dto.budget !== undefined ? convertBudget(dto.budget) : Number(lead.budget) || 0,
@@ -496,6 +500,8 @@ export class LeadsService {
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        description: dto.description ?? lead.description ?? '',
+        cil: dto.cil ?? lead.cil ?? false,
         projectInterestId: dto.projectInterestId ?? lead.projectInterestId ?? null,
         otherProject: dto.otherProject ?? lead.otherProject ?? '',
       };
@@ -509,6 +515,8 @@ export class LeadsService {
       const limitedUpdate: any = {};
       if (dto.nameAr !== undefined) limitedUpdate.nameAr = dto.nameAr;
       if (dto.nameEn !== undefined) limitedUpdate.nameEn = dto.nameEn;
+      if (dto.description !== undefined) limitedUpdate.description = dto.description;
+      if (dto.cil !== undefined) limitedUpdate.cil = dto.cil;
       if (dto.otherProject !== undefined) limitedUpdate.otherProject = dto.otherProject;
       if (dto.familyName !== undefined) limitedUpdate.familyName = dto.familyName;
       if (dto.status !== undefined) limitedUpdate.status = dto.status || lead.status || 'fresh_lead';
@@ -523,8 +531,7 @@ export class LeadsService {
       if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // string
       if (dto.contacts !== undefined) limitedUpdate.contacts = dto.contacts; // array
 
-
-
+    if (dto.firstConection) limitedUpdate.firstConection = new Date(dto.firstConection);
 
 
 
@@ -561,15 +568,35 @@ export class LeadsService {
       if (!inventory) throw new NotFoundException('Inventory item not found');
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+console.log("Updated Data Will Send",updateData);
+
+
+
+
+
    const updatedLead = await this.prisma.lead.update({
   where: { id: leadId },
   data: {
     nameAr: updateData.nameAr,
     nameEn: updateData.nameEn,
+    description: updateData.description,
     familyName: updateData.familyName,
     firstConection: updateData.firstConection,
     contact: dto.contact ?? lead.contact ?? '',
     contacts: dto.contacts ?? lead.contacts ?? [],
+    cil: dto.cil ?? lead.cil ?? false ,
     email: updateData.email,
     otherProject: updateData.otherProject,
     interest: updateData.interest,

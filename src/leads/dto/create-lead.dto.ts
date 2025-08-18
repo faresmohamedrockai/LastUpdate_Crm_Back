@@ -61,6 +61,15 @@ export class CreateLeadDto {
   @IsString()
   email?: string;
 
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+
+
+
+
   @IsOptional()
   @IsString()
   assignedToId?: string;
