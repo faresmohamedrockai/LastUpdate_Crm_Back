@@ -49,31 +49,45 @@ async createZone(dto: CreateZoneDto, userId: string, userName: string, userRole:
   }
 }
 
-  async getAllZones(userId: string, email: string, userRole: string) {
-    const zones = await this.prisma.zone.findMany({
-      include: {
-        projects: {
-          include: {
-            inventories: true,
-          },
+async getAllZones(userId: string, email: string, userRole: string) {
+  const zones = await this.prisma.zone.findMany({
+    include: {
+      projects: {
+        include: {
+          inventories: true,
         },
       },
-      orderBy: { id: 'desc' },
-    });
+    },
+    orderBy: { id: 'desc' },
+  });
 
-    // // Log zones retrieval
-    // await this.logsService.createLog({
-    //   userId,
-    //   email,
-    //   userRole,
-    //   action: 'get_all_zones',
-    //   description: `Retrieved ${zones.length} zones`,
-    // });
+  
+  const formattedZones = zones.map(zone => ({
+    ...zone,
+    projects: zone.projects.map(project => ({
+      ...project,
+      createdAt: project.createdAt.toLocaleDateString(), 
+      inventories: project.inventories.map(inv => ({
+        ...inv,
+        createdAt: inv.createdAt.toLocaleDateString(), 
+      })),
+    })),
+  }));
 
-    return {
-      zones:zones
-    };
-  }
+  // // Log zones retrieval
+  // await this.logsService.createLog({
+  //   userId,
+  //   email,
+  //   userRole,
+  //   action: 'get_all_zones',
+  //   description: `Retrieved ${zones.length} zones`,
+  // });
+
+  return {
+    zones: formattedZones,
+  };
+}
+
 
   async getZoneById(id: string, userId: string, userName: string, userRole: string) {
     const zone = await this.prisma.zone.findUnique({

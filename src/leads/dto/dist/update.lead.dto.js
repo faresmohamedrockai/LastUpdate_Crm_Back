@@ -56,12 +56,24 @@ var UpdateLeadDto = /** @class */ (function () {
         class_validator_1.IsString()
     ], UpdateLeadDto.prototype, "email");
     __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "otherProject");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "description");
+    __decorate([
         class_validator_1.IsOptional()
     ], UpdateLeadDto.prototype, "budget");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
     ], UpdateLeadDto.prototype, "inventoryInterestId");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], UpdateLeadDto.prototype, "projectInterestId");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
@@ -80,8 +92,9 @@ var UpdateLeadDto = /** @class */ (function () {
     ], UpdateLeadDto.prototype, "cil");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsDate(),
-        class_transformer_1.Type(function () { return Date; }) // يحول النص لـ Date
+        class_transformer_1.Type(function () { return Date; }) // يحول من string لـ Date
+        ,
+        class_validator_1.IsDate()
     ], UpdateLeadDto.prototype, "firstConection");
     __decorate([
         class_validator_1.IsOptional(),

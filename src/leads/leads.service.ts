@@ -238,7 +238,7 @@ export class LeadsService {
         throw new ForbiddenException('Access denied');
     }
 
-    // ✅ تحويل التواريخ كلها إلى toISOString()
+    
     const parsedLeads = leads.map(lead => ({
       ...lead,
       createdAt: lead.createdAt ? lead.createdAt?.toLocaleDateString('en-GB') : null,
@@ -393,6 +393,7 @@ export class LeadsService {
       nameEn: lead.nameEn || '',
       nameAr: lead.nameAr || '',
       contact: lead.contact || '',
+      firstConection: lead.firstConection || '',
       email: lead.email || '',
       budget: Number(lead.budget) || 0,
       inventoryInterestId: lead.inventoryInterestId || '',
@@ -479,7 +480,8 @@ export class LeadsService {
         description: dto.description ?? lead.description ?? '',
         otherProject: dto.otherProject ?? lead.otherProject ?? '',
         familyName: dto.familyName ?? lead.familyName ?? '',
-        // firstConection: dto.firstConection && new Date(dto.firstConection) ,
+        firstConection: dto.firstConection ? new Date(dto.firstConection) : lead.firstConection,
+
         contact: dto.contact ?? lead.contact ?? '',        // string منفرد
         contacts: dto.contacts ?? lead.contacts ?? [],    // array من strings 
         email: dto.email ?? lead.email ?? '',
@@ -493,13 +495,16 @@ export class LeadsService {
         status: dto.status || lead.status || 'fresh_lead',
         ownerId: dto.assignedToId ?? lead.ownerId ?? null,
       };
+
     } else {
+      // updates for sales rep
       if (dto.nameEn === undefined && dto.nameAr === undefined && dto.inventoryInterestId === undefined) {
         throw new ForbiddenException('You are only allowed to update the client name and the property they are interested in.');
       }
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        familyName: dto.familyName ?? lead.familyName ?? '',
         description: dto.description ?? lead.description ?? '',
         cil: dto.cil ?? lead.cil ?? false,
         projectInterestId: dto.projectInterestId ?? lead.projectInterestId ?? null,
@@ -531,9 +536,10 @@ export class LeadsService {
       if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // string
       if (dto.contacts !== undefined) limitedUpdate.contacts = dto.contacts; // array
 
-    if (dto.firstConection) limitedUpdate.firstConection = new Date(dto.firstConection);
+   if (dto.firstConection) limitedUpdate.firstConection = new Date(dto.firstConection);
 
 
+console.log("Updated Data Will Send sales rep",updateData);
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },

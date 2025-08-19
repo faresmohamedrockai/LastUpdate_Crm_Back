@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { User } from '@prisma/client';
-import { Task } from '../tasks/types';
+import { Task,Meeting } from '../tasks/types';
 
 @Injectable()
 export class EmailService {
@@ -16,25 +16,113 @@ export class EmailService {
   private initializeTransporter() {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get('GMAIL_HOST', 'smtp.gmail.com'),
-      port: this.configService.get('GMAIL_PORT', 587),
-      secure: false, // true for 465, false for other ports
+      port: Number(this.configService.get('GMAIL_PORT', 587)), // true for 465, false for other ports
       auth: {
-        user: this.configService.get('GMAIL_USER'),
-        pass: this.configService.get('GMAIL_PASS'),
+        user: this.configService.get('EMAIL_USER'),
+        pass: this.configService.get('EMAIL_PASS'),
       },
     });
   }
 
+
+
+
+
+
+
+
+
+
+
+private generateMeetingReminderEmail(meeting: Meeting, user: User): string {
+  const meetingDate = meeting.date
+    ? new Date(meeting.date).toLocaleDateString()
+    : 'No date set';
+  const meetingTime = meeting.time || 'No time set';
+  const location = meeting.location || 'Not specified';
+  const duration = meeting.duration || 'Not specified';
+
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>Meeting Reminder</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: #cfe2ff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
+      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>⏰ Meeting Reminder</h2>
+        <p>Hello ${user.name},</p>
+        <p>This is a reminder for your upcoming meeting.</p>
+      </div>
+      
+      <div class="meeting-details">
+        <h3>${meeting.title || 'Meeting'}</h3>
+        <p><strong>Client:</strong> ${meeting.client || 'Not specified'}</p>
+        <p><strong>Date:</strong> ${meetingDate}</p>
+        <p><strong>Time:</strong> ${meetingTime}</p>
+        <p><strong>Duration:</strong> ${duration}</p>
+        <p><strong>Location:</strong> ${location}</p>
+        <p><strong>Notes:</strong> ${meeting.notes || 'No additional notes'}</p>
+        <p><strong>Status:</strong> ${meeting.status || 'Scheduled'}</p>
+      </div>
+
+      <p style="margin-top: 20px;">
+        <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/meetings" class="btn">
+          View Meeting Details
+        </a>
+      </p>
+
+      <p style="margin-top: 20px; font-size: 12px; color: #666;">
+        This is an automated notification from your CRM system.
+      </p>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
+async sendMeetingReminder(meeting: Meeting, user: User): Promise<boolean> {
+  try {
+    const mailOptions = {
+      from: this.configService.get('EMAIL_USER'),
+      to: user.email,
+      subject: `Meeting Reminder: ${meeting.title || 'Upcoming Meeting'}`,
+      
+      html: this.generateMeetingReminderEmail(meeting, user),
+    };
+
+    const result = await this.transporter.sendMail(mailOptions);
+
+    this.logger.log(`Meeting reminder sent to ${user.email} for meeting: ${meeting.title}`);
+    return true;
+  } catch (error) {
+    this.logger.error(`Failed to send meeting reminder: ${error.message}`);
+    return false;
+  }
+}
+
+
+
   async sendTaskReminder(task: Task, user: User): Promise<boolean> {
     try {
       const mailOptions = {
-        from: this.configService.get('GMAIL_USER'),
+        from: this.configService.get('EMAIL_USER'),
         to: user.email,
         subject: `Task Reminder: ${task.title}`,
         html: this.generateTaskReminderEmail(task, user),
       };
 
       const result = await this.transporter.sendMail(mailOptions);
+      
       this.logger.log(`Task reminder sent to ${user.email} for task: ${task.title}`);
       return true;
     } catch (error) {
@@ -46,13 +134,14 @@ export class EmailService {
   async sendTaskAssignment(task: Task, user: User, assignedBy: User): Promise<boolean> {
     try {
       const mailOptions = {
-        from: this.configService.get('GMAIL_USER'),
+        from: this.configService.get('EMAIL_USER'),
         to: user.email,
         subject: `New Task Assigned: ${task.title}`,
         html: this.generateTaskAssignmentEmail(task, user, assignedBy),
       };
 
       const result = await this.transporter.sendMail(mailOptions);
+      console.log(result);
       this.logger.log(`Task assignment sent to ${user.email} for task: ${task.title}`);
       return true;
     } catch (error) {
@@ -131,6 +220,8 @@ export class EmailService {
   }
 
   private generateTaskAssignmentEmail(task: Task, user: User, assignedBy: User): string {
+console.log(task)
+
     const dueDate = new Date(task.dueDate).toLocaleDateString();
     const priorityColor = this.getPriorityColor(task.priority);
     
@@ -159,6 +250,7 @@ export class EmailService {
           
           <div class="task-details">
             <h3>${task.title}</h3>
+           
             <p><strong>Description:</strong> ${task.description || 'No description provided'}</p>
             <p><strong>Due Date:</strong> ${dueDate}</p>
             <p><strong>Priority:</strong> <span class="priority" style="background: ${priorityColor}">${task.priority}</span></p>
@@ -167,7 +259,7 @@ export class EmailService {
           </div>
           
           <p style="margin-top: 20px;">
-            <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/tasks/${task.id}" class="btn">
+            <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/tasks/${task.id}" class="btn">
               View Task Details
             </a>
           </p>
@@ -246,4 +338,8 @@ export class EmailService {
         return '#6c757d';
     }
   }
+
+
+
+
 } 

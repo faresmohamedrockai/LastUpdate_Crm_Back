@@ -126,7 +126,7 @@ var LeadsController = /** @class */ (function () {
         __param(2, common_1.Req())
     ], LeadsController.prototype, "updateLead");
     __decorate([
-        Role_decorator_1.Roles(roles_enum_1.Role.ADMIN, roles_enum_1.Role.SALES_ADMIN),
+        Role_decorator_1.Roles(roles_enum_1.Role.ADMIN, roles_enum_1.Role.SALES_ADMIN, roles_enum_1.Role.SALES_REP),
         common_1.Delete(':id'),
         __param(0, common_1.Param('id')), __param(1, common_1.Req())
     ], LeadsController.prototype, "deleteLead");

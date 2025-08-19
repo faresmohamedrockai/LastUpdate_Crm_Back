@@ -40,80 +40,107 @@ export class LogsService {
   /**
    * جلب كل الـ Logs
    */
-  async getAllLogs() {
-    return this.prisma.log.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+ async getAllLogs() {
+  const logs = await this.prisma.log.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
 
+  return logs.map((log) => ({
+    ...log,
+    createdAt: log.createdAt.toISOString(), // ISO format: 2025-08-19T12:34:56.000Z
+    // أو ممكن تعمل فورمات زي ما تحب
+  }));
+}
   /**
    * جلب كل الـ Logs لمستخدم معين
    */
-  async getLogsByUser(userId: string) {
-    return this.prisma.log.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+async getLogsByUser(userId: string) {
+  const logs = await this.prisma.log.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
 
-  /**
-   * جلب كل الـ Logs (لـ admin فقط)
-   */
-  async getLogsForAdmin() {
-    return this.prisma.log.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+  return logs.map((log) => ({
+    ...log,
+    createdAt: log.createdAt.toISOString(), 
+  }));
+}
 
-  /**
-   * جلب كل الـ Logs لكل أعضاء الشركة (sales_admin)
-   * يحصل على كل اللوجات الخاصة بالـ team_leaders وأعضاء فرقهم
-   */
-  async getLogsForSalesAdmin() {
-    // أولاً: هات كل الـ team_leaders
-    const teamLeaders = await this.prisma.user.findMany({
-      where: { role: 'team_leader' },
-      select: { id: true },
-    });
-    const teamLeaderIds = teamLeaders.map(u => u.id);
-    // هات كل أعضاء الفرق
-    const teamMembers = await this.prisma.user.findMany({
-      where: { teamLeaderId: { in: teamLeaderIds } },
-      select: { id: true },
-    });
-    const memberIds = teamMembers.map(u => u.id);
-    // كل اللوجات الخاصة بالـ team_leaders وأعضاء فرقهم
-    return this.prisma.log.findMany({
-      where: {
-        OR: [
-          { userId: { in: teamLeaderIds } },
-          { userId: { in: memberIds } },
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+/**
+ * جلب كل الـ Logs (لـ admin فقط)
+ */
+async getLogsForAdmin() {
+  const logs = await this.prisma.log.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
 
-  /**
-   * جلب كل الـ Logs لفريق معين (team_leader)
-   * يحصل على كل اللوجات الخاصة به وبأعضاء فريقه فقط
-   */
-  async getLogsForTeamLeader(teamLeaderId: string) {
-    // هات كل أعضاء الفريق
-    const teamMembers = await this.prisma.user.findMany({
-      where: { teamLeaderId },
-      select: { id: true },
-    });
-    const memberIds = teamMembers.map(u => u.id);
-    // كل اللوجات الخاصة بالـ team_leader وأعضاء فريقه
-    return this.prisma.log.findMany({
-      where: {
-        OR: [
-          { userId: teamLeaderId },
-          { userId: { in: memberIds } },
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+  return logs.map((log) => ({
+    ...log,
+    createdAt: log.createdAt.toISOString(),
+  }));
+}
+
+/**
+ * جلب كل الـ Logs لكل أعضاء الشركة (sales_admin)
+ */
+async getLogsForSalesAdmin() {
+  // أولاً: هات كل الـ team_leaders
+  const teamLeaders = await this.prisma.user.findMany({
+    where: { role: 'team_leader' },
+    select: { id: true },
+  });
+  const teamLeaderIds = teamLeaders.map(u => u.id);
+
+  // هات كل أعضاء الفرق
+  const teamMembers = await this.prisma.user.findMany({
+    where: { teamLeaderId: { in: teamLeaderIds } },
+    select: { id: true },
+  });
+  const memberIds = teamMembers.map(u => u.id);
+
+  // كل اللوجات الخاصة بالـ team_leaders وأعضاء فرقهم
+  const logs = await this.prisma.log.findMany({
+    where: {
+      OR: [
+        { userId: { in: teamLeaderIds } },
+        { userId: { in: memberIds } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return logs.map((log) => ({
+    ...log,
+    createdAt: log.createdAt.toISOString(),
+  }));
+}
+
+/**
+ * جلب كل الـ Logs لفريق معين (team_leader)
+ */
+async getLogsForTeamLeader(teamLeaderId: string) {
+  // هات كل أعضاء الفريق
+  const teamMembers = await this.prisma.user.findMany({
+    where: { teamLeaderId },
+    select: { id: true },
+  });
+  const memberIds = teamMembers.map(u => u.id);
+
+  // كل اللوجات الخاصة بالـ team_leader وأعضاء فريقه
+  const logs = await this.prisma.log.findMany({
+    where: {
+      OR: [
+        { userId: teamLeaderId },
+        { userId: { in: memberIds } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return logs.map((log) => ({
+    ...log,
+    createdAt: log.createdAt.toISOString(),
+  }));
+}
+
 } 

@@ -3,11 +3,12 @@ import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
-
+import {EmailService} from '../email/email.service'
 @Module({
   imports: [PrismaModule, EmailModule],
   controllers: [TasksController],
-  providers: [TasksService],
+  providers: [TasksService], 
   exports: [TasksService],
 })
-export class TasksModule {} 
+export class TasksModule {}
+

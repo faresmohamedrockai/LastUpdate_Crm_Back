@@ -1,15 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
+import { Task,Meeting } from '../tasks/types';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
-
+import {EmailService} from '../email/email.service'
 @Injectable()
 export class MeetingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logsService: LogsService,
+    private emailService: EmailService,
   ) { }
+private serializeMeeting(meeting: any): Meeting {
+  return {
+    ...meeting,
+    title: meeting.title ?? undefined,
+    client: meeting.client ?? undefined,
+    date: meeting.date ? new Date(meeting.date).toISOString() : undefined,
+    time: meeting.time ?? undefined,
+    duration: meeting.duration ?? undefined,
+    type: meeting.type ?? undefined,
+    status: meeting.status ?? undefined,
+    notes: meeting.notes ?? undefined,
+    objections: meeting.objections ?? undefined,
+    location: meeting.location ?? undefined,
+    locationType: meeting.locationType ?? undefined,
+    inventory: meeting.inventory ?? undefined,
+    project: meeting.project ?? undefined,
+    lead: meeting.lead ?? undefined,
+    assignedTo: meeting.assignedTo ?? undefined,
+    createdBy: meeting.createdBy ?? undefined,
+    createdAt: meeting.createdAt ? meeting.createdAt.toISOString() : undefined,
+    updatedAt: meeting.updatedAt ? meeting.updatedAt.toISOString() : undefined,
+  };
+}
+
 
   /**
    * Helper method to check if a user can access a specific meeting
@@ -61,75 +87,63 @@ export class MeetingsService {
 
     return false;
   }
+async createMeeting(
+  dto: CreateMeetingDto,
+  userId: string,
+  email: string,
+  role: string,
+): Promise<{ status: number; message: string; meeting: Meeting }> {
+  // إنشاء الـMeeting في قاعدة البيانات
+  const meeting = await this.prisma.meeting.create({
+    data: {
+      title: dto.title,
+      client: dto.client,
+      date: dto.date ?? null,
+      time: dto.time,
+      duration: dto.duration,
+      type: dto.type,
+      status: dto.status,
+      locationType: dto.locationType,
+      notes: dto.notes,
+      objections: dto.objections,
+      location: dto.location,
 
-  async createMeeting(
-    dto: CreateMeetingDto,
-    userId: string,
-    email: string,
-    role: string,
-  ) {
-    const meeting = await this.prisma.meeting.create({
-      data: {
-        // الحقول الأساسية
-        title: dto.title,
-        client: dto.client,
-        date: dto.date ? dto.date : null,
-        time: dto.time,
-        duration: dto.duration,
-        type: dto.type,
-        status: dto.status,
-        locationType: dto.locationType,
-        notes: dto.notes,
-        objections: dto.objections,
-        location: dto.location,
+      ...(dto.inventoryId && {
+        inventory: { connect: { id: dto.inventoryId } },
+      }),
+      ...(dto.projectId && {
+        project: { connect: { id: dto.projectId } },
+      }),
+      ...(dto.assignedToId && {
+        assignedTo: { connect: { id: dto.assignedToId } },
+      }),
 
-       
-        ...(dto.inventoryId && {
-          inventory: {
-            connect: { id: dto.inventoryId },
-          },
-        }),
-        ...(dto.projectId && {
-          project: {
-            connect: { id: dto.projectId },
-          },
-        }),
-        ...(dto.assignedToId && {
-          assignedTo: {
-            connect: { id: dto.assignedToId },
-          },
-        }),
+      createdBy: { connect: { id: userId } },
+    },
+    include: {
+      lead: true,
+      inventory: true,
+      project: true,
+      assignedTo: true,
+      createdBy: true,
+    },
+  });
 
-        // المستخدم المنشئ
-        createdBy: {
-          connect: { id: userId },
-        },
-      },
-      include: {
-        lead: true,
-        inventory: true,
-        project: true,
-        assignedTo: true,
-        createdBy: true,
-      },
-    });
+  // إرسال إشعار بالبريد الإلكتروني للشخص المسؤول عن الاجتماع
+  if (meeting.assignedTo) {
+   const serializedMeeting = this.serializeMeeting(meeting);
 
-    // // سجل عملية الإنشاء
-    // await this.logsService.createLog({
-    //   userId,
-    //   email,
-    //   userRole: role,
-    //   leadId: dto.leadId || null,
-    //   action: 'create_meeting',
-    //   description: `Created meeting: ${dto.title || ''} for lead ${dto.leadId || 'N/A'}`,
-    // });
-
-    return {
-      status: 201,
-      message: 'Meeting created successfully',
-      meetings: meeting,
-    };
+if (serializedMeeting.assignedTo) {
+  await this.emailService.sendMeetingReminder(serializedMeeting, serializedMeeting.assignedTo);
+}
   }
+
+  return {
+    status: 201,
+    message: 'Meeting created successfully',
+    meeting: this.serializeMeeting(meeting),
+  };
+}
 
 
 

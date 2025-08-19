@@ -56,35 +56,81 @@ exports.__esModule = true;
 exports.MeetingsService = void 0;
 var common_1 = require("@nestjs/common");
 var MeetingsService = /** @class */ (function () {
-    function MeetingsService(prisma, logsService) {
+    function MeetingsService(prisma, logsService, emailService) {
         this.prisma = prisma;
         this.logsService = logsService;
+        this.emailService = emailService;
     }
-    MeetingsService.prototype.createMeeting = function (dto, userId, email, role) {
-        return __awaiter(this, void 0, void 0, function () {
+    MeetingsService.prototype.serializeMeeting = function (meeting) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        return __assign(__assign({}, meeting), { title: (_a = meeting.title) !== null && _a !== void 0 ? _a : undefined, client: (_b = meeting.client) !== null && _b !== void 0 ? _b : undefined, date: meeting.date ? new Date(meeting.date).toISOString() : undefined, time: (_c = meeting.time) !== null && _c !== void 0 ? _c : undefined, duration: (_d = meeting.duration) !== null && _d !== void 0 ? _d : undefined, type: (_e = meeting.type) !== null && _e !== void 0 ? _e : undefined, status: (_f = meeting.status) !== null && _f !== void 0 ? _f : undefined, notes: (_g = meeting.notes) !== null && _g !== void 0 ? _g : undefined, objections: (_h = meeting.objections) !== null && _h !== void 0 ? _h : undefined, location: (_j = meeting.location) !== null && _j !== void 0 ? _j : undefined, locationType: (_k = meeting.locationType) !== null && _k !== void 0 ? _k : undefined, inventory: (_l = meeting.inventory) !== null && _l !== void 0 ? _l : undefined, project: (_m = meeting.project) !== null && _m !== void 0 ? _m : undefined, lead: (_o = meeting.lead) !== null && _o !== void 0 ? _o : undefined, assignedTo: (_p = meeting.assignedTo) !== null && _p !== void 0 ? _p : undefined, createdBy: (_q = meeting.createdBy) !== null && _q !== void 0 ? _q : undefined, createdAt: meeting.createdAt ? meeting.createdAt.toISOString() : undefined, updatedAt: meeting.updatedAt ? meeting.updatedAt.toISOString() : undefined });
+    };
+    /**
+     * Helper method to check if a user can access a specific meeting
+     */
+    MeetingsService.prototype.canAccessMeeting = function (meetingId, userId, role) {
+        var _a, _b;
+        return __awaiter(this, void 0, Promise, function () {
             var meeting;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        // Admins and sales admins can access all meetings
+                        if (role === 'admin' || role === 'sales_admin') {
+                            return [2 /*return*/, true];
+                        }
+                        return [4 /*yield*/, this.prisma.meeting.findUnique({
+                                where: { id: meetingId },
+                                select: {
+                                    createdById: true,
+                                    assignedToId: true,
+                                    createdBy: {
+                                        select: { teamLeaderId: true }
+                                    },
+                                    assignedTo: {
+                                        select: { teamLeaderId: true }
+                                    }
+                                }
+                            })];
+                    case 1:
+                        meeting = _c.sent();
+                        if (!meeting) {
+                            return [2 /*return*/, false];
+                        }
+                        // Check if user created or is assigned to the meeting
+                        if (meeting.createdById === userId || meeting.assignedToId === userId) {
+                            return [2 /*return*/, true];
+                        }
+                        // If user is team leader, check if they can access team members' meetings
+                        if (role === 'team_leader') {
+                            // Check if the meeting was created by a team member
+                            if (((_a = meeting.createdBy) === null || _a === void 0 ? void 0 : _a.teamLeaderId) === userId) {
+                                return [2 /*return*/, true];
+                            }
+                            // Check if the meeting is assigned to a team member
+                            if (((_b = meeting.assignedTo) === null || _b === void 0 ? void 0 : _b.teamLeaderId) === userId) {
+                                return [2 /*return*/, true];
+                            }
+                        }
+                        return [2 /*return*/, false];
+                }
+            });
+        });
+    };
+    MeetingsService.prototype.createMeeting = function (dto, userId, email, role) {
+        var _a;
+        return __awaiter(this, void 0, Promise, function () {
+            var meeting, serializedMeeting;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.prisma.meeting.create({
-                            data: __assign(__assign(__assign(__assign({ 
-                                // الحقول الأساسية
-                                title: dto.title, client: dto.client, date: dto.date ? dto.date : null, time: dto.time, duration: dto.duration, type: dto.type, status: dto.status, locationType: dto.locationType, notes: dto.notes, objections: dto.objections, location: dto.location }, (dto.inventoryId && {
-                                inventory: {
-                                    connect: { id: dto.inventoryId }
-                                }
+                            data: __assign(__assign(__assign(__assign({ title: dto.title, client: dto.client, date: (_a = dto.date) !== null && _a !== void 0 ? _a : null, time: dto.time, duration: dto.duration, type: dto.type, status: dto.status, locationType: dto.locationType, notes: dto.notes, objections: dto.objections, location: dto.location }, (dto.inventoryId && {
+                                inventory: { connect: { id: dto.inventoryId } }
                             })), (dto.projectId && {
-                                project: {
-                                    connect: { id: dto.projectId }
-                                }
+                                project: { connect: { id: dto.projectId } }
                             })), (dto.assignedToId && {
-                                assignedTo: {
-                                    connect: { id: dto.assignedToId }
-                                }
-                            })), { 
-                                // المستخدم المنشئ
-                                createdBy: {
-                                    connect: { id: userId }
-                                } }),
+                                assignedTo: { connect: { id: dto.assignedToId } }
+                            })), { createdBy: { connect: { id: userId } } }),
                             include: {
                                 lead: true,
                                 inventory: true,
@@ -94,31 +140,80 @@ var MeetingsService = /** @class */ (function () {
                             }
                         })];
                     case 1:
-                        meeting = _a.sent();
-                        // // سجل عملية الإنشاء
-                        // await this.logsService.createLog({
-                        //   userId,
-                        //   email,
-                        //   userRole: role,
-                        //   leadId: dto.leadId || null,
-                        //   action: 'create_meeting',
-                        //   description: `Created meeting: ${dto.title || ''} for lead ${dto.leadId || 'N/A'}`,
-                        // });
-                        return [2 /*return*/, {
-                                status: 201,
-                                message: 'Meeting created successfully',
-                                meetings: meeting
-                            }];
+                        meeting = _b.sent();
+                        if (!meeting.assignedTo) return [3 /*break*/, 3];
+                        serializedMeeting = this.serializeMeeting(meeting);
+                        if (!serializedMeeting.assignedTo) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.emailService.sendMeetingReminder(serializedMeeting, serializedMeeting.assignedTo)];
+                    case 2:
+                        _b.sent();
+                        _b.label = 3;
+                    case 3: return [2 /*return*/, {
+                            status: 201,
+                            message: 'Meeting created successfully',
+                            meeting: this.serializeMeeting(meeting)
+                        }];
                 }
             });
         });
     };
     MeetingsService.prototype.getAllMeetings = function (userId, email, role) {
         return __awaiter(this, void 0, void 0, function () {
-            var meetings;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.prisma.meeting.findMany({
+            var whereClause, _a, teamMembers, teamMemberIds, meetings;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        whereClause = {};
+                        _a = role;
+                        switch (_a) {
+                            case 'sales_rep': return [3 /*break*/, 1];
+                            case 'team_leader': return [3 /*break*/, 2];
+                            case 'sales_admin': return [3 /*break*/, 4];
+                            case 'admin': return [3 /*break*/, 4];
+                        }
+                        return [3 /*break*/, 5];
+                    case 1:
+                        // Sales reps can only see meetings they created or are assigned to
+                        whereClause = {
+                            OR: [
+                                { createdById: userId },
+                                { assignedToId: userId },
+                            ]
+                        };
+                        return [3 /*break*/, 6];
+                    case 2: return [4 /*yield*/, this.prisma.user.findMany({
+                            where: { teamLeaderId: userId },
+                            select: { id: true }
+                        })];
+                    case 3:
+                        teamMembers = _b.sent();
+                        teamMemberIds = teamMembers.map(function (member) { return member.id; });
+                        whereClause = {
+                            OR: [
+                                // Own meetings (created or assigned)
+                                { createdById: userId },
+                                { assignedToId: userId },
+                                // Team members' meetings (created or assigned)
+                                { createdById: { "in": teamMemberIds } },
+                                { assignedToId: { "in": teamMemberIds } },
+                            ]
+                        };
+                        return [3 /*break*/, 6];
+                    case 4:
+                        // Sales admins and admins can see all meetings
+                        whereClause = {};
+                        return [3 /*break*/, 6];
+                    case 5:
+                        // Default to sales_rep behavior for unknown roles
+                        whereClause = {
+                            OR: [
+                                { createdById: userId },
+                                { assignedToId: userId },
+                            ]
+                        };
+                        return [3 /*break*/, 6];
+                    case 6: return [4 /*yield*/, this.prisma.meeting.findMany({
+                            where: whereClause,
                             include: {
                                 lead: true,
                                 inventory: true,
@@ -130,8 +225,8 @@ var MeetingsService = /** @class */ (function () {
                                 createdAt: 'desc'
                             }
                         })];
-                    case 1:
-                        meetings = _a.sent();
+                    case 7:
+                        meetings = _b.sent();
                         return [2 /*return*/, {
                                 status: 200,
                                 message: 'Meetings retrieved successfully',
@@ -141,9 +236,82 @@ var MeetingsService = /** @class */ (function () {
             });
         });
     };
+    MeetingsService.prototype.getMeetingsByProject = function (projectId, userId, email, role) {
+        return __awaiter(this, void 0, void 0, function () {
+            var whereClause, _a, teamMembers, teamMemberIds, meetings;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        whereClause = {
+                            projectId: projectId
+                        };
+                        _a = role;
+                        switch (_a) {
+                            case 'sales_rep': return [3 /*break*/, 1];
+                            case 'team_leader': return [3 /*break*/, 2];
+                            case 'sales_admin': return [3 /*break*/, 4];
+                            case 'admin': return [3 /*break*/, 4];
+                        }
+                        return [3 /*break*/, 5];
+                    case 1:
+                        whereClause = __assign(__assign({}, whereClause), { OR: [
+                                { createdById: userId },
+                                { assignedToId: userId },
+                            ] });
+                        return [3 /*break*/, 6];
+                    case 2: return [4 /*yield*/, this.prisma.user.findMany({
+                            where: { teamLeaderId: userId },
+                            select: { id: true }
+                        })];
+                    case 3:
+                        teamMembers = _b.sent();
+                        teamMemberIds = teamMembers.map(function (member) { return member.id; });
+                        whereClause = __assign(__assign({}, whereClause), { OR: [
+                                // Own meetings
+                                { createdById: userId },
+                                { assignedToId: userId },
+                                // Team members' meetings
+                                { createdById: { "in": teamMemberIds } },
+                                { assignedToId: { "in": teamMemberIds } },
+                            ] });
+                        return [3 /*break*/, 6];
+                    case 4: 
+                    // No additional filtering for admins
+                    return [3 /*break*/, 6];
+                    case 5:
+                        // Default to sales_rep behavior
+                        whereClause = __assign(__assign({}, whereClause), { OR: [
+                                { createdById: userId },
+                                { assignedToId: userId },
+                            ] });
+                        return [3 /*break*/, 6];
+                    case 6: return [4 /*yield*/, this.prisma.meeting.findMany({
+                            where: whereClause,
+                            include: {
+                                lead: true,
+                                inventory: true,
+                                project: true,
+                                createdBy: true,
+                                assignedTo: true
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
+                            }
+                        })];
+                    case 7:
+                        meetings = _b.sent();
+                        return [2 /*return*/, {
+                                status: 200,
+                                message: 'Project meetings retrieved successfully',
+                                meetings: meetings
+                            }];
+                }
+            });
+        });
+    };
     MeetingsService.prototype.updateMeeting = function (id, dto, userId, email, role) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingMeeting, updatedMeeting, log;
+            var existingMeeting, canAccess, updatedMeeting, log;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.prisma.meeting.findUnique({
@@ -153,6 +321,12 @@ var MeetingsService = /** @class */ (function () {
                         existingMeeting = _a.sent();
                         if (!existingMeeting) {
                             throw new common_1.NotFoundException('Meeting not found');
+                        }
+                        return [4 /*yield*/, this.canAccessMeeting(id, userId, role)];
+                    case 2:
+                        canAccess = _a.sent();
+                        if (!canAccess) {
+                            throw new common_1.NotFoundException('Meeting not found or access denied');
                         }
                         return [4 /*yield*/, this.prisma.meeting.update({
                                 where: { id: id },
@@ -171,7 +345,7 @@ var MeetingsService = /** @class */ (function () {
                                     assignedTo: true
                                 }
                             })];
-                    case 2:
+                    case 3:
                         updatedMeeting = _a.sent();
                         return [4 /*yield*/, this.prisma.log.create({
                                 data: {
@@ -186,7 +360,7 @@ var MeetingsService = /** @class */ (function () {
                                     description: "Updated meeting : status=" + dto.status + ", date=" + dto.date
                                 }
                             })];
-                    case 3:
+                    case 4:
                         log = _a.sent();
                         // 4. الإرجاع
                         return [2 /*return*/, {
@@ -200,7 +374,7 @@ var MeetingsService = /** @class */ (function () {
     };
     MeetingsService.prototype.deleteMeeting = function (id, userId, email, role) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingMeeting;
+            var existingMeeting, canAccess;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.prisma.meeting.findUnique({ where: { id: id } })];
@@ -209,8 +383,14 @@ var MeetingsService = /** @class */ (function () {
                         if (!existingMeeting) {
                             throw new common_1.NotFoundException('Meeting not found');
                         }
-                        return [4 /*yield*/, this.prisma.meeting["delete"]({ where: { id: id } })];
+                        return [4 /*yield*/, this.canAccessMeeting(id, userId, role)];
                     case 2:
+                        canAccess = _a.sent();
+                        if (!canAccess) {
+                            throw new common_1.NotFoundException('Meeting not found or access denied');
+                        }
+                        return [4 /*yield*/, this.prisma.meeting["delete"]({ where: { id: id } })];
+                    case 3:
                         _a.sent();
                         return [2 /*return*/, {
                                 status: 200,

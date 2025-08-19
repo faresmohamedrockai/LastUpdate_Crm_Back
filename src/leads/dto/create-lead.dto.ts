@@ -104,10 +104,14 @@ export class CreateLeadDto {
   lastVisit?: Date;
 
  @IsOptional()
+  @Type(() => Date) // يحول من string لـ Date
   @IsDate()
-  @Type(() => Date)   // يحول النص لـ Date
   firstConection?: Date;
 
+
+
+
+  
   @IsOptional()
   @IsString()
   inventoryInterestId?: string;

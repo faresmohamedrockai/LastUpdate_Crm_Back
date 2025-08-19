@@ -53,6 +53,10 @@ var CreateLeadDto = /** @class */ (function () {
     ], CreateLeadDto.prototype, "nameEn");
     __decorate([
         class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], CreateLeadDto.prototype, "otherProject");
+    __decorate([
+        class_validator_1.IsOptional(),
         class_validator_1.IsArray(),
         class_validator_1.IsString({ each: true })
     ], CreateLeadDto.prototype, "contacts");
@@ -60,6 +64,10 @@ var CreateLeadDto = /** @class */ (function () {
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
     ], CreateLeadDto.prototype, "email");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], CreateLeadDto.prototype, "description");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
@@ -94,13 +102,18 @@ var CreateLeadDto = /** @class */ (function () {
     ], CreateLeadDto.prototype, "lastVisit");
     __decorate([
         class_validator_1.IsOptional(),
-        class_validator_1.IsDate(),
-        class_transformer_1.Type(function () { return Date; }) // يحول النص لـ Date
+        class_transformer_1.Type(function () { return Date; }) // يحول من string لـ Date
+        ,
+        class_validator_1.IsDate()
     ], CreateLeadDto.prototype, "firstConection");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()
     ], CreateLeadDto.prototype, "inventoryInterestId");
+    __decorate([
+        class_validator_1.IsOptional(),
+        class_validator_1.IsString()
+    ], CreateLeadDto.prototype, "projectInterestId");
     __decorate([
         class_validator_1.IsOptional(),
         class_validator_1.IsString()

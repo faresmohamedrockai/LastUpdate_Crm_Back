@@ -21,6 +21,8 @@ export class CreateTaskDto {
   @IsEnum(['pending', 'in_progress', 'completed', 'cancelled', 'overdue'])
   status?: TaskStatus;
 
+  
+  @IsOptional()
   @IsEnum(['follow_up', 'meeting_preparation', 'contract_review', 'payment_reminder', 'visit_scheduling', 'lead_nurturing', 'general'])
   type: TaskType;
 

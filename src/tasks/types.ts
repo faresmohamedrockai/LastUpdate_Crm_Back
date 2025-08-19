@@ -33,3 +33,26 @@ export interface Task {
   project: any | null;
   inventory: any | null;
 } 
+export interface Meeting {
+  id: string;
+  title?: string;
+  client?: string;
+  date?: string;
+  time?: string;
+  duration?: string;
+  type?: string;
+  status?: 'Scheduled' | 'Completed' | 'Cancelled';
+  notes?: string;
+  objections?: string;
+  location?: string;
+  locationType?: string;
+  inventory?: any;
+  project?: any;
+  lead?: any;
+  assignedTo?: any;
+  createdBy?: any;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+

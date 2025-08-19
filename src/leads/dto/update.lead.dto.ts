@@ -86,10 +86,10 @@ export class UpdateLeadDto {
   @IsBoolean()
   cil?: boolean 
 
-  @IsOptional()
-   @IsDate()
-   @Type(() => Date)   // يحول النص لـ Date
-   firstConection?: Date;
+ @IsOptional()
+  @Type(() => Date) // يحول من string لـ Date
+  @IsDate()
+  firstConection?: Date;
 
   @IsOptional()
   @IsArray()
