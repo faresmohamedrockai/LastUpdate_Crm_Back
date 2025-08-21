@@ -230,6 +230,7 @@ export class LeadsService {
           include: {
             owner: true,
             calls: true,
+            projectInterest: true,
           },
         });
         description = `Sales rep retrieved ${leads.length} leads`;

@@ -32,15 +32,15 @@ export class EmailService {
 
   // Reminders
 
-  private generateMeetingReminderEmail(meeting: Meeting, user: User): string {
-    const meetingDate = meeting.date
-      ? new Date(meeting.date).toLocaleDateString()
-      : 'No date set';
-    const meetingTime = meeting.time || 'No time set';
-    const location = meeting.location || 'Not specified';
-    const duration = meeting.duration || 'Not specified';
+private generateMeetingReminderEmail(meeting: Meeting, user: User): string {
+  const meetingDate = meeting.date
+    ? new Date(meeting.date).toLocaleDateString()
+    : 'No date set';
+  const meetingTime = meeting.time || 'No time set';
+  const location = meeting.location || 'Not specified';
+  const duration = meeting.duration || 'Not specified';
 
-    return `
+  return `
   <!DOCTYPE html>
   <html>
   <head>
@@ -49,17 +49,18 @@ export class EmailService {
     <style>
       body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
       .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: #cfe2ff; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
-      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
-      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; }
+      .header { background: #cfe2ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+      .header-logo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; }
+      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <img src="https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg" 
-             alt="Meeting Banner" 
-             style="max-width: 100%; border-radius: 5px;"/>
+             alt="CRM Logo" 
+             class="header-logo"/>
         <h2>⏰ Meeting Reminder</h2>
         <p>Hello ${user.name},</p>
         <p>This is a reminder for your upcoming meeting.</p>
@@ -89,68 +90,72 @@ export class EmailService {
   </body>
   </html>
   `;
-  }
+}
 
-  private generateTaskReminderEmail(task: Task, user: User): string {
-    const dueDate = new Date(task.dueDate).toLocaleDateString();
-    const priorityColor = this.getPriorityColor(task.priority);
+private generateTaskReminderEmail(task: Task, user: User): string {
+  const dueDate = new Date(task.dueDate).toLocaleDateString();
+  const priorityColor = this.getPriorityColor(task.priority);
 
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Task Reminder</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-          .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
-          .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }
-          .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h2>🔔 Task Reminder</h2>
-            <p>Hello ${user.name},</p>
-            <p>This is a reminder for a task that's due soon.</p>
-          </div>
-          
-          <div class="task-details">
-            <h3>${task.title}</h3>
-            <p><strong>Description:</strong> ${task.description || 'No description provided'}</p>
-            <p><strong>Due Date:</strong> ${dueDate}</p>
-            <p><strong>Priority:</strong> <span class="priority" style="background: ${priorityColor}">${task.priority}</span></p>
-            <p><strong>Type:</strong> ${task.type.replace('_', ' ').toUpperCase()}</p>
-            <p><strong>Status:</strong> ${task.status.replace('_', ' ').toUpperCase()}</p>
-          </div>
-          
-          <p style="margin-top: 20px;">
-            <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/tasks/${task.id}" class="btn">
-              View Task Details
-            </a>
-          </p>
-          
-          <p style="margin-top: 20px; font-size: 12px; color: #666;">
-            This is an automated reminder from your CRM system.
-          </p>
-        </div>
-      </body>
-      </html>
-    `;
-  }
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>Task Reminder</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+      .header-logo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+      .task-details { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; }
+      .priority { display: inline-block; padding: 5px 10px; border-radius: 5px; color: white; font-weight: bold; }
+      .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg" 
+             alt="CRM Logo" 
+             class="header-logo"/>
+        <h2>🔔 Task Reminder</h2>
+        <p>Hello ${user.name},</p>
+        <p>This is a reminder for a task that's due soon.</p>
+      </div>
+      
+      <div class="task-details">
+        <h3>${task.title}</h3>
+        <p><strong>Description:</strong> ${task.description || 'No description provided'}</p>
+        <p><strong>Due Date:</strong> ${dueDate}</p>
+        <p><strong>Priority:</strong> <span class="priority" style="background: ${priorityColor}">${task.priority}</span></p>
+        <p><strong>Type:</strong> ${task.type.replace('_', ' ').toUpperCase()}</p>
+        <p><strong>Status:</strong> ${task.status.replace('_', ' ').toUpperCase()}</p>
+      </div>
+      
+      <p style="margin-top: 20px;">
+        <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/tasks/${task.id}" class="btn">
+          View Task Details
+        </a>
+      </p>
+      
+      <p style="margin-top: 20px; font-size: 12px; color: #666;">
+        This is an automated reminder from your CRM system.
+      </p>
+    </div>
+  </body>
+  </html>
+  `;
+}
 
-  private generateMeetingConfirmationEmail(meeting: Meeting, user: User): string {
-    const meetingDate = meeting.date
-      ? new Date(meeting.date).toLocaleDateString()
-      : 'No date set';
-    const meetingTime = meeting.time || 'No time set';
-    const location = meeting.location || 'Not specified';
-    const duration = meeting.duration || 'Not specified';
+private generateMeetingConfirmationEmail(meeting: Meeting, user: User): string {
+  const meetingDate = meeting.date
+    ? new Date(meeting.date).toLocaleDateString()
+    : 'No date set';
+  const meetingTime = meeting.time || 'No time set';
+  const location = meeting.location || 'Not specified';
+  const duration = meeting.duration || 'Not specified';
 
-    return `
+  return `
   <!DOCTYPE html>
   <html>
   <head>
@@ -159,17 +164,18 @@ export class EmailService {
     <style>
       body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
       .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: #d1e7dd; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
-      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
-      .btn { display: inline-block; padding: 10px 20px; background: #198754; color: white; text-decoration: none; border-radius: 5px; }
+      .header { background: #d1e7dd; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+      .header-logo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; }
+      .btn { display: inline-block; padding: 10px 20px; background: #198754; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <img src="https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg" 
-             alt="Meeting Banner" 
-             style="max-width: 100%; border-radius: 5px;"/>
+             alt="CRM Logo" 
+             class="header-logo"/>
         <h2>✅ Meeting Scheduled</h2>
         <p>Hello ${user.name},</p>
         <p>Your meeting has been successfully scheduled with the following details:</p>
@@ -199,7 +205,7 @@ export class EmailService {
   </body>
   </html>
   `;
-  }
+}
 
 private generateCallReminderEmail(call: Partial<Call>, user: Partial<User>): string {
   const callDate = call.date ? new Date(call.date).toLocaleDateString() : 'No date set';
@@ -213,51 +219,52 @@ private generateCallReminderEmail(call: Partial<Call>, user: Partial<User>): str
   const userName = user.name || 'User';
 
   return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Call Reminder</title>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #cfe2ff; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
-    .call-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
-    .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg" 
-           alt="Call Banner" 
-           style="max-width: 100%; border-radius: 5px;"/>
-      <h2>📞 Call Reminder</h2>
-      <p>Hello ${userName},</p>
-      <p>This is a reminder for your upcoming call with the following details:</p>
-    </div>
-    
-    <div class="call-details">
-      <p><strong>Outcome:</strong> ${outcome}</p>
-      <p><strong>Date:</strong> ${callDate}</p>
-      <p><strong>Time:</strong> ${callTime}</p>
-      <p><strong>Duration:</strong> ${duration}</p>
-      ${followUpInfo}
-      ${call.notes ? `<p><strong>Notes:</strong> ${call.notes}</p>` : ''}
-    </div>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>Call Reminder</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+      .header-logo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+      .call-details { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; }
+      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg" 
+             alt="CRM Logo" 
+             class="header-logo"/>
+        <h2>📞 Call Reminder</h2>
+        <p>Hello ${userName},</p>
+        <p>This is a reminder for your upcoming call with the following details:</p>
+      </div>
+      
+      <div class="call-details">
+        <p><strong>Outcome:</strong> ${outcome}</p>
+        <p><strong>Date:</strong> ${callDate}</p>
+        <p><strong>Time:</strong> ${callTime}</p>
+        <p><strong>Duration:</strong> ${duration}</p>
+        ${followUpInfo}
+        ${call.notes ? `<p><strong>Notes:</strong> ${call.notes}</p>` : ''}
+      </div>
 
-    <p style="margin-top: 20px;">
-      <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/calls" class="btn">
-        View Call Details
-      </a>
-    </p>
+      <p style="margin-top: 20px;">
+        <a href="${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/calls" class="btn">
+          View Call Details
+        </a>
+      </p>
 
-    <p style="margin-top: 20px; font-size: 12px; color: #666;">
-      This is an automated reminder from your CRM system.
-    </p>
-  </div>
-</body>
-</html>
+      <p style="margin-top: 20px; font-size: 12px; color: #666;">
+        This is an automated reminder from your CRM system.
+      </p>
+    </div>
+  </body>
+  </html>
   `;
 }
 
