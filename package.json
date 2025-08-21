@@ -25,6 +25,8 @@
     "seed": "npx ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@google-cloud/translate": "^9.2.0",
+    "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -36,6 +38,7 @@
     "@ngrok/ngrok": "^1.5.1",
     "@prisma/client": "^6.10.1",
     "@types/nodemailer": "^6.4.17",
+    "@vitalets/google-translate-api": "^9.2.1",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "buffer-to-stream": "^1.0.0",
@@ -67,7 +70,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/multer": "^1.4.13",
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.17.2",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",

@@ -2,60 +2,79 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCallDto } from './dto/create-calls.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
-
+import { EmailService } from '../email/email.service';
+import { Task,Meeting,Call,User } from '../tasks/types';
 @Injectable()
 export class CallsService {
   constructor(
     private prisma: PrismaService, 
-    private readonly logsService: LogsService
+    private readonly logsService: LogsService,
+    private emailService: EmailService,
   ) {}
 
-  async createCall(dto: CreateCallDto, userId: string, id: string,email,role) {
-  
-  const lead = await this.prisma.lead.findUnique({
+async createCall(dto: CreateCallDto, userId: string, id: string, email: string, role: string) {
+  const lead = await this.prisma.lead.findUnique({ 
     where: { id: dto.leadId },
+    include: { owner: true }, // لجلب اسم صاحب الـ lead
   });
   if (!lead) throw new NotFoundException('Lead not found');
 
-  
   if (dto.projectId && dto.projectId.trim()) {
-    const project = await this.prisma.project.findUnique({
-      where: { id: dto.projectId },
-    });
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+    const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
+    if (!project) throw new NotFoundException('Project not found');
   }
 
-
-  // 3. أنشئ المكالمة
   const call = await this.prisma.call.create({
-  data: {
-    date: dto.date, 
-    outcome: dto.outcome,
-    duration: dto.duration,
-    notes: dto.notes,
-    leadId: dto.leadId,
-    projectId: dto.projectId?.trim() || undefined,
-    createdBy:userId
-  },
-  include: {
-    lead: true,
-    Project: true,
-  },
-});
+    data: {
+      date: dto.date,
+      outcome: dto.outcome,
+      followUpDate: dto.followUpDate || null,
+      followUpTime: dto.followUpTime || null,
+      duration: dto.duration,
+      notes: dto.notes,
+      leadId: dto.leadId,
+      projectId: dto.projectId?.trim() || undefined,
+      createdBy: userId,
+    },
+    include: {
+      lead: true,
+      createdByUser:true,
+      Project: true,
+    },
+  });
 
+  await this.logsService.createLog({
+    userId,
+    action: 'create_call',
+    description: `User ${id} created Call`,
+    email,
+    userRole: role,
+  });
 
- await this.logsService.createLog({
-      userId: userId,
-      action: 'create_call',
-      description: `User ${id} created Call in`,
-   
-      email: email,
-      userRole: role,
-    });
+  // جدولة reminder للـ follow-up
+  if (dto.outcome === 'Follow Up Required' && dto.followUpDate && dto.followUpTime) {
+   if (!call.createdByUser) {
+  console.log(`Call ${call.id} has no creator.`);
+  return;
+}
+const user = { id: call.createdByUser.id, name: call.createdByUser.name, email:call.createdByUser.email };
+console.log(user);
 
-  // 5. رد النجاح
+    if (!call.leadId || !call.createdBy) {
+  // this.logger.warn(`Cannot schedule follow-up reminder for call ${call.id} because leadId or createdBy is null`);
+  return;
+}
+const userForReminder = {
+  id: call.createdByUser.id,
+  name: call.createdByUser.name || 'User',
+  email: call.createdByUser.email,
+  role: call.createdByUser.role || '', // لو ال role مطلوبة
+  createdAt: call.createdByUser.createdAt,
+  password: call.createdByUser.password || '', // لو الدالة محتاجة
+};
+    await this.emailService.scheduleCallFollowUpReminder(call as Call, userForReminder as any );
+  }
+
   return {
     status: 201,
     message: 'Call created successfully',
@@ -63,12 +82,14 @@ export class CallsService {
   };
 }
 
+
   async getAllCalls(leadId: string) {
   const calls = await this.prisma.call.findMany({
     where: { leadId },
     include: {
       lead: true,
       Project: true, 
+      createdByUser: true, 
     },
     orderBy: { date: 'desc' },
   });

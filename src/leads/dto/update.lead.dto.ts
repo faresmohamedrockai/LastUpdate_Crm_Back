@@ -83,6 +83,10 @@ export class UpdateLeadDto {
   contact?: string
 
   @IsOptional()
+  @IsString()
+  gender?: string
+
+  @IsOptional()
   @IsBoolean()
   cil?: boolean 
 

@@ -28,6 +28,7 @@ model User {
   createdMeetings  Meeting[]  @relation("CreatedMeetings")
   assignedTasks    Task[]     @relation("AssignedTasks")
   createdTasks     Task[]     @relation("CreatedTasks")
+  createdCalls Call[] @relation("CreatedCalls")
   teamLeader       User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id])
   teamMembers      User[]     @relation("TeamMembers")
   visit            Visit[]
@@ -38,6 +39,7 @@ model Lead {
   nameAr              String?
   nameEn              String?
   contact             String?
+  gender              String?
   status              LeadStatus
   lastCall            DateTime?
   lastVisit           DateTime?
@@ -156,6 +158,8 @@ model Call {
   id        String   @id @default(uuid())
   date      String?
   outcome   String?
+  followUpTime   String?
+  followUpDate   String?
   duration  String?
   projectId String?
   notes     String?
@@ -164,6 +168,7 @@ model Call {
   createdBy String?
   project   String?
   lead      Lead?    @relation(fields: [leadId], references: [id])
+  createdByUser User?     @relation("CreatedCalls", fields: [createdBy], references: [id])
   Project   Project? @relation(fields: [projectId], references: [id])
 }
 

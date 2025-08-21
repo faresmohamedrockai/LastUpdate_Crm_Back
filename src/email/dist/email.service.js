@@ -69,7 +69,61 @@ var EmailService = /** @class */ (function () {
         var meetingTime = meeting.time || 'No time set';
         var location = meeting.location || 'Not specified';
         var duration = meeting.duration || 'Not specified';
-        return "\n  <!DOCTYPE html>\n  <html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Meeting Reminder</title>\n    <style>\n      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n      .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n      .header { background: #cfe2ff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }\n      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">\n        <h2>\u23F0 Meeting Reminder</h2>\n        <p>Hello " + user.name + ",</p>\n        <p>This is a reminder for your upcoming meeting.</p>\n      </div>\n      \n      <div class=\"meeting-details\">\n        <h3>" + (meeting.title || 'Meeting') + "</h3>\n        <p><strong>Client:</strong> " + (meeting.client || 'Not specified') + "</p>\n        <p><strong>Date:</strong> " + meetingDate + "</p>\n        <p><strong>Time:</strong> " + meetingTime + "</p>\n        <p><strong>Duration:</strong> " + duration + "</p>\n        <p><strong>Location:</strong> " + location + "</p>\n        <p><strong>Notes:</strong> " + (meeting.notes || 'No additional notes') + "</p>\n        <p><strong>Status:</strong> " + (meeting.status || 'Scheduled') + "</p>\n      </div>\n\n      <p style=\"margin-top: 20px;\">\n        <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:5173') + "/meetings\" class=\"btn\">\n          View Meeting Details\n        </a>\n      </p>\n\n      <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n        This is an automated notification from your CRM system.\n      </p>\n    </div>\n  </body>\n  </html>\n  ";
+        return "\n  <!DOCTYPE html>\n  <html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Meeting Reminder</title>\n    <style>\n      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n      .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n      .header { background: #cfe2ff; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }\n      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">\n        <img src=\"https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg\" \n             alt=\"Meeting Banner\" \n             style=\"max-width: 100%; border-radius: 5px;\"/>\n        <h2>\u23F0 Meeting Reminder</h2>\n        <p>Hello " + user.name + ",</p>\n        <p>This is a reminder for your upcoming meeting.</p>\n      </div>\n      \n      <div class=\"meeting-details\">\n        <h3>" + (meeting.title || 'Meeting') + "</h3>\n        <p><strong>Client:</strong> " + (meeting.client || 'Not specified') + "</p>\n        <p><strong>Date:</strong> " + meetingDate + "</p>\n        <p><strong>Time:</strong> " + meetingTime + "</p>\n        <p><strong>Duration:</strong> " + duration + "</p>\n        <p><strong>Location:</strong> " + location + "</p>\n        <p><strong>Notes:</strong> " + (meeting.notes || 'No additional notes') + "</p>\n        <p><strong>Status:</strong> " + (meeting.status || 'Scheduled') + "</p>\n      </div>\n\n      <p style=\"margin-top: 20px;\">\n        <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:5173') + "/meetings\" class=\"btn\">\n          View Meeting Details\n        </a>\n      </p>\n\n      <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n        This is an automated notification from your CRM system.\n      </p>\n    </div>\n  </body>\n  </html>\n  ";
+    };
+    EmailService.prototype.generateMeetingUpdateEmail = function (meeting, user) {
+        var meetingDate = meeting.date
+            ? new Date(meeting.date).toLocaleDateString()
+            : 'No date set';
+        var meetingTime = meeting.time || 'No time set';
+        var location = meeting.location || 'Not specified';
+        var duration = meeting.duration || 'Not specified';
+        // اختيار لون الـ header حسب حالة الـ meeting
+        // const headerBg =
+        //   meeting.status === 'CANCELLED'
+        //     ? '#f8d7da' // أحمر فاتح
+        //     : meeting.status === 'RESCHEDULED'
+        //     ? '#fff3cd' // أصفر
+        //     : '#d1e7dd'; // أخضر فاتح (باقي الحالات)
+        return "\n  <!DOCTYPE html>\n  <html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Meeting Updated</title>\n    <style>\n      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n      .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n      .header { background:  padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }\n      .meeting-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n      .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">\n        <img src=\"https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg\" \n             alt=\"Meeting Banner\" \n             style=\"max-width: 100%; border-radius: 5px;\"/>\n        <h2>\u270F\uFE0F Meeting Updated</h2>\n        <p>Hello " + user.name + ",</p>\n        <p>A meeting you are assigned to has been updated.</p>\n      </div>\n      \n      <div class=\"meeting-details\">\n        <h3>" + (meeting.title || 'Meeting') + "</h3>\n        <p><strong>Client:</strong> " + (meeting.client || 'Not specified') + "</p>\n        <p><strong>Date:</strong> " + meetingDate + "</p>\n        <p><strong>Time:</strong> " + meetingTime + "</p>\n        <p><strong>Duration:</strong> " + duration + "</p>\n        <p><strong>Location:</strong> " + location + "</p>\n        <p><strong>Notes:</strong> " + (meeting.notes || 'No additional notes') + "</p>\n        <p><strong>Status:</strong> " + (meeting.status || 'Scheduled') + "</p>\n      </div>\n\n      <p style=\"margin-top: 20px;\">\n        <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:5173') + "/meetings/" + meeting.id + "\" class=\"btn\">\n          View Meeting Details\n        </a>\n      </p>\n\n      <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n        This is an automated notification from your CRM system.\n      </p>\n    </div>\n  </body>\n  </html>\n  ";
+    };
+    EmailService.prototype.generateTaskReminderEmail = function (task, user) {
+        var dueDate = new Date(task.dueDate).toLocaleDateString();
+        var priorityColor = this.getPriorityColor(task.priority);
+        return "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <title>Task Reminder</title>\n        <style>\n          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n          .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n          .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }\n          .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n          .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }\n          .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n        </style>\n      </head>\n      <body>\n        <div class=\"container\">\n          <div class=\"header\">\n            <h2>\uD83D\uDD14 Task Reminder</h2>\n            <p>Hello " + user.name + ",</p>\n            <p>This is a reminder for a task that's due soon.</p>\n          </div>\n          \n          <div class=\"task-details\">\n            <h3>" + task.title + "</h3>\n            <p><strong>Description:</strong> " + (task.description || 'No description provided') + "</p>\n            <p><strong>Due Date:</strong> " + dueDate + "</p>\n            <p><strong>Priority:</strong> <span class=\"priority\" style=\"background: " + priorityColor + "\">" + task.priority + "</span></p>\n            <p><strong>Type:</strong> " + task.type.replace('_', ' ').toUpperCase() + "</p>\n            <p><strong>Status:</strong> " + task.status.replace('_', ' ').toUpperCase() + "</p>\n          </div>\n          \n          <p style=\"margin-top: 20px;\">\n            <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:3000') + "/tasks/" + task.id + "\" class=\"btn\">\n              View Task Details\n            </a>\n          </p>\n          \n          <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n            This is an automated reminder from your CRM system.\n          </p>\n        </div>\n      </body>\n      </html>\n    ";
+    };
+    EmailService.prototype.generateTaskAssignmentEmail = function (task, user, assignedBy) {
+        var dueDate = task.dueDate
+            ? new Date(task.dueDate).toLocaleDateString()
+            : 'No due date set';
+        var priorityColor = this.getPriorityColor(task.priority) || '#6c757d';
+        return "\n    <!DOCTYPE html>\n    <html>\n    <head>\n      <meta charset=\"utf-8\">\n      <title>New Task Assignment</title>\n      <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }\n        .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n        .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }\n        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n      </style>\n    </head>\n    <body>\n      <div class=\"container\">\n        <div class=\"header\">\n          <img src=\"https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg\"\n               alt=\"CRM Logo\"\n               style=\"max-width: 120px; margin-bottom: 10px;\"/>\n          <h2>\uD83D\uDCCB New Task Assignment</h2>\n          <p>Hello " + user.name + ",</p>\n          <p>You have been assigned a new task by <strong>" + assignedBy.name + "</strong>.</p>\n        </div>\n        \n        <div class=\"task-details\">\n          <h3>" + task.title + "</h3>\n          <p><strong>Description:</strong> " + (task.description || 'No description provided') + "</p>\n          <p><strong>Due Date:</strong> " + dueDate + "</p>\n          <p><strong>Priority:</strong> <span class=\"priority\" style=\"background: " + priorityColor + "\">" + task.priority + "</span></p>\n          <p><strong>Type:</strong> " + task.type.replace(/_/g, ' ').toUpperCase() + "</p>\n          <p><strong>Assigned By:</strong> " + assignedBy.name + "</p>\n        </div>\n        \n        <p style=\"margin-top: 20px;\">\n          <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:5173') + "/tasks/" + task.id + "\" class=\"btn\">\n            View Task Details\n          </a>\n        </p>\n        \n        <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n          This is an automated notification from your CRM system.\n        </p>\n      </div>\n    </body>\n    </html>\n  ";
+    };
+    EmailService.prototype.generateTaskUpdateEmail = function (task, user) {
+        var dueDate = task.dueDate
+            ? new Date(task.dueDate).toLocaleDateString()
+            : 'No due date set';
+        var priorityColor = this.getPriorityColor(task.priority) || '#6c757d';
+        var headerBg = task.priority === 'high'
+            ? '#f8d7da' // أحمر فاتح
+            : task.priority === 'medium'
+                ? '#fff3cd' // أصفر
+                : '#d1e7dd'; // أخضر فاتح
+        return "\n    <!DOCTYPE html>\n    <html>\n    <head>\n      <meta charset=\"utf-8\">\n      <title>Task Updated</title>\n      <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: " + headerBg + "; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }\n        .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n        .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }\n        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n      </style>\n    </head>\n    <body>\n      <div class=\"container\">\n        <div class=\"header\">\n          <img src=\"https://res.cloudinary.com/dxkau0eb3/image/upload/v1755677291/propiaImage_iwm9j8.jpg\"\n               alt=\"CRM Logo\"\n               style=\"max-width: 120px; margin-bottom: 10px;\"/>\n          <h2>\u270F\uFE0F Task Updated</h2>\n          <p>Hello " + user.name + ",</p>\n          <p>A task you're assigned to has been updated.</p>\n        </div>\n        \n        <div class=\"task-details\">\n          <h3>" + task.title + "</h3>\n          <p><strong>Description:</strong> " + (task.description || 'No description provided') + "</p>\n          <p><strong>Due Date:</strong> " + dueDate + "</p>\n          <p><strong>Priority:</strong> <span class=\"priority\" style=\"background: " + priorityColor + "\">" + task.priority + "</span></p>\n          <p><strong>Type:</strong> " + task.type.replace(/_/g, ' ').toUpperCase() + "</p>\n          <p><strong>Status:</strong> " + task.status.replace(/_/g, ' ').toUpperCase() + "</p>\n        </div>\n        \n        <p style=\"margin-top: 20px;\">\n          <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:3000') + "/tasks/" + task.id + "\" class=\"btn\">\n            View Task Details\n          </a>\n        </p>\n        \n        <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n          This is an automated notification from your CRM system.\n        </p>\n      </div>\n    </body>\n    </html>\n  ";
+    };
+    EmailService.prototype.getPriorityColor = function (priority) {
+        switch (priority) {
+            case 'urgent':
+                return '#dc3545';
+            case 'high':
+                return '#fd7e14';
+            case 'medium':
+                return '#ffc107';
+            case 'low':
+                return '#28a745';
+            default:
+                return '#6c757d';
+        }
     };
     EmailService.prototype.sendMeetingReminder = function (meeting, user) {
         return __awaiter(this, void 0, Promise, function () {
@@ -98,9 +152,39 @@ var EmailService = /** @class */ (function () {
             });
         });
     };
-    EmailService.prototype.sendTaskReminder = function (task, user) {
+    EmailService.prototype.sendMeetingUpdate = function (meeting, user) {
         return __awaiter(this, void 0, Promise, function () {
             var mailOptions, result, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        console.log("user In Send Email Meeting", user);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        mailOptions = {
+                            from: this.configService.get('EMAIL_USER'),
+                            to: user.email,
+                            subject: "Meeting Updated: " + (meeting.title || 'Meeting Update'),
+                            html: this.generateMeetingUpdateEmail(meeting, user)
+                        };
+                        return [4 /*yield*/, this.transporter.sendMail(mailOptions)];
+                    case 2:
+                        result = _a.sent();
+                        this.logger.log("Meeting update sent to " + user.email + " for meeting: " + meeting.title); // غير الرسالة
+                        return [2 /*return*/, true];
+                    case 3:
+                        error_2 = _a.sent();
+                        this.logger.error("Failed to send meeting update: " + error_2.message); // غير الرسالة
+                        return [2 /*return*/, false];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    EmailService.prototype.sendTaskReminder = function (task, user) {
+        return __awaiter(this, void 0, Promise, function () {
+            var mailOptions, result, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -117,8 +201,8 @@ var EmailService = /** @class */ (function () {
                         this.logger.log("Task reminder sent to " + user.email + " for task: " + task.title);
                         return [2 /*return*/, true];
                     case 2:
-                        error_2 = _a.sent();
-                        this.logger.error("Failed to send task reminder: " + error_2.message);
+                        error_3 = _a.sent();
+                        this.logger.error("Failed to send task reminder: " + error_3.message);
                         return [2 /*return*/, false];
                     case 3: return [2 /*return*/];
                 }
@@ -127,7 +211,7 @@ var EmailService = /** @class */ (function () {
     };
     EmailService.prototype.sendTaskAssignment = function (task, user, assignedBy) {
         return __awaiter(this, void 0, Promise, function () {
-            var mailOptions, result, error_3;
+            var mailOptions, result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -145,8 +229,8 @@ var EmailService = /** @class */ (function () {
                         this.logger.log("Task assignment sent to " + user.email + " for task: " + task.title);
                         return [2 /*return*/, true];
                     case 2:
-                        error_3 = _a.sent();
-                        this.logger.error("Failed to send task assignment: " + error_3.message);
+                        error_4 = _a.sent();
+                        this.logger.error("Failed to send task assignment: " + error_4.message);
                         return [2 /*return*/, false];
                     case 3: return [2 /*return*/];
                 }
@@ -155,7 +239,7 @@ var EmailService = /** @class */ (function () {
     };
     EmailService.prototype.sendTaskUpdate = function (task, user) {
         return __awaiter(this, void 0, Promise, function () {
-            var mailOptions, result, error_4;
+            var mailOptions, result, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -172,43 +256,13 @@ var EmailService = /** @class */ (function () {
                         this.logger.log("Task update sent to " + user.email + " for task: " + task.title);
                         return [2 /*return*/, true];
                     case 2:
-                        error_4 = _a.sent();
-                        this.logger.error("Failed to send task update: " + error_4.message);
+                        error_5 = _a.sent();
+                        this.logger.error("Failed to send task update: " + error_5.message);
                         return [2 /*return*/, false];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    };
-    EmailService.prototype.generateTaskReminderEmail = function (task, user) {
-        var dueDate = new Date(task.dueDate).toLocaleDateString();
-        var priorityColor = this.getPriorityColor(task.priority);
-        return "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <title>Task Reminder</title>\n        <style>\n          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n          .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n          .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }\n          .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n          .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }\n          .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n        </style>\n      </head>\n      <body>\n        <div class=\"container\">\n          <div class=\"header\">\n            <h2>\uD83D\uDD14 Task Reminder</h2>\n            <p>Hello " + user.name + ",</p>\n            <p>This is a reminder for a task that's due soon.</p>\n          </div>\n          \n          <div class=\"task-details\">\n            <h3>" + task.title + "</h3>\n            <p><strong>Description:</strong> " + (task.description || 'No description provided') + "</p>\n            <p><strong>Due Date:</strong> " + dueDate + "</p>\n            <p><strong>Priority:</strong> <span class=\"priority\" style=\"background: " + priorityColor + "\">" + task.priority + "</span></p>\n            <p><strong>Type:</strong> " + task.type.replace('_', ' ').toUpperCase() + "</p>\n            <p><strong>Status:</strong> " + task.status.replace('_', ' ').toUpperCase() + "</p>\n          </div>\n          \n          <p style=\"margin-top: 20px;\">\n            <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:3000') + "/tasks/" + task.id + "\" class=\"btn\">\n              View Task Details\n            </a>\n          </p>\n          \n          <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n            This is an automated reminder from your CRM system.\n          </p>\n        </div>\n      </body>\n      </html>\n    ";
-    };
-    EmailService.prototype.generateTaskAssignmentEmail = function (task, user, assignedBy) {
-        console.log(task);
-        var dueDate = new Date(task.dueDate).toLocaleDateString();
-        var priorityColor = this.getPriorityColor(task.priority);
-        return "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <title>New Task Assignment</title>\n        <style>\n          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n          .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n          .header { background: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px; }\n          .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n          .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }\n          .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n        </style>\n      </head>\n      <body>\n        <div class=\"container\">\n          <div class=\"header\">\n            <h2>\uD83D\uDCCB New Task Assignment</h2>\n            <p>Hello " + user.name + ",</p>\n            <p>You have been assigned a new task by " + assignedBy.name + ".</p>\n          </div>\n          \n          <div class=\"task-details\">\n            <h3>" + task.title + "</h3>\n           \n            <p><strong>Description:</strong> " + (task.description || 'No description provided') + "</p>\n            <p><strong>Due Date:</strong> " + dueDate + "</p>\n            <p><strong>Priority:</strong> <span class=\"priority\" style=\"background: " + priorityColor + "\">" + task.priority + "</span></p>\n            <p><strong>Type:</strong> " + task.type.replace('_', ' ').toUpperCase() + "</p>\n            <p><strong>Assigned By:</strong> " + assignedBy.name + "</p>\n          </div>\n          \n          <p style=\"margin-top: 20px;\">\n            <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:5173') + "/tasks/" + task.id + "\" class=\"btn\">\n              View Task Details\n            </a>\n          </p>\n          \n          <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n            This is an automated notification from your CRM system.\n          </p>\n        </div>\n      </body>\n      </html>\n    ";
-    };
-    EmailService.prototype.generateTaskUpdateEmail = function (task, user) {
-        var dueDate = new Date(task.dueDate).toLocaleDateString();
-        var priorityColor = this.getPriorityColor(task.priority);
-        return "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <title>Task Updated</title>\n        <style>\n          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n          .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n          .header { background: #fff3cd; padding: 20px; border-radius: 5px; margin-bottom: 20px; }\n          .task-details { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }\n          .priority { display: inline-block; padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }\n          .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n        </style>\n      </head>\n      <body>\n        <div class=\"container\">\n          <div class=\"header\">\n            <h2>\u270F\uFE0F Task Updated</h2>\n            <p>Hello " + user.name + ",</p>\n            <p>A task you're assigned to has been updated.</p>\n          </div>\n          \n          <div class=\"task-details\">\n            <h3>" + task.title + "</h3>\n            <p><strong>Description:</strong> " + (task.description || 'No description provided') + "</p>\n            <p><strong>Due Date:</strong> " + dueDate + "</p>\n            <p><strong>Priority:</strong> <span class=\"priority\" style=\"background: " + priorityColor + "\">" + task.priority + "</span></p>\n            <p><strong>Type:</strong> " + task.type.replace('_', ' ').toUpperCase() + "</p>\n            <p><strong>Status:</strong> " + task.status.replace('_', ' ').toUpperCase() + "</p>\n          </div>\n          \n          <p style=\"margin-top: 20px;\">\n            <a href=\"" + this.configService.get('FRONTEND_URL', 'http://localhost:3000') + "/tasks/" + task.id + "\" class=\"btn\">\n              View Task Details\n            </a>\n          </p>\n          \n          <p style=\"margin-top: 20px; font-size: 12px; color: #666;\">\n            This is an automated notification from your CRM system.\n          </p>\n        </div>\n      </body>\n      </html>\n    ";
-    };
-    EmailService.prototype.getPriorityColor = function (priority) {
-        switch (priority) {
-            case 'urgent':
-                return '#dc3545';
-            case 'high':
-                return '#fd7e14';
-            case 'medium':
-                return '#ffc107';
-            case 'low':
-                return '#28a745';
-            default:
-                return '#6c757d';
-        }
     };
     var EmailService_1;
     EmailService = EmailService_1 = __decorate([

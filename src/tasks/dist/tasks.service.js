@@ -280,11 +280,11 @@ var TasksService = /** @class */ (function () {
     };
     TasksService.prototype.update = function (id, updateTaskDto, userId, userRole) {
         return __awaiter(this, void 0, Promise, function () {
-            var existingTask, updateData, updatedTask, error_4;
+            var existingTask, updateData, updatedTask, serializedTask, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 3, , 4]);
+                        _a.trys.push([0, 5, , 6]);
                         return [4 /*yield*/, this.prisma.task.findUnique({
                                 where: { id: id }
                             })];
@@ -343,9 +343,16 @@ var TasksService = /** @class */ (function () {
                             })];
                     case 2:
                         updatedTask = _a.sent();
+                        if (!updatedTask.assignedTo) return [3 /*break*/, 4];
+                        serializedTask = this.serializeTask(updatedTask);
+                        return [4 /*yield*/, this.emailService.sendTaskUpdate(serializedTask, updatedTask.assignedTo)];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4:
                         this.logger.log("Task updated: " + updatedTask.title + " by user " + userId);
                         return [2 /*return*/, this.serializeTask(updatedTask)];
-                    case 3:
+                    case 5:
                         error_4 = _a.sent();
                         if (error_4 instanceof common_1.NotFoundException) {
                             throw error_4;
@@ -367,7 +374,7 @@ var TasksService = /** @class */ (function () {
                             }
                         }
                         throw new common_1.BadRequestException('Failed to update task');
-                    case 4: return [2 /*return*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });

@@ -15,6 +15,12 @@ export class UpdateMeetingDto {
   @IsString()
   client?: string;
 
+
+  @IsOptional()
+  @IsString()
+  leadId?: string;
+
+
 @IsOptional()
   @IsDateString()
   @IsFutureDateIfScheduled('status')

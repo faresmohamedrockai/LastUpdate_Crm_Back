@@ -555,10 +555,6 @@ var LeadsService = /** @class */ (function () {
                             };
                         }
                         else {
-                            // updates for sales rep
-                            if (dto.nameEn === undefined && dto.nameAr === undefined && dto.inventoryInterestId === undefined) {
-                                throw new common_1.ForbiddenException('You are only allowed to update the client name and the property they are interested in.');
-                            }
                             updateData = {
                                 nameEn: (_7 = (_6 = dto.nameEn) !== null && _6 !== void 0 ? _6 : lead.nameEn) !== null && _7 !== void 0 ? _7 : '',
                                 nameAr: (_9 = (_8 = dto.nameAr) !== null && _8 !== void 0 ? _8 : lead.nameAr) !== null && _9 !== void 0 ? _9 : '',
@@ -566,6 +562,7 @@ var LeadsService = /** @class */ (function () {
                                 description: (_13 = (_12 = dto.description) !== null && _12 !== void 0 ? _12 : lead.description) !== null && _13 !== void 0 ? _13 : '',
                                 cil: (_15 = (_14 = dto.cil) !== null && _14 !== void 0 ? _14 : lead.cil) !== null && _15 !== void 0 ? _15 : false,
                                 projectInterestId: (_17 = (_16 = dto.projectInterestId) !== null && _16 !== void 0 ? _16 : lead.projectInterestId) !== null && _17 !== void 0 ? _17 : null,
+                                firstConection: dto.firstConection ? new Date(dto.firstConection) : lead.firstConection,
                                 otherProject: (_19 = (_18 = dto.otherProject) !== null && _18 !== void 0 ? _18 : lead.otherProject) !== null && _19 !== void 0 ? _19 : ''
                             };
                         }

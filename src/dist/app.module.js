@@ -30,6 +30,7 @@ var platform_express_1 = require("@nestjs/platform-express");
 var prisma_module_1 = require("./prisma/prisma.module");
 var jwt_1 = require("@nestjs/jwt");
 var UserCheckMiddleware_1 = require("./common/middelwares/UserCheckMiddleware ");
+var schedule_1 = require("@nestjs/schedule");
 var AppModule = /** @class */ (function () {
     function AppModule() {
     }
@@ -43,6 +44,7 @@ var AppModule = /** @class */ (function () {
         common_1.Module({
             imports: [
                 config_1.ConfigModule.forRoot({ isGlobal: true }),
+                schedule_1.ScheduleModule.forRoot(),
                 jwt_1.JwtModule.register({ secret: process.env.JWT_SECRET }),
                 auth_module_1.AuthModule,
                 leads_module_1.LeadsModule,

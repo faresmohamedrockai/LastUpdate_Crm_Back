@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LogsService } from '../logs/logs.service';
-import { Task,Meeting } from '../tasks/types';
+import { Task, Meeting } from '../tasks/types';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
-import {EmailService} from '../email/email.service'
+import { EmailService } from '../email/email.service'
 @Injectable()
 export class MeetingsService {
   constructor(
@@ -12,29 +12,29 @@ export class MeetingsService {
     private readonly logsService: LogsService,
     private emailService: EmailService,
   ) { }
-private serializeMeeting(meeting: any): Meeting {
-  return {
-    ...meeting,
-    title: meeting.title ?? undefined,
-    client: meeting.client ?? undefined,
-    date: meeting.date ? new Date(meeting.date).toISOString() : undefined,
-    time: meeting.time ?? undefined,
-    duration: meeting.duration ?? undefined,
-    type: meeting.type ?? undefined,
-    status: meeting.status ?? undefined,
-    notes: meeting.notes ?? undefined,
-    objections: meeting.objections ?? undefined,
-    location: meeting.location ?? undefined,
-    locationType: meeting.locationType ?? undefined,
-    inventory: meeting.inventory ?? undefined,
-    project: meeting.project ?? undefined,
-    lead: meeting.lead ?? undefined,
-    assignedTo: meeting.assignedTo ?? undefined,
-    createdBy: meeting.createdBy ?? undefined,
-    createdAt: meeting.createdAt ? meeting.createdAt.toISOString() : undefined,
-    updatedAt: meeting.updatedAt ? meeting.updatedAt.toISOString() : undefined,
-  };
-}
+  private serializeMeeting(meeting: any): Meeting {
+    return {
+      ...meeting,
+      title: meeting.title ?? undefined,
+      client: meeting.client ?? undefined,
+      date: meeting.date ? new Date(meeting.date).toISOString() : undefined,
+      time: meeting.time ?? undefined,
+      duration: meeting.duration ?? undefined,
+      type: meeting.type ?? undefined,
+      status: meeting.status ?? undefined,
+      notes: meeting.notes ?? undefined,
+      objections: meeting.objections ?? undefined,
+      location: meeting.location ?? undefined,
+      locationType: meeting.locationType ?? undefined,
+      inventory: meeting.inventory ?? undefined,
+      project: meeting.project ?? undefined,
+      lead: meeting.lead ?? undefined,
+      assignedTo: meeting.assignedTo ?? undefined,
+      createdBy: meeting.createdBy ?? undefined,
+      createdAt: meeting.createdAt ? meeting.createdAt.toISOString() : undefined,
+      updatedAt: meeting.updatedAt ? meeting.updatedAt.toISOString() : undefined,
+    };
+  }
 
 
   /**
@@ -87,63 +87,68 @@ private serializeMeeting(meeting: any): Meeting {
 
     return false;
   }
-async createMeeting(
-  dto: CreateMeetingDto,
-  userId: string,
-  email: string,
-  role: string,
-): Promise<{ status: number; message: string; meeting: Meeting }> {
-  // إنشاء الـMeeting في قاعدة البيانات
-  const meeting = await this.prisma.meeting.create({
-    data: {
-      title: dto.title,
-      client: dto.client,
-      date: dto.date ?? null,
-      time: dto.time,
-      duration: dto.duration,
-      type: dto.type,
-      status: dto.status,
-      locationType: dto.locationType,
-      notes: dto.notes,
-      objections: dto.objections,
-      location: dto.location,
+  async createMeeting(
+    dto: CreateMeetingDto,
+    userId: string,
+    email: string,
+    role: string,
+  ): Promise<{ status: number; message: string; meeting: Meeting }> {
+    // إنشاء الـMeeting في قاعدة البيانات
+    const meeting = await this.prisma.meeting.create({
+      data: {
+        title: dto.title,
+        client: dto.client,
+        date: dto.date ?? null,
+        time: dto.time,
+        duration: dto.duration,
+        type: dto.type,
+        status: dto.status,
+        locationType: dto.locationType,
+        notes: dto.notes,
+        objections: dto.objections,
+        location: dto.location,
 
-      ...(dto.inventoryId && {
-        inventory: { connect: { id: dto.inventoryId } },
-      }),
-      ...(dto.projectId && {
-        project: { connect: { id: dto.projectId } },
-      }),
-      ...(dto.assignedToId && {
-        assignedTo: { connect: { id: dto.assignedToId } },
-      }),
+        ...(dto.leadId && {
+          lead: { connect: { id: dto.leadId } },   // ✅ ربط الـ Lead
+        }),
+        ...(dto.inventoryId && {
+          inventory: { connect: { id: dto.inventoryId } },
+        }),
+        ...(dto.projectId && {
+          project: { connect: { id: dto.projectId } },
+        }),
+        ...(dto.assignedToId && {
+          assignedTo: { connect: { id: dto.assignedToId } },
+        }),
 
-      createdBy: { connect: { id: userId } },
-    },
-    include: {
-      lead: true,
-      inventory: true,
-      project: true,
-      assignedTo: true,
-      createdBy: true,
-    },
-  });
+        createdBy: { connect: { id: userId } },
+      },
+      include: {
+        lead: true,       // ✅ كده هيرجع بيانات الـ Lead كمان
+        inventory: true,
+        project: true,
+        assignedTo: true,
+        createdBy: true,
+      },
+    });
 
-  // إرسال إشعار بالبريد الإلكتروني للشخص المسؤول عن الاجتماع
-  if (meeting.assignedTo) {
-   const serializedMeeting = this.serializeMeeting(meeting);
 
-if (serializedMeeting.assignedTo) {
-  await this.emailService.sendMeetingReminder(serializedMeeting, serializedMeeting.assignedTo);
-}
+
+    if (meeting.assignedTo) {
+      const serializedMeeting = this.serializeMeeting(meeting);
+
+      if (serializedMeeting.assignedTo) {
+        await this.emailService.sendMeetingCreation(serializedMeeting, serializedMeeting.assignedTo);
+        await this.emailService.scheduleMeetingReminder(serializedMeeting, serializedMeeting.assignedTo);
+      }
+    }
+
+    return {
+      status: 201,
+      message: 'Meeting created successfully',
+      meeting: this.serializeMeeting(meeting),
+    };
   }
-
-  return {
-    status: 201,
-    message: 'Meeting created successfully',
-    meeting: this.serializeMeeting(meeting),
-  };
-}
 
 
 
@@ -179,9 +184,9 @@ if (serializedMeeting.assignedTo) {
           where: { teamLeaderId: userId },
           select: { id: true },
         });
-        
+
         const teamMemberIds = teamMembers.map(member => member.id);
-        
+
         whereClause = {
           OR: [
             // Own meetings (created or assigned)
@@ -210,20 +215,29 @@ if (serializedMeeting.assignedTo) {
         };
         break;
     }
-
     const meetings = await this.prisma.meeting.findMany({
       where: whereClause,
       include: {
-        lead: true,
+        lead: {
+          select: {
+            id: true,
+            nameEn: true,
+            nameAr: true,
+            contact: true,
+            email: true,
+            status: true,
+          },
+        },
         inventory: true,
         project: true,
-        createdBy: true,
-        assignedTo: true,
+        createdBy: { select: { id: true, name: true, email: true } },
+        assignedTo: { select: { id: true, name: true, email: true } },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
 
     return {
       status: 200,
@@ -260,9 +274,9 @@ if (serializedMeeting.assignedTo) {
           where: { teamLeaderId: userId },
           select: { id: true },
         });
-        
+
         const teamMemberIds = teamMembers.map(member => member.id);
-        
+
         whereClause = {
           ...whereClause,
           OR: [
@@ -349,6 +363,13 @@ if (serializedMeeting.assignedTo) {
     // 1. Check if meeting exists
     const existingMeeting = await this.prisma.meeting.findUnique({
       where: { id },
+      include: {
+        lead: true,
+        inventory: true,
+        project: true,
+        createdBy: true,
+        assignedTo: true,
+      },
     });
 
     if (!existingMeeting) {
@@ -361,7 +382,11 @@ if (serializedMeeting.assignedTo) {
       throw new NotFoundException('Meeting not found or access denied');
     }
 
-    // 2. تنفيذ التحديث بالحقول الموجودة فقط
+    // 🟢 log البيانات قبل التحديث
+    console.log(`Meeting before update: ${JSON.stringify(existingMeeting, null, 2)}`);
+    console.log(`Update DTO: ${JSON.stringify(dto, null, 2)}`);
+
+    // 3. تحديث البيانات
     const updatedMeeting = await this.prisma.meeting.update({
       where: { id },
       data: {
@@ -377,7 +402,9 @@ if (serializedMeeting.assignedTo) {
         ...(dto.objections && { objections: dto.objections }),
         ...(dto.location && { location: dto.location }),
 
-       
+        ...(dto.leadId && {
+          lead: { connect: { id: dto.leadId } },   // ✅ إضافة ربط الـ Lead
+        }),
         ...(dto.inventoryId && {
           inventory: { connect: { id: dto.inventoryId } },
         }),
@@ -389,7 +416,7 @@ if (serializedMeeting.assignedTo) {
         }),
       },
       include: {
-        lead: true,
+        lead: true,        // ✅ كده هترجع بيانات الـ Lead بعد التحديث
         inventory: true,
         project: true,
         createdBy: true,
@@ -397,29 +424,38 @@ if (serializedMeeting.assignedTo) {
       },
     });
 
-    // 3. تسجيل التحديث في السجل (logs)
-    const log = await this.prisma.log.create({
+
+    // 🟢 log البيانات بعد التحديث
+    // this.logger.debug(`Meeting after update: ${JSON.stringify(updatedMeeting, null, 2)}`);
+
+    // 4. تسجيل التحديث في الـ logs
+    await this.prisma.log.create({
       data: {
-        user: {
-          connect: {
-            id: userId, // تأكد أن هذا موجود في المتغيرات
-          },
-        },
-       
+        user: { connect: { id: userId } },
         email,
-       userRole: role,
+        userRole: role,
         action: 'update_meeting',
         description: `Updated meeting : status=${dto.status}, date=${dto.date}`,
-     
       },
     });
 
+    // 5. ✉️ إرسال إيميل بعد التحديث
+    if (updatedMeeting.assignedTo) {
+      const serializedMeeting = this.serializeMeeting(updatedMeeting);
 
-    // 4. الإرجاع
+      if (serializedMeeting.assignedTo) {
+        await this.emailService.sendMeetingUpdate(
+          serializedMeeting,
+          serializedMeeting.assignedTo,
+        );
+      }
+    }
+
+    // 6. الإرجاع
     return {
       status: 200,
       message: 'Meeting updated successfully',
-      meetings: updatedMeeting,
+      meeting: this.serializeMeeting(updatedMeeting),
     };
   }
 
@@ -448,7 +484,7 @@ if (serializedMeeting.assignedTo) {
 
     await this.prisma.meeting.delete({ where: { id } });
 
-  
+
 
 
     return {

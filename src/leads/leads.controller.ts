@@ -68,11 +68,13 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
 
 
 
-  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.SALES_REP)
+  @Roles(Role.ADMIN, Role.SALES_ADMIN)
   @Delete(':id')
   async deleteLead(@Param('id') id: string, @Req() req) {
     const { id: userId, email, role } = req.user;
     return this.leadsService.deleteLead(id, userId, email, role);
   }
+
+  
 }
 

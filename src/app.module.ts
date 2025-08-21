@@ -21,10 +21,12 @@ import { MulterModule } from '@nestjs/platform-express';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserCheckMiddleware } from './common/middelwares/UserCheckMiddleware ';
-
+import { ScheduleModule } from '@nestjs/schedule';
+// import { AiModule } from './ai/ai.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+       ScheduleModule.forRoot(),
     JwtModule.register({ secret: process.env.JWT_SECRET }), // لازم تسجله
     AuthModule,
     LeadsModule,
@@ -42,6 +44,7 @@ import { UserCheckMiddleware } from './common/middelwares/UserCheckMiddleware ';
     EmailModule,
     SchedulerModule,
     MulterModule.register({}),
+    // AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -16,6 +16,14 @@ export class CreateMeetingDto {
   @IsString()
   client?: string;
 
+
+  @IsOptional()
+  @IsString()
+  leadId?: string;
+
+
+
+
   @IsOptional()
   @IsDateString()
   @IsFutureDateIfScheduled('status')

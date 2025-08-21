@@ -12,7 +12,7 @@ export class TasksService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   // 🔄 Serialize Prisma task to API response format
   private serializeTask(task: any): Task {
@@ -25,6 +25,18 @@ export class TasksService {
     };
   }
 
+
+
+
+
+
+
+
+
+
+
+
+
   // 🔄 Serialize array of tasks
   private serializeTasks(tasks: any[]): Task[] {
     return tasks.map(task => this.serializeTask(task));
@@ -35,7 +47,7 @@ export class TasksService {
       // Debug logging
       this.logger.log(`Creating task with userId: ${userId}`);
       this.logger.log(`createTaskDto: ${JSON.stringify(createTaskDto)}`);
-      
+
       // Validate userId
       if (!userId) {
         throw new BadRequestException('User ID is required to create a task');
@@ -92,13 +104,14 @@ export class TasksService {
       if (task.assignedTo && task.assignedToId !== userId && task.createdBy) {
         const serializedTask: Task = this.serializeTask(task);
         await this.emailService.sendTaskAssignment(serializedTask, task.assignedTo, task.createdBy);
+        await this.emailService.scheduleTaskReminder(serializedTask, task.assignedTo);
       }
 
       this.logger.log(`Task created: ${task.title} by user ${userId}`);
       return this.serializeTask(task);
     } catch (error) {
       this.logger.error(`Error creating task: ${error.message}`);
-      
+
       // Provide more specific error messages
       if (error.message.includes('Foreign key constraint violated')) {
         if (error.message.includes('leadId')) {
@@ -114,7 +127,7 @@ export class TasksService {
           throw new BadRequestException('The specified user does not exist');
         }
       }
-      
+
       throw new BadRequestException('Failed to create task');
     }
   }
@@ -282,6 +295,12 @@ export class TasksService {
         },
       });
 
+      // ✉️ إرسال إيميل تحديث التاسك
+      if (updatedTask.assignedTo) {
+        const serializedTask: Task = this.serializeTask(updatedTask);
+        await this.emailService.sendTaskUpdate(serializedTask, updatedTask.assignedTo);
+      }
+
       this.logger.log(`Task updated: ${updatedTask.title} by user ${userId}`);
       return this.serializeTask(updatedTask);
     } catch (error) {
@@ -289,7 +308,7 @@ export class TasksService {
         throw error;
       }
       this.logger.error(`Error updating task: ${error.message}`);
-      
+
       // Provide specific error messages for foreign key violations
       if (error.message.includes('Foreign key constraint violated')) {
         if (error.message.includes('leadId')) {
@@ -305,7 +324,7 @@ export class TasksService {
           throw new BadRequestException('The specified user does not exist');
         }
       }
-      
+
       throw new BadRequestException('Failed to update task');
     }
   }

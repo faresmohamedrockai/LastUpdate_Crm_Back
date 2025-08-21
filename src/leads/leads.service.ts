@@ -78,6 +78,7 @@ export class LeadsService {
       nameEn: dto.nameEn,
       nameAr: dto.nameAr,
       description: dto.description,
+      gender: dto.gender,
       otherProject: dto.otherProject,
       familyName: dto.familyName,
       contact: dto.contact ?? '',
@@ -477,6 +478,7 @@ export class LeadsService {
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        gender: dto.gender ?? lead.gender ?? '',
         description: dto.description ?? lead.description ?? '',
         otherProject: dto.otherProject ?? lead.otherProject ?? '',
         familyName: dto.familyName ?? lead.familyName ?? '',
@@ -497,17 +499,16 @@ export class LeadsService {
       };
 
     } else {
-      // updates for sales rep
-      if (dto.nameEn === undefined && dto.nameAr === undefined && dto.inventoryInterestId === undefined) {
-        throw new ForbiddenException('You are only allowed to update the client name and the property they are interested in.');
-      }
+      
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
+        gender: dto.gender ?? lead.gender ?? '',
         familyName: dto.familyName ?? lead.familyName ?? '',
         description: dto.description ?? lead.description ?? '',
         cil: dto.cil ?? lead.cil ?? false,
         projectInterestId: dto.projectInterestId ?? lead.projectInterestId ?? null,
+         firstConection: dto.firstConection ? new Date(dto.firstConection) : lead.firstConection,
         otherProject: dto.otherProject ?? lead.otherProject ?? '',
       };
     }
@@ -520,6 +521,7 @@ export class LeadsService {
       const limitedUpdate: any = {};
       if (dto.nameAr !== undefined) limitedUpdate.nameAr = dto.nameAr;
       if (dto.nameEn !== undefined) limitedUpdate.nameEn = dto.nameEn;
+      if (dto.gender !== undefined) limitedUpdate.gender = dto.gender;
       if (dto.description !== undefined) limitedUpdate.description = dto.description;
       if (dto.cil !== undefined) limitedUpdate.cil = dto.cil;
       if (dto.otherProject !== undefined) limitedUpdate.otherProject = dto.otherProject;
@@ -597,6 +599,7 @@ console.log("Updated Data Will Send",updateData);
   data: {
     nameAr: updateData.nameAr,
     nameEn: updateData.nameEn,
+    gender: updateData.gender,
     description: updateData.description,
     familyName: updateData.familyName,
     firstConection: updateData.firstConection,

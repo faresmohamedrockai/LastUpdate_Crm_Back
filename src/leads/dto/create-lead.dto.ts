@@ -92,6 +92,10 @@ export class CreateLeadDto {
   source?: string;
 
   @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @IsOptional()
   @IsEnum(LeadStatus)
   status?: LeadStatus;
 

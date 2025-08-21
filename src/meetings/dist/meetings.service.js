@@ -311,11 +311,18 @@ var MeetingsService = /** @class */ (function () {
     };
     MeetingsService.prototype.updateMeeting = function (id, dto, userId, email, role) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingMeeting, canAccess, updatedMeeting, log;
+            var existingMeeting, canAccess, updatedMeeting, serializedMeeting;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.prisma.meeting.findUnique({
-                            where: { id: id }
+                            where: { id: id },
+                            include: {
+                                lead: true,
+                                inventory: true,
+                                project: true,
+                                createdBy: true,
+                                assignedTo: true
+                            }
                         })];
                     case 1:
                         existingMeeting = _a.sent();
@@ -328,6 +335,9 @@ var MeetingsService = /** @class */ (function () {
                         if (!canAccess) {
                             throw new common_1.NotFoundException('Meeting not found or access denied');
                         }
+                        // 🟢 log البيانات قبل التحديث
+                        console.log("Meeting before update: " + JSON.stringify(existingMeeting, null, 2));
+                        console.log("Update DTO: " + JSON.stringify(dto, null, 2));
                         return [4 /*yield*/, this.prisma.meeting.update({
                                 where: { id: id },
                                 data: __assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign(__assign({}, (dto.title && { title: dto.title })), (dto.client && { client: dto.client })), (dto.date && { date: dto.date })), (dto.time && { time: dto.time })), (dto.duration && { duration: dto.duration })), (dto.type && { type: dto.type })), (dto.status && { status: dto.status })), (dto.locationType && { locationType: dto.locationType })), (dto.notes && { notes: dto.notes })), (dto.objections && { objections: dto.objections })), (dto.location && { location: dto.location })), (dto.inventoryId && {
@@ -347,13 +357,12 @@ var MeetingsService = /** @class */ (function () {
                             })];
                     case 3:
                         updatedMeeting = _a.sent();
+                        // 🟢 log البيانات بعد التحديث
+                        // this.logger.debug(`Meeting after update: ${JSON.stringify(updatedMeeting, null, 2)}`);
+                        // 4. تسجيل التحديث في الـ logs
                         return [4 /*yield*/, this.prisma.log.create({
                                 data: {
-                                    user: {
-                                        connect: {
-                                            id: userId
-                                        }
-                                    },
+                                    user: { connect: { id: userId } },
                                     email: email,
                                     userRole: role,
                                     action: 'update_meeting',
@@ -361,13 +370,24 @@ var MeetingsService = /** @class */ (function () {
                                 }
                             })];
                     case 4:
-                        log = _a.sent();
-                        // 4. الإرجاع
-                        return [2 /*return*/, {
-                                status: 200,
-                                message: 'Meeting updated successfully',
-                                meetings: updatedMeeting
-                            }];
+                        // 🟢 log البيانات بعد التحديث
+                        // this.logger.debug(`Meeting after update: ${JSON.stringify(updatedMeeting, null, 2)}`);
+                        // 4. تسجيل التحديث في الـ logs
+                        _a.sent();
+                        if (!updatedMeeting.assignedTo) return [3 /*break*/, 6];
+                        serializedMeeting = this.serializeMeeting(updatedMeeting);
+                        if (!serializedMeeting.assignedTo) return [3 /*break*/, 6];
+                        return [4 /*yield*/, this.emailService.sendMeetingUpdate(serializedMeeting, serializedMeeting.assignedTo)];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: 
+                    // 6. الإرجاع
+                    return [2 /*return*/, {
+                            status: 200,
+                            message: 'Meeting updated successfully',
+                            meeting: this.serializeMeeting(updatedMeeting)
+                        }];
                 }
             });
         });

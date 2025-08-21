@@ -13,6 +13,14 @@ export class CreateCallDto {
  @IsString()
 date: string;
 
+ @IsOptional()
+ @IsString()
+followUpDate: string;
+
+ @IsOptional()
+ @IsString()
+followUpTime: string;
+
 
   @IsString()
   outcome: string;
