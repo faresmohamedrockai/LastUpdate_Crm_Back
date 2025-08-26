@@ -1,5 +1,4 @@
-// src/visit/dto/create-visit.dto.ts
-
+// src/visit/dto/update-visit.dto.ts
 import {
   IsDateString,
   IsString,
@@ -10,15 +9,14 @@ import { IsFutureDateIfScheduled } from '../../meetings/dto/checkScheduale';
 
 
 
-export class CreateVisitDto {
+export class UpdateVisitDto {
   @IsOptional()
   @IsDateString()
   date: string;
 
   @IsOptional()
   @IsString()
-  inventoryId: string;
-
+  inventoryId?: string;
 
   @IsOptional()
   @IsString()

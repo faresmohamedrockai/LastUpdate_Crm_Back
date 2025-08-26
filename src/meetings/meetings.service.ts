@@ -12,29 +12,46 @@ export class MeetingsService {
     private readonly logsService: LogsService,
     private emailService: EmailService,
   ) { }
-  private serializeMeeting(meeting: any): Meeting {
+  private serializeMeeting(meeting: any): any {
+    // Helper function: يحوّل BigInt → string
+    const convert = (value: any) => (typeof value === 'bigint' ? value.toString() : value);
+
+    // Recursive function: تعدي على كل object وتحوّل BigInt
+    const deepConvert = (obj: any): any => {
+      if (Array.isArray(obj)) {
+        return obj.map(deepConvert);
+      } else if (obj && typeof obj === 'object') {
+        const converted: any = {};
+        for (const key of Object.keys(obj)) {
+          converted[key] = deepConvert(obj[key]);
+        }
+        return converted;
+      }
+      return convert(obj);
+    };
+
+    // 👇 هنا نطبق الـ deepConvert على الميتنج كله
+    const safeMeeting = deepConvert(meeting);
+
     return {
-      ...meeting,
-      title: meeting.title ?? undefined,
-      client: meeting.client ?? undefined,
-      date: meeting.date ? new Date(meeting.date).toISOString() : undefined,
-      time: meeting.time ?? undefined,
-      duration: meeting.duration ?? undefined,
-      type: meeting.type ?? undefined,
-      status: meeting.status ?? undefined,
-      notes: meeting.notes ?? undefined,
-      objections: meeting.objections ?? undefined,
-      location: meeting.location ?? undefined,
-      locationType: meeting.locationType ?? undefined,
-      inventory: meeting.inventory ?? undefined,
-      project: meeting.project ?? undefined,
-      lead: meeting.lead ?? undefined,
-      assignedTo: meeting.assignedTo ?? undefined,
-      createdBy: meeting.createdBy ?? undefined,
-      createdAt: meeting.createdAt ? meeting.createdAt.toISOString() : undefined,
-      updatedAt: meeting.updatedAt ? meeting.updatedAt.toISOString() : undefined,
+      ...safeMeeting,
+      title: safeMeeting.title ?? undefined,
+      client: safeMeeting.client ?? undefined,
+      date: safeMeeting.date ? new Date(safeMeeting.date).toISOString() : undefined,
+      time: safeMeeting.time ?? undefined,
+      duration: safeMeeting.duration ?? undefined,
+      meetingDone: safeMeeting.meetingDone ?? false,
+      type: safeMeeting.type ?? undefined,
+      status: safeMeeting.status ?? undefined,
+      notes: safeMeeting.notes ?? undefined,
+      objections: safeMeeting.objections ?? undefined,
+      location: safeMeeting.location ?? undefined,
+      locationType: safeMeeting.locationType ?? undefined,
+      createdAt: safeMeeting.createdAt instanceof Date ? safeMeeting.createdAt.toISOString() : safeMeeting.createdAt,
+      updatedAt: safeMeeting.updatedAt instanceof Date ? safeMeeting.updatedAt.toISOString() : safeMeeting.updatedAt,
     };
   }
+
 
 
   /**
@@ -87,17 +104,25 @@ export class MeetingsService {
 
     return false;
   }
+
+
+
+
+
+
+
   async createMeeting(
     dto: CreateMeetingDto,
     userId: string,
     email: string,
     role: string,
   ): Promise<{ status: number; message: string; meeting: Meeting }> {
-    // إنشاء الـMeeting في قاعدة البيانات
+
     const meeting = await this.prisma.meeting.create({
       data: {
         title: dto.title,
         client: dto.client,
+        meetingDone: dto.meetingDone || false,
         date: dto.date ?? null,
         time: dto.time,
         duration: dto.duration,
@@ -382,15 +407,16 @@ export class MeetingsService {
       throw new NotFoundException('Meeting not found or access denied');
     }
 
-    // 🟢 log البيانات قبل التحديث
-    console.log(`Meeting before update: ${JSON.stringify(existingMeeting, null, 2)}`);
-    console.log(`Update DTO: ${JSON.stringify(dto, null, 2)}`);
+    // // 🟢 log البيانات قبل التحديث
+    // console.log(`Meeting before update: ${JSON.stringify(existingMeeting, null, 2)}`);
+    // console.log(`Update DTO: ${JSON.stringify(dto, null, 2)}`);
 
     // 3. تحديث البيانات
     const updatedMeeting = await this.prisma.meeting.update({
       where: { id },
       data: {
         ...(dto.title && { title: dto.title }),
+        ...(dto.meetingDone && { meetingDone: dto.meetingDone }),
         ...(dto.client && { client: dto.client }),
         ...(dto.date && { date: dto.date }),
         ...(dto.time && { time: dto.time }),

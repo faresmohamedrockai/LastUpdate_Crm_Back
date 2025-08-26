@@ -239,10 +239,12 @@ export class AuthService {
     if (role === 'admin') {
       console.log(' Admin access - fetching all users');
       users = await this.prisma.user.findMany({
-        include: {
-          teamLeader: true
+        select: {
+          ...defaultSelect,   // ✅ كده تمام
+          teamLeader: true,   // ممكن تحطه هنا لو عايزه ضمن select
         },
       });
+
     } else if (role === 'sales_admin') {
       console.log(' Sales admin access - fetching sales users');
       users = await this.prisma.user.findMany({
@@ -250,7 +252,9 @@ export class AuthService {
           role: {
             in: ['sales_rep', 'sales_admin', 'team_leader'],
           },
+          
         },
+        
         include: {
           teamLeader: true
         },
@@ -262,6 +266,9 @@ export class AuthService {
         throw new ForbiddenException('Missing team leader ID');
       }
 
+
+
+      
       users = await this.prisma.user.findMany({
         where: {
           OR: [
@@ -441,7 +448,7 @@ export class AuthService {
           throw new ForbiddenException('You cannot change your role');
         }
 
-        
+
         if (data.teamLeaderId !== undefined) {
           throw new ForbiddenException('You cannot change your team leader assignment');
         }
@@ -497,7 +504,7 @@ export class AuthService {
 
       const { imageBase64, ...updateData } = data;
 
-     
+
       Object.keys(updateData).forEach((key) => {
         if (
           updateData[key] === undefined ||

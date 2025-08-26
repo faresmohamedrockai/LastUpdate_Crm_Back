@@ -85,7 +85,7 @@ export class LeadsService {
       contacts: dto.contacts ?? [],
       notes: dto.notes,
       email: dto.email,
-      cil:dto.cil,
+      cil: dto.cil,
       interest: dto.interest,
       tier: dto.tier,
       budget,
@@ -170,10 +170,11 @@ export class LeadsService {
           include: {
             owner: true,
             calls: true,
+            visits: { select: { date: true } },
             inventoryInterest: {
               include: { project: true }
             },
-            projectInterest:true
+            projectInterest: true
             ,
             meetings: {
               include: {
@@ -206,6 +207,7 @@ export class LeadsService {
           where: { ownerId: { in: allIds } },
           include: {
             owner: true,
+            visits: { select: { date: true } },
             inventoryInterest: {
               include:
               {
@@ -230,6 +232,7 @@ export class LeadsService {
           include: {
             owner: true,
             calls: true,
+            visits: { select: { date: true } },
             projectInterest: true,
           },
         });
@@ -240,7 +243,7 @@ export class LeadsService {
         throw new ForbiddenException('Access denied');
     }
 
-    
+
     const parsedLeads = leads.map(lead => ({
       ...lead,
       createdAt: lead.createdAt ? lead.createdAt?.toLocaleDateString('en-GB') : null,
@@ -327,12 +330,17 @@ export class LeadsService {
         lead = await this.prisma.lead.findUnique({
           where: { id: leadId },
           include: {
+            visits: { select: { date: true } },
             owner: {
+
               select: { id: true, name: true, email: true }
             },
             inventoryInterest: {
               select: { id: true, title: true, titleEn: true, titleAr: true }
-            }
+            },
+            meetings: true,
+            calls: true,
+
           }
         });
         break;
@@ -353,12 +361,15 @@ export class LeadsService {
             ownerId: { in: allIds }
           },
           include: {
+            visits: { select: { date: true } },
             owner: {
               select: { id: true, name: true, email: true }
             },
             inventoryInterest: {
               select: { id: true, title: true, titleEn: true, titleAr: true }
-            }
+            },
+            meetings: true,
+            calls: true,
           }
         });
         break;
@@ -371,12 +382,15 @@ export class LeadsService {
             ownerId: userId
           },
           include: {
+            visits: { select: { date: true } },
             owner: {
               select: { id: true, name: true, email: true }
             },
             inventoryInterest: {
               select: { id: true, title: true, titleEn: true, titleAr: true }
-            }
+            },
+            meetings: true,
+            calls: true,
           }
         });
         break;
@@ -403,9 +417,12 @@ export class LeadsService {
       status: lead.status || 'fresh_lead',
       assignedToId: lead.ownerId || '', // Map ownerId back to assignedToId for form
       // Additional fields
+      meetings: lead.meetings || [],
+      calls: lead.calls || [],
       notes: lead.notes || [],
       lastCall: lead.lastCall,
-      lastVisit: lead.lastVisit,
+      visists: lead.visists,
+      // lastVisit: lead.lastVisit,
       createdAt: lead.createdAt?.toISOString(),
       // Include related data for reference
       owner: lead.owner,
@@ -500,7 +517,7 @@ export class LeadsService {
       };
 
     } else {
-      
+
       updateData = {
         nameEn: dto.nameEn ?? lead.nameEn ?? '',
         nameAr: dto.nameAr ?? lead.nameAr ?? '',
@@ -509,7 +526,7 @@ export class LeadsService {
         description: dto.description ?? lead.description ?? '',
         cil: dto.cil ?? lead.cil ?? false,
         projectInterestId: dto.projectInterestId ?? lead.projectInterestId ?? null,
-         firstConection: dto.firstConection ? new Date(dto.firstConection) : lead.firstConection,
+        firstConection: dto.firstConection ? new Date(dto.firstConection) : lead.firstConection,
         otherProject: dto.otherProject ?? lead.otherProject ?? '',
       };
     }
@@ -539,10 +556,10 @@ export class LeadsService {
       if (dto.contact !== undefined) limitedUpdate.contact = dto.contact; // string
       if (dto.contacts !== undefined) limitedUpdate.contacts = dto.contacts; // array
 
-   if (dto.firstConection) limitedUpdate.firstConection = new Date(dto.firstConection);
+      if (dto.firstConection) limitedUpdate.firstConection = new Date(dto.firstConection);
 
 
-console.log("Updated Data Will Send sales rep",updateData);
+      console.log("Updated Data Will Send sales rep", updateData);
 
       const updatedLead = await this.prisma.lead.update({
         where: { id: leadId },
@@ -589,39 +606,39 @@ console.log("Updated Data Will Send sales rep",updateData);
 
 
 
-console.log("Updated Data Will Send",updateData);
+    console.log("Updated Data Will Send", updateData);
 
 
 
 
 
-   const updatedLead = await this.prisma.lead.update({
-  where: { id: leadId },
-  data: {
-    nameAr: updateData.nameAr,
-    nameEn: updateData.nameEn,
-    gender: updateData.gender,
-    description: updateData.description,
-    familyName: updateData.familyName,
-    firstConection: updateData.firstConection,
-    contact: dto.contact ?? lead.contact ?? '',
-    contacts: dto.contacts ?? lead.contacts ?? [],
-    cil: dto.cil ?? lead.cil ?? false ,
-    email: updateData.email,
-    otherProject: updateData.otherProject,
-    interest: updateData.interest,
-    tier: updateData.tier,
-    budget: updateData.budget,
-    source: updateData.source,
-    status: updateData.status,
-    ownerId: updateData.ownerId,
-    inventoryInterestId: updateData.inventoryInterestId,
-    projectInterestId: updateData.projectInterestId, // 👈 ضيف دي
-    ...(dto.notes !== undefined && { notes: dto.notes }),
-    ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
-    ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
-  },
-});
+    const updatedLead = await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        nameAr: updateData.nameAr,
+        nameEn: updateData.nameEn,
+        gender: updateData.gender,
+        description: updateData.description,
+        familyName: updateData.familyName,
+        firstConection: updateData.firstConection,
+        contact: dto.contact ?? lead.contact ?? '',
+        contacts: dto.contacts ?? lead.contacts ?? [],
+        cil: dto.cil ?? lead.cil ?? false,
+        email: updateData.email,
+        otherProject: updateData.otherProject,
+        interest: updateData.interest,
+        tier: updateData.tier,
+        budget: updateData.budget,
+        source: updateData.source,
+        status: updateData.status,
+        ownerId: updateData.ownerId,
+        inventoryInterestId: updateData.inventoryInterestId,
+        projectInterestId: updateData.projectInterestId, // 👈 ضيف دي
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.lastCall !== undefined && { lastCall: dto.lastCall }),
+        ...(dto.lastVisit !== undefined && { lastVisit: dto.lastVisit }),
+      },
+    });
 
 
     await this.logsService.createLog({

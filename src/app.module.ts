@@ -23,6 +23,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserCheckMiddleware } from './common/middelwares/UserCheckMiddleware ';
 import { ScheduleModule } from '@nestjs/schedule';
 // import { AiModule } from './ai/ai.module';
+import { AiModule } from './ai/ai.module';
+import { TransferService } from './transfer/transfer.service';
+import { TransferModule } from './transfer/transfer.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -44,10 +47,12 @@ import { ScheduleModule } from '@nestjs/schedule';
     EmailModule,
     SchedulerModule,
     MulterModule.register({}),
+    AiModule,
+    TransferModule,
     // AiModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, TransferService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

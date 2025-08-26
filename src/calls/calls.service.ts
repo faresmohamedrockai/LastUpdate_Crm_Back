@@ -13,6 +13,9 @@ export class CallsService {
   ) {}
 
 async createCall(dto: CreateCallDto, userId: string, id: string, email: string, role: string) {
+console.log(dto)
+
+
   const lead = await this.prisma.lead.findUnique({ 
     where: { id: dto.leadId },
     include: { owner: true }, // لجلب اسم صاحب الـ lead

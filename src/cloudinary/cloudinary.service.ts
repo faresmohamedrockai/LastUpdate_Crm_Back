@@ -34,7 +34,9 @@ export class CloudinaryService {
   // ✅ رفع صورة من buffer (مثلاً لو جايه من form-data أو sharp)
   uploadBuffer(buffer: Buffer, folder: string): Promise<string> {
     return new Promise((resolve, reject) => {
+
       const uploadStream = cloudinary.uploader.upload_stream(
+
         { folder },
         (error, result) => {
           if (error) return reject(error);
@@ -42,6 +44,9 @@ export class CloudinaryService {
           resolve(result.secure_url);
         },
       );
+
+
+      
 
       toStream(buffer).pipe(uploadStream);
     });

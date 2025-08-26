@@ -2,7 +2,7 @@ import {
   IsString,
   IsOptional,
   IsDateString,
-  IsUUID,
+  IsBoolean,
   IsIn,
 } from 'class-validator';
 import { IsFutureDateIfScheduled } from '../dto/checkScheduale';
@@ -21,7 +21,7 @@ export class UpdateMeetingDto {
   leadId?: string;
 
 
-@IsOptional()
+  @IsOptional()
   @IsDateString()
   @IsFutureDateIfScheduled('status')
   date?: string;
@@ -30,9 +30,11 @@ export class UpdateMeetingDto {
   @IsString()
   time?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  meetingDone?: boolean;
 
 
-  
   @IsOptional()
   @IsString()
   duration?: string;

@@ -6,6 +6,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/roles.gaurd';
 import { Roles } from '../auth/Role.decorator';
 import { Role } from '../auth/roles.enum';
+import { UpdateVisitDto } from './dto/update-visits.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('visits')
@@ -22,6 +23,9 @@ export class VisitsController {
     return this.visitsService.createVisit(dto,userId,id,email,role);
   }
 
+
+
+
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
   @Get(":id")
   async getAllVisits(@Req() req) {
@@ -32,16 +36,16 @@ export class VisitsController {
 
   
 
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
-  // @Patch(':id')
-  // async updateVisit(
-  //   @Param('id') id: string,
-  //   @Body() dto: CreateVisitDto,
-  //   @Req() req
-  // ) {
-  //   const { id: userId, name: userName, role: userRole } = req.user;
-  //   return this.visitsService.updateVisit(id, dto, userId, userName, userRole);
-  // }
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
+  @Patch(':id')
+  async updateVisit(
+    @Param('id') id: string,
+    @Body() dto: UpdateVisitDto,
+    @Req() req
+  ) {
+    const { id: userId, name: userName, role: userRole } = req.user;
+    return this.visitsService.updateVisit(id, dto, userId, userName, userRole);
+  }
 
   // @Roles(Role.ADMIN, Role.SALES_ADMIN)
   // @Delete(':id')
@@ -49,4 +53,10 @@ export class VisitsController {
   //   const { id: userId, name: userName, role: userRole } = req.user;
   //   return this.visitsService.deleteVisit(id, userId, userName, userRole);
   // }
+
+
+
+
+
+  
 }

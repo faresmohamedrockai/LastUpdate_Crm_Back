@@ -21,6 +21,7 @@ model User {
   createdAt        DateTime   @default(now())
   image            String?
   teamLeaderId     String?
+  createdCalls     Call[]     @relation("CreatedCalls")
   Contract         Contract[]
   leads            Lead[]
   logs             Log[]
@@ -28,18 +29,18 @@ model User {
   createdMeetings  Meeting[]  @relation("CreatedMeetings")
   assignedTasks    Task[]     @relation("AssignedTasks")
   createdTasks     Task[]     @relation("CreatedTasks")
-  createdCalls Call[] @relation("CreatedCalls")
   teamLeader       User?      @relation("TeamMembers", fields: [teamLeaderId], references: [id])
   teamMembers      User[]     @relation("TeamMembers")
   visit            Visit[]
+
+  transfersFrom TransferTable[] @relation("TransferFromAgent")
+  transfersTo   TransferTable[] @relation("TransferToAgent")
 }
 
 model Lead {
   id                  String     @id @default(uuid())
   nameAr              String?
   nameEn              String?
-  contact             String?
-  gender              String?
   status              LeadStatus
   lastCall            DateTime?
   lastVisit           DateTime?
@@ -50,15 +51,17 @@ model Lead {
   notes               String[]
   source              String?
   budget              BigInt?
-  contacts            String[]
   familyName          String?
   firstConection      DateTime?
+  contact             String?
+  contacts            String[]
   interest            Interest   @default(under_decision)
   tier                Tier       @default(bronze)
   cil                 Boolean?   @default(false)
   description         String?
   otherProject        String?
   projectInterestId   String?
+  gender              String?
   calls               Call[]
   Contract            Contract[]
   inventoryInterest   Inventory? @relation(fields: [inventoryInterestId], references: [id])
@@ -68,6 +71,24 @@ model Lead {
   meetings            Meeting[]
   tasks               Task[]
   visits              Visit[]
+
+  // العلاقة مع TransferTable
+  transfers TransferTable[]
+}
+
+model TransferTable {
+  id           String   @id @default(uuid())
+  leadId       String
+  fromAgentId  String?
+  toAgentId    String?
+  transferType String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  // العلاقات
+  lead      Lead? @relation(fields: [leadId], references: [id])
+  fromAgent User? @relation("TransferFromAgent", fields: [fromAgentId], references: [id])
+  toAgent   User?  @relation("TransferToAgent", fields: [toAgentId], references: [id])
 }
 
 model Inventory {
@@ -149,27 +170,28 @@ model Visit {
   createdById String?
   objections  String?
   inventoryId String?
+  meettingId  String?
   createdBy   User?      @relation(fields: [createdById], references: [id])
   inventory   Inventory? @relation(fields: [inventoryId], references: [id])
   lead        Lead?      @relation(fields: [leadId], references: [id])
 }
 
 model Call {
-  id        String   @id @default(uuid())
-  date      String?
-  outcome   String?
-  followUpTime   String?
-  followUpDate   String?
-  duration  String?
-  projectId String?
-  notes     String?
-  leadId    String?
-  createdAt DateTime @default(now())
-  createdBy String?
-  project   String?
-  lead      Lead?    @relation(fields: [leadId], references: [id])
-  createdByUser User?     @relation("CreatedCalls", fields: [createdBy], references: [id])
-  Project   Project? @relation(fields: [projectId], references: [id])
+  id            String   @id @default(uuid())
+  date          String?
+  outcome       String?
+  duration      String?
+  projectId     String?
+  notes         String?
+  leadId        String?
+  createdAt     DateTime @default(now())
+  createdBy     String?
+  followUpDate  String?
+  followUpTime  String?
+  project       String?
+  createdByUser User?    @relation("CreatedCalls", fields: [createdBy], references: [id])
+  lead          Lead?    @relation(fields: [leadId], references: [id])
+  Project       Project? @relation(fields: [projectId], references: [id])
 }
 
 model Log {
@@ -233,6 +255,7 @@ model Meeting {
   status       String?
   notes        String?
   objections   String?
+  meetingDone  Boolean?   @default(false)
   location     String?
   leadId       String?
   createdById  String?

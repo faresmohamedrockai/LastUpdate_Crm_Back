@@ -16,6 +16,12 @@ export class InventoryService {
   ) {}
 
   async createInventory(dto: CreateInventoryDto, userId: string, email: string, role: string) {
+
+// console.log(dto);
+
+
+
+
     // Validate project and payment plan index if provided
     if (dto.projectId) {
       const project = await this.prisma.project.findUnique({
@@ -27,6 +33,10 @@ export class InventoryService {
         },
       });
       if (!project) throw new NotFoundException('Project not found');
+
+
+ dto.paymentPlanIndex = dto.paymentPlanIndex ?? undefined;
+
 
       // Validate paymentPlanIndex if provided
       if (dto.paymentPlanIndex !== undefined) {
@@ -66,7 +76,7 @@ export class InventoryService {
         zoneId: dto.zoneId!,
         projectId: dto.projectId!,
         developerId: dto.developerId!,
-        paymentPlanIndex: dto.paymentPlanIndex, // Store index directly
+        paymentPlanIndex: dto.paymentPlanIndex ?? null, // Store index directly
         parking: dto.parking,
       },
       include: {
@@ -114,39 +124,79 @@ export class InventoryService {
     };
   }
 
-  async getAllInventories(userId: string, userName: string, userRole: string) {
-    const inventories = await this.prisma.inventory.findMany({
-      include: {
-        project: { 
-          include: { 
-            developer: true, 
-            zone: true,
-            paymentPlans: true // Include to access payment plan details by index
-          } 
+async getAllInventories(userId: string, userName: string, userRole: string) {
+  const inventories = await this.prisma.inventory.findMany({
+    include: {
+      project: {
+        include: {
+          developer: true,
+          zone: true,
+          paymentPlans: true,
         },
-        leads: true,
       },
-      orderBy: { createdAt: 'desc' },
-    });
+      leads: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-    return {
-      properties: inventories.map((inventory) => ({
+  return {
+    properties: inventories.map((inventory) => {
+      // ✅ معالجة الـ paymentPlan
+      let paymentPlans ;
+      if (
+        inventory.paymentPlanIndex !== null &&
+        inventory.project?.paymentPlans &&
+        inventory.project.paymentPlans[inventory.paymentPlanIndex]
+      ) {
+        const plan = inventory.project.paymentPlans[inventory.paymentPlanIndex];
+        paymentPlans = {
+          ...plan,
+          createdAt: plan.createdAt ? plan.createdAt.toISOString() : null,
+          firstInstallmentDate: plan.firstInstallmentDate
+            ? plan.firstInstallmentDate.toISOString().split("T")[0]
+            : null,
+          deliveryDate: plan.deliveryDate
+            ? plan.deliveryDate.toISOString().split("T")[0]
+            : null,
+        };
+      }
+
+      return {
         ...inventory,
-        images: inventory.images ?? [],
-        paymentPlan: inventory.paymentPlanIndex !== null && inventory.project?.paymentPlans && inventory.project.paymentPlans[inventory.paymentPlanIndex]
-          ? {
-              ...inventory.project.paymentPlans[inventory.paymentPlanIndex],
-              firstInstallmentDate: inventory.project.paymentPlans[inventory.paymentPlanIndex].firstInstallmentDate
-                ? inventory.project.paymentPlans[inventory.paymentPlanIndex].firstInstallmentDate!.toISOString().split('T')[0]
-                : null,
-              deliveryDate: inventory.project.paymentPlans[inventory.paymentPlanIndex].deliveryDate
-                ? inventory.project.paymentPlans[inventory.paymentPlanIndex].deliveryDate!.toISOString().split('T')[0]
-                : null,
-            }
+        createdAt: inventory.createdAt
+          ? inventory.createdAt.toISOString()
           : null,
-      })),
-    };
-  }
+        images: Array.isArray(inventory.images) ? inventory.images : [],
+        project: {
+          ...inventory.project,
+          createdAt: inventory.project?.createdAt
+            ? inventory.project.createdAt.toISOString()
+            : null,
+          paymentPlans: inventory.project?.paymentPlans?.map((plan) => ({
+            ...plan,
+            createdAt: plan.createdAt ? plan.createdAt.toISOString() : null,
+            firstInstallmentDate: plan.firstInstallmentDate
+              ? plan.firstInstallmentDate.toISOString().split("T")[0]
+              : null,
+            deliveryDate: plan.deliveryDate
+              ? plan.deliveryDate.toISOString().split("T")[0]
+              : null,
+          })),
+        },
+        leads: inventory.leads.map((lead) => ({
+          ...lead,
+          createdAt: lead.createdAt ? lead.createdAt.toISOString() : null,
+          lastCall: lead.lastCall ? lead.lastCall.toISOString() : null,
+          lastVisit: lead.lastVisit ? lead.lastVisit.toISOString() : null,
+          firstConection: lead.firstConection
+            ? lead.firstConection.toISOString()
+            : null,
+        })),
+        paymentPlans,
+      };
+    }),
+  };
+}
 
   async updateInventory(
     id: string,
