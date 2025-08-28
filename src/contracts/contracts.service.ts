@@ -16,59 +16,80 @@ export class ContractsService {
   ) { }
 
   async createContract(
-  dto: CreateContractDto,
-  userId: string,
-  email: string,
-  role: string,
-) {
-  // تحقق من وجود الـ Inventory (اختياري)
-  if (dto.inventoryId) {
-    const inventory = await this.prisma.inventory.findUnique({
-      where: { id: dto.inventoryId },
+    dto: CreateContractDto,
+    userId: string,
+    email: string,
+    role: string,
+  ) {
+    // تحقق من وجود الـ Inventory (اختياري)
+    if (dto.inventoryId) {
+      const inventory = await this.prisma.inventory.findUnique({
+        where: { id: dto.inventoryId },
+      });
+      if (!inventory) throw new NotFoundException('Inventory not found');
+    }
+
+    // تحقق من وجود الـ Lead (اختياري)
+    if (dto.leadId) {
+      const lead = await this.prisma.lead.findUnique({
+        where: { id: dto.leadId },
+      });
+      if (!lead) throw new NotFoundException('Lead not found');
+    }
+
+    // 🔹 جلب آخر cNumber موجود
+    const lastContract = await this.prisma.contract.findFirst({
+      orderBy: { createdAt: 'desc' }, // أو orderBy: { cNumber: 'desc' } لو فيه index
+      select: { cNumber: true },
     });
-    if (!inventory) throw new NotFoundException('Inventory not found');
+
+    let nextNumber = 1;
+    if (lastContract?.cNumber) {
+      // إزالة الـ "C-" وتحويله لرقم
+      const lastNumber = parseInt(lastContract.cNumber.replace('C-', ''), 10);
+      nextNumber = lastNumber + 1;
+    }
+
+    const cNumber = `C-${nextNumber}`;
+
+    const contract = await this.prisma.contract.create({
+      data: {
+        leadId: dto.leadId,
+        inventoryId: dto.inventoryId,
+        dealValue: dto.dealValue,
+        contractDate: dto.contractDate,
+        status: dto.status,
+        notes: dto.notes,
+        createdById: userId,
+        cNumber, // الرقم المتسلسل
+      },
+      include: {
+        lead: true,
+        inventory: true,
+        createdBy: true,
+      },
+    });
+
+    // Log
+    await this.logsService.createLog({
+      userId,
+      email,
+      userRole: role,
+      action: 'create_contract',
+      description: `Created contract: cNumber=${cNumber}, dealValue=${contract.dealValue}, status=${contract.status}`,
+    });
+
+    return {
+      status: 201,
+      message: 'Contract created successfully',
+      data: contract,
+    };
   }
 
-  // تحقق من وجود الـ Lead (اختياري)
-  if (dto.leadId) {
-    const lead = await this.prisma.lead.findUnique({
-      where: { id: dto.leadId },
-    });
-    if (!lead) throw new NotFoundException('Lead not found');
-  }
 
-  const contract = await this.prisma.contract.create({
-    data: {
-      leadId: dto.leadId,
-      inventoryId: dto.inventoryId,
-      dealValue: dto.dealValue,
-      contractDate: dto.contractDate,
-      status: dto.status,
-      notes: dto.notes,
-      createdById: userId,
-    },
-    include: {
-      lead: true,
-      inventory: true,
-      createdBy: true,
-    },
-  });
 
-  // Log
-  await this.logsService.createLog({
-    userId,
-    email,
-    userRole:role,
-    action: 'create_contract',
-    description: `Created contract: id=${contract.id}, dealValue=${contract.dealValue}, status=${contract.status}`,
-  });
 
-  return {
-    status: 201,
-    message: 'Contract created successfully',
-    data: contract,
-  };
-}
+
 
 
   async getAllContracts(userId: string, email: string, role) {
@@ -84,7 +105,7 @@ export class ContractsService {
     await this.logsService.createLog({
       userId,
       email,
-      userRole:role,
+      userRole: role,
       action: 'get_all_contracts',
       description: `Retrieved ${contracts.length} contracts`,
     });
@@ -123,27 +144,27 @@ export class ContractsService {
     }
 
     const updatedContract = await this.prisma.contract.update({
-  where: { id },
-  data: {
-    ...(dto.leadId !== undefined && { leadId: dto.leadId }),
-    ...(dto.inventoryId !== undefined && { inventoryId: dto.inventoryId }),
-    ...(dto.dealValue !== undefined && { dealValue: dto.dealValue }),
-    ...(dto.contractDate !== undefined && { contractDate: dto.contractDate }), // بدون new Date
-    ...(dto.status !== undefined && { status: dto.status }),
-    ...(dto.notes !== undefined && { notes: dto.notes }),
-  },
-  include: {
-    lead: true,
-    inventory: true,
-    createdBy: true,
-  },
-});
+      where: { id },
+      data: {
+        ...(dto.leadId !== undefined && { leadId: dto.leadId }),
+        ...(dto.inventoryId !== undefined && { inventoryId: dto.inventoryId }),
+        ...(dto.dealValue !== undefined && { dealValue: dto.dealValue }),
+        ...(dto.contractDate !== undefined && { contractDate: dto.contractDate }), // بدون new Date
+        ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+      },
+      include: {
+        lead: true,
+        inventory: true,
+        createdBy: true,
+      },
+    });
 
 
-await this.logsService.createLog({
+    await this.logsService.createLog({
       userId,
       email,
-      userRole:role,
+      userRole: role,
       action: 'Update Contratc',
       description: `Update contracts`,
     });
@@ -178,12 +199,12 @@ await this.logsService.createLog({
 
 
 
-     await this.logsService.createLog({
+    await this.logsService.createLog({
       userId,
       email,
-      userRole:role,
+      userRole: role,
       action: 'delete_contract',
-      
+
       description: `Deleted contract: id=${id}, dealValue=${existingContract.dealValue}`,
     });
 
@@ -194,7 +215,7 @@ await this.logsService.createLog({
 
     await this.prisma.contract.delete({ where: { id } });
 
-   
+
     return {
       status: 200,
       message: 'Contract deleted successfully',

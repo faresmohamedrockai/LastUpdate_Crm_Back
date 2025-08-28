@@ -59,6 +59,15 @@ export class AiController {
 
   }
 
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get("tip-userLead")
+  async getUserTip(@Req() req: any, @Param('id') id: string,) {
+    const { userId, email, role } = req.user;
+    return this.aiService.getUserTip(userId, email, role)
+
+  }
+
 
 
 

@@ -132,36 +132,21 @@ export class LeadsService {
 
 
   async getLeads(id: string, email: string, userRole: string) {
-    // 🔒 SECURITY FIX: Validate userRole parameter
-    if (!userRole) {
-      throw new ForbiddenException('User role is required');
+    // 🔒 Validate role
+    if (!userRole || !Object.values(Role).includes(userRole as Role)) {
+      throw new ForbiddenException('Invalid or missing user role');
     }
 
-    // Validate that the role is a valid enum value
-    if (!Object.values(Role).includes(userRole as Role)) {
-      throw new ForbiddenException('Invalid user role');
-    }
-
-    // 🔒 SECURITY FIX: Validate user exists and role matches
+    // 🔒 Validate user existence and match
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: { id: true, role: true, email: true }
     });
-
-    if (!user) {
-      throw new ForbiddenException('User not found');
+    if (!user || user.role !== userRole || user.email !== email) {
+      throw new ForbiddenException('User validation failed');
     }
 
-    if (user.role !== userRole) {
-      throw new ForbiddenException('Role mismatch - potential security breach');
-    }
-
-    if (user.email !== email) {
-      throw new ForbiddenException('Email mismatch - potential security breach');
-    }
-
-    let leads;
-    let description;
+    let leads: any[] = [];
 
     switch (userRole) {
       case Role.ADMIN:
@@ -171,59 +156,48 @@ export class LeadsService {
             owner: true,
             calls: true,
             visits: { select: { date: true } },
-            inventoryInterest: {
-              include: { project: true }
+            inventoryInterest: { include: { project: true } },
+            projectInterest: true,
+            meetings: { include: { createdBy: true, assignedTo: true, project: true, inventory: true } },
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                transferType: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
             },
-            projectInterest: true
-            ,
-            meetings: {
-              include: {
-                createdBy: true,
-                assignedTo: true,
-                project: true,
-                inventory: true
-              }
-            }
-          }
+          },
         });
-
-        description = `Admin retrieved ${leads.length} leads with meetings`;
-
-        description = `Admin retrieved ${leads.length} leads`;
         break;
 
       case Role.TEAM_LEADER:
-        // First, get team members
         const teamMembers = await this.prisma.user.findMany({
           where: { teamLeaderId: id },
           select: { id: true },
         });
-
-        const memberIds = teamMembers.map(member => member.id);
-        // Include team leader's own ID along with team members
-        const allIds = [...memberIds, id].filter(id => id !== undefined && id !== null);
-
+        const allIds = [...teamMembers.map(m => m.id), id];
         leads = await this.prisma.lead.findMany({
           where: { ownerId: { in: allIds } },
           include: {
             owner: true,
             visits: { select: { date: true } },
-            inventoryInterest: {
-              include:
-              {
-                project: {
-                  select: {
-                    nameEn: true,
-                    nameAr: true
-                  }
-                }
-
-              }
-            },
+            inventoryInterest: { include: { project: { select: { nameEn: true, nameAr: true } } } },
             calls: true,
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                transferType: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+            },
           },
         });
-        description = `Team leader retrieved ${leads.length} leads for team and self`;
         break;
 
       case Role.SALES_REP:
@@ -234,36 +208,44 @@ export class LeadsService {
             calls: true,
             visits: { select: { date: true } },
             projectInterest: true,
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                transferType: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+            },
           },
         });
-        description = `Sales rep retrieved ${leads.length} leads`;
         break;
 
       default:
         throw new ForbiddenException('Access denied');
     }
 
-
+    // 🔹 Parse dates and structure data
     const parsedLeads = leads.map(lead => ({
       ...lead,
-      createdAt: lead.createdAt ? lead.createdAt?.toLocaleDateString('en-GB') : null,
-      firstConection: lead.firstConection ? lead.firstConection.toLocaleDateString('en-GB') : null
-      ,
-
-      owner: lead.owner
-        ? {
-          ...lead.owner,
-          createdAt: lead.owner.createdAt?.toISOString?.(),
-        }
-        : null,
+      createdAt: lead.createdAt?.toLocaleDateString('en-GB') ?? null,
+      firstConection: lead.firstConection?.toLocaleDateString('en-GB') ?? null,
+      owner: lead.owner ? { ...lead.owner, createdAt: lead.owner.createdAt?.toISOString?.() } : null,
       calls: lead.calls?.map(call => ({
         ...call,
-        createdAt: call.createdAt ? call.createdAt?.toLocaleDateString('en-GB') : null,
+        createdAt: call.createdAt?.toLocaleDateString('en-GB') ?? null,
+      })) || [],
+      transfers: lead.transfers?.map(t => ({
+        ...t,
+        createdAt: t.createdAt?.toLocaleDateString('en-GB') ?? null,
+        transferType: t.transferType ?? null,
       })) || [],
     }));
 
     return { leads: parsedLeads };
   }
+
 
   async getLeadsByOwnerId(userId: string) {
     const leads = await this.prisma.lead.findMany({
@@ -331,18 +313,23 @@ export class LeadsService {
           where: { id: leadId },
           include: {
             visits: { select: { date: true } },
-            owner: {
-
-              select: { id: true, name: true, email: true }
-            },
-            inventoryInterest: {
-              select: { id: true, title: true, titleEn: true, titleAr: true }
-            },
+            owner: { select: { id: true, name: true, email: true } },
+            inventoryInterest: { select: { id: true, title: true, titleEn: true, titleAr: true } },
             meetings: true,
             calls: true,
-
-          }
+            transfers: {
+              orderBy: { createdAt: 'desc' }, // ✅ هنا الترتيب الصحيح
+              select: {
+                id: true,
+                notes: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+            },
+          },
         });
+
         break;
 
       case Role.TEAM_LEADER:
@@ -370,6 +357,15 @@ export class LeadsService {
             },
             meetings: true,
             calls: true,
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+            }
           }
         });
         break;
@@ -391,6 +387,18 @@ export class LeadsService {
             },
             meetings: true,
             calls: true,
+
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+
+
+            }
           }
         });
         break;
@@ -427,6 +435,7 @@ export class LeadsService {
       // Include related data for reference
       owner: lead.owner,
       inventoryInterest: lead.inventoryInterest
+
     };
   }
 
@@ -659,7 +668,56 @@ export class LeadsService {
 
 
 
+  async getMyLeads(user: { id: string; email: string; role: Role }) {
+    // Admin & Sales Admin يشوفوا كل الـleads
+    if (user.role === Role.ADMIN || user.role === Role.SALES_ADMIN) {
+      return this.prisma.lead.findMany({
+        include: {
+          inventoryInterest: true,
+          projectInterest: true,
+          calls: true,
+          visits: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
 
+    // Team Leader يشوف كل الـleads بتاع الفريق أو بتاعه
+    if (user.role === Role.TEAM_LEADER) {
+      const teamMemberIds = await this.prisma.user.findMany({
+        where: { teamLeaderId: user.id },
+        select: { id: true },
+      }).then(users => users.map(u => u.id));
+
+      return this.prisma.lead.findMany({
+        where: {
+          OR: [
+            { ownerId: user.id },
+            { ownerId: { in: teamMemberIds } },
+          ],
+        },
+        include: {
+          inventoryInterest: true,
+          projectInterest: true,
+          calls: true,
+          visits: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    // Sales Rep يشوف بس الـleads بتاعه
+    return this.prisma.lead.findMany({
+      where: { ownerId: user.id },
+      include: {
+        inventoryInterest: true,
+        projectInterest: true,
+        calls: true,
+        visits: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
 
 

@@ -240,6 +240,7 @@ model Contract {
   inventoryId  String?
   dealValue    Float?
   contractDate String?
+  cNumber String?
   createdById  String?
   notes        String?
   createdAt    DateTime        @default(now())
@@ -255,7 +256,7 @@ model Meeting {
   status       String?
   notes        String?
   objections   String?
-  meetingDone  Boolean?   @default(false)
+  // meetingDone  Boolean?   @default(false)
   location     String?
   leadId       String?
   createdById  String?

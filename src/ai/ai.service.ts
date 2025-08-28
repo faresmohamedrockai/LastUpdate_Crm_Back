@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Role } from 'src/auth/roles.enum';
 // import * as leadsData from '../data/leads.json';
 import { LeadsService } from '../leads/leads.service'
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -21,6 +22,11 @@ export class AiService {
   ) {
     this.genAI = new GoogleGenerativeAI(this.config.get<string>('GEMINI_API_KEY')!);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+  }
+
+  // FIX: Added a replacer function to handle BigInt serialization.
+  private jsonReplacer(key, value) {
+    return typeof value === 'bigint' ? value.toString() : value;
   }
 
   async getOrGenerateGeneralTip(
@@ -40,9 +46,9 @@ export class AiService {
         ? 'الأهم: ردك بالكامل باللهجة المصرية. رجّع الرد فقط بصيغة JSON بالشكل {"tip": "نص النصيحة"}'
         : 'IMPORTANT: Respond ONLY in valid JSON format like {"tip": "your tip here"}';
 
-    // ✅ هنا نجيب بيانات الـ lead من السيرفس
     const lead = await this.leadsService.getLeads(id, email, role);
-    const leadData = JSON.stringify(lead); // أو اختار أهم الداتا فقط
+    // FIX: Used the replacer function in JSON.stringify.
+    const leadData = JSON.stringify(lead, this.jsonReplacer);
 
     const prompt = `
   You are a Sales Mentor.
@@ -58,7 +64,6 @@ export class AiService {
       const response = await result.response;
       const text = response.text();
 
-      // ✅ نحاول نلقط JSON لو موجود
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       let generatedTip;
 
@@ -84,8 +89,9 @@ export class AiService {
 
   async getOrGenerateProactiveTip(lang = 'en', id: string, email: string, role: string) {
     const leads = await this.leadsService.getLeads(id, email, role);
-    const dataString = JSON.stringify(leads.leads);
-    //   console.log(dataString);
+    // FIX: Used the replacer function in JSON.stringify.
+    const dataString = JSON.stringify(leads.leads, this.jsonReplacer);
+
     const languageInstruction =
       lang === 'ar'
         ? 'الأهم: ردك بالكامل باللهجة المصرية. رجّع الرد فقط بصيغة JSON بالشكل {"tip": "نص النصيحة"}'
@@ -168,11 +174,12 @@ export class AiService {
       ...core
     } = leadData ?? {};
 
-    const dataString = JSON.stringify(core);
-    const notesString = JSON.stringify(notes);
-    const callsString = JSON.stringify(calls);
-    const meetingsString = JSON.stringify(meetings);
-    const visitsString = JSON.stringify(visists);
+    // FIX: Used the replacer function in all JSON.stringify calls.
+    const dataString = JSON.stringify(core, this.jsonReplacer);
+    const notesString = JSON.stringify(notes, this.jsonReplacer);
+    const callsString = JSON.stringify(calls, this.jsonReplacer);
+    const meetingsString = JSON.stringify(meetings, this.jsonReplacer);
+    const visitsString = JSON.stringify(visists, this.jsonReplacer);
 
     // --- Strong Bilingual Prompt with Details ---
     const prompt = `
@@ -261,9 +268,116 @@ ${visitsString}
     }
   }
 
+ async getUserTip(userId: string, email: string, role: Role) {
+    const { leads: userLeads } = await this.leadsService.getLeads(userId, email, role);
 
+    if (!userLeads || userLeads.length === 0) return {
+      title: "No Leads Data",
+      advices: [
+        {
+          en_tip: "No leads data available to generate a tip.",
+          ar_tip: "لا توجد بيانات للعملاء المحتملين لإنشاء نصيحة."
+        }
+      ]
+    };
 
+    // دمج كل بيانات الـ leads في JSON واحد
+    const dataString = JSON.stringify(
+      userLeads.map(lead => {
+        const { notes, calls, meetings, visits, ...core } = lead;
+        return core;
+      }),
+      this.jsonReplacer
+    );
 
+    const languageInstruction = `
+IMPORTANT: Your response must be a single, valid JSON object.
+Provide the analysis in BOTH professional English and Egyptian Arabic.
+Do NOT wrap the JSON in markdown backticks (\`).
+Address the user personally using their role where appropriate.
+The JSON object must have a "title" key and an "advices" key containing an array of advice objects.
+Each object in the "advices" array must have "ar_tip" and "en_tip" keys.
+`;
 
+    const prompt = `
+You are a world-class Sales Director and Performance Coach. Your tone is professional, direct, and highly motivational.
+
+User Role: ${role}
+User Email: ${email}
+
+Analyze all the leads data provided below for this user.
+Based on your analysis, provide a concise, motivational title for the feedback and a list of 3 distinct, actionable performance improvement tips.
+For each tip, tell the user clearly where they need to improve and what actionable steps they should take.
+
+${languageInstruction}
+
+--- RESPONSE FORMAT ---
+Return a JSON object with EXACTLY the following structure:
+{
+  "title": "A concise, motivational title in English",
+  "advices": [
+    {
+      "ar_tip": "النصيحة الأولى باللغة العربية",
+      "en_tip": "The first tip in English"
+    },
+    {
+      "ar_tip": "النصيحة الثانية باللغة العربية",
+      "en_tip": "The second tip in English"
+    },
+    {
+      "ar_tip": "النصيحة الثالثة باللغة العربية",
+      "en_tip": "The third tip in English"
+    }
+  ]
+}
+
+--- FILTERED LEADS DATA ---
+${dataString}
+---
+`;
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = await response.text();
+
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return {
+          title: "Error",
+          advices: [{
+            en_tip: "Error: Could not parse tip from AI response.",
+            ar_tip: "خطأ: لم يتمكن النظام من استخراج النصيحة من استجابة AI."
+          }]
+        };
+      }
+
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Ensure the response has the correct structure before returning
+        if (parsed.title && Array.isArray(parsed.advices)) {
+          return parsed;
+        }
+        throw new Error("Invalid JSON structure received from AI.");
+      } catch {
+        return {
+          title: "Error",
+          advices: [{
+            en_tip: "Error parsing AI response.",
+            ar_tip: "خطأ أثناء تحليل استجابة AI."
+          }]
+        };
+      }
+    } catch (err) {
+      this.logger.error('Error generating user tip', err);
+      return {
+        title: "Error",
+        advices: [{
+          en_tip: "Error generating tip.",
+          ar_tip: "خطأ أثناء إنشاء النصيحة."
+        }]
+      };
+    }
+  }
 
 }

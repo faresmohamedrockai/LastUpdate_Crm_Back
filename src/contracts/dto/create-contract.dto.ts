@@ -10,6 +10,10 @@ export class CreateContractDto {
   inventoryId?: string;
 
   @IsOptional()
+  @IsString()
+  cNumber?: string;
+
+  @IsOptional()
   @IsNumber()
   dealValue?: number;
 
