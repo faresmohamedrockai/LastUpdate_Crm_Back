@@ -268,29 +268,56 @@ ${visitsString}
     }
   }
 
- async getUserTip(userId: string, email: string, role: Role) {
-    const { leads: userLeads } = await this.leadsService.getLeads(userId, email, role);
+async getUserTip(userId: string, email: string, role: Role) {
+  const { leads: userLeads } = await this.leadsService.getLeads(userId, email, role);
 
-    if (!userLeads || userLeads.length === 0) return {
-      title: "No Leads Data",
-      advices: [
-        {
-          en_tip: "No leads data available to generate a tip.",
-          ar_tip: "لا توجد بيانات للعملاء المحتملين لإنشاء نصيحة."
-        }
-      ]
-    };
+  if (!userLeads || userLeads.length === 0) return {
+    title: "No Leads Data",
+    advices: [
+      {
+        en_tip: "No leads data available to generate a tip.",
+        ar_tip: "لا توجد بيانات للعملاء المحتملين لإنشاء نصيحة."
+      }
+    ]
+  };
 
-    // دمج كل بيانات الـ leads في JSON واحد
-    const dataString = JSON.stringify(
-      userLeads.map(lead => {
-        const { notes, calls, meetings, visits, ...core } = lead;
-        return core;
-      }),
-      this.jsonReplacer
-    );
+  
+  const essentialData = userLeads.map(lead => ({
+    id: lead.id,
+    nameAr: lead.nameAr,
+    nameEn: lead.nameEn,
+    status: lead.status,
+    createdAt: lead.createdAt,
+    source: lead.source,
+    budget: lead.budget,
+    firstConnection: lead.firstConection, // تصحيح الإملاء إن أمكن
+    interest: lead.interest,
+    tier: lead.tier,
+    gender: lead.gender,
+    
+    // إحصائيات مبسطة بدلاً من البيانات الكاملة
+    callsCount: lead.calls?.length || 0,
+    visitsCount: lead.visits?.length || 0,
+    meetingsCount: lead.meetings?.length || 0,
+    notesCount: lead.notes?.length || 0,
+    transfersCount: lead.transfers?.length || 0,
+    
+    // آخر نشاط فقط
+    lastCallOutcome: lead.calls?.length > 0 ? lead.calls[lead.calls.length - 1]?.outcome : null,
+    lastMeetingStatus: lead.meetings?.length > 0 ? lead.meetings[lead.meetings.length - 1]?.status : null,
+    
+    // معلومات الاهتمام المبسطة
+    hasInventoryInterest: !!lead.inventoryInterestId,
+    hasProjectInterest: !!lead.projectInterestId,
+    
+    // معلومات المالك
+    ownerId: lead.ownerId,
+    ownerRole: lead.owner?.role
+  }));
 
-    const languageInstruction = `
+  const dataString = JSON.stringify(essentialData, this.jsonReplacer);
+
+  const languageInstruction = `
 IMPORTANT: Your response must be a single, valid JSON object.
 Provide the analysis in BOTH professional English and Egyptian Arabic.
 Do NOT wrap the JSON in markdown backticks (\`).
@@ -299,13 +326,20 @@ The JSON object must have a "title" key and an "advices" key containing an array
 Each object in the "advices" array must have "ar_tip" and "en_tip" keys.
 `;
 
-    const prompt = `
+  const prompt = `
 You are a world-class Sales Director and Performance Coach. Your tone is professional, direct, and highly motivational.
 
 User Role: ${role}
 User Email: ${email}
 
-Analyze all the leads data provided below for this user.
+Analyze the leads data provided below for this user.
+Focus on these key performance indicators:
+- Lead conversion patterns by status
+- Lead source effectiveness  
+- Activity levels (calls, meetings, visits)
+- Lead quality indicators (tier, budget, interest level)
+- Follow-up consistency
+
 Based on your analysis, provide a concise, motivational title for the feedback and a list of 3 distinct, actionable performance improvement tips.
 For each tip, tell the user clearly where they need to improve and what actionable steps they should take.
 
@@ -331,53 +365,348 @@ Return a JSON object with EXACTLY the following structure:
   ]
 }
 
---- FILTERED LEADS DATA ---
+--- ESSENTIAL LEADS DATA ---
 ${dataString}
 ---
 `;
 
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = await response.text();
+  try {
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    const text = await response.text();
 
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        return {
-          title: "Error",
-          advices: [{
-            en_tip: "Error: Could not parse tip from AI response.",
-            ar_tip: "خطأ: لم يتمكن النظام من استخراج النصيحة من استجابة AI."
-          }]
-        };
-      }
-
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // Ensure the response has the correct structure before returning
-        if (parsed.title && Array.isArray(parsed.advices)) {
-          return parsed;
-        }
-        throw new Error("Invalid JSON structure received from AI.");
-      } catch {
-        return {
-          title: "Error",
-          advices: [{
-            en_tip: "Error parsing AI response.",
-            ar_tip: "خطأ أثناء تحليل استجابة AI."
-          }]
-        };
-      }
-    } catch (err) {
-      this.logger.error('Error generating user tip', err);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
       return {
         title: "Error",
         advices: [{
-          en_tip: "Error generating tip.",
-          ar_tip: "خطأ أثناء إنشاء النصيحة."
+          en_tip: "Error: Could not parse tip from AI response.",
+          ar_tip: "خطأ: لم يتمكن النظام من استخراج النصيحة من استجابة AI."
         }]
       };
     }
+
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      // Ensure the response has the correct structure before returning
+      if (parsed.title && Array.isArray(parsed.advices)) {
+        return parsed;
+      }
+      throw new Error("Invalid JSON structure received from AI.");
+    } catch {
+      return {
+        title: "Error",
+        advices: [{
+          en_tip: "Error parsing AI response.",
+          ar_tip: "خطأ أثناء تحليل استجابة AI."
+        }]
+      };
+    }
+  } catch (err) {
+    this.logger.error('Error generating user tip', err);
+    return {
+      title: "Error",
+      advices: [{
+        en_tip: "Error generating tip.",
+        ar_tip: "خطأ أثناء إنشاء النصيحة."
+      }]
+    };
   }
+}
+
+
+
+// async getUserTip(userId: string, email: string, role: Role) {
+//   const { leads: userLeads } = await this.leadsService.getLeads(userId, email, role);
+
+//   if (!userLeads || userLeads.length === 0) return {
+//     title: "No Leads Data",
+//     advices: [
+//       {
+//         en_tip: "No leads data available to generate a tip.",
+//         ar_tip: "لا توجد بيانات للعملاء المحتملين لإنشاء نصيحة."
+//       }
+//     ]
+//   };
+
+//   // إذا كان العدد كبير جداً، نحلل إحصائياً بدلاً من إرسال البيانات الخام
+//   const MAX_LEADS_FOR_DETAILED_ANALYSIS = 100;
+  
+//   let analysisData: string;
+  
+//   if (userLeads.length > MAX_LEADS_FOR_DETAILED_ANALYSIS) {
+//     // تحليل إحصائي للأعداد الكبيرة
+//     analysisData = JSON.stringify(this.generateStatisticalSummary(userLeads), this.jsonReplacer);
+//   } else {
+//     // تحليل تفصيلي للأعداد الصغيرة
+//     const essentialData = userLeads.map(lead => ({
+//       id: lead.id,
+//       status: lead.status,
+//       createdAt: lead.createdAt,
+//       source: lead.source,
+//       budget: lead.budget,
+//       interest: lead.interest,
+//       tier: lead.tier,
+//       callsCount: lead.calls?.length || 0,
+//       visitsCount: lead.visits?.length || 0,
+//       meetingsCount: lead.meetings?.length || 0,
+//       lastCallOutcome: lead.calls?.length > 0 ? lead.calls[lead.calls.length - 1]?.outcome : null,
+//       lastMeetingStatus: lead.meetings?.length > 0 ? lead.meetings[lead.meetings.length - 1]?.status : null,
+//       hasInventoryInterest: !!lead.inventoryInterestId,
+//       hasProjectInterest: !!lead.projectInterestId,
+//     }));
+    
+//     analysisData = JSON.stringify(essentialData, this.jsonReplacer);
+//   }
+
+//   const prompt = this.buildPrompt(role, email, analysisData, userLeads.length > MAX_LEADS_FOR_DETAILED_ANALYSIS);
+
+//   try {
+//     const result = await this.model.generateContent(prompt);
+//     const response = await result.response;
+//     const text = await response.text();
+
+//     return this.parseResponse(text);
+//   } catch (err) {
+//     this.logger.error('Error generating user tip', err);
+//     return this.getErrorResponse();
+//   }
+// }
+
+// private generateStatisticalSummary(leads: any[]) {
+//   const now = new Date();
+//   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+//   return {
+//     totalLeads: leads.length,
+    
+//     // توزيع الحالات
+//     statusDistribution: this.groupAndCount(leads, 'status'),
+    
+//     // توزيع المصادر
+//     sourceDistribution: this.groupAndCount(leads, 'source'),
+    
+//     // توزيع مستويات الاهتمام
+//     interestDistribution: this.groupAndCount(leads, 'interest'),
+    
+//     // توزيع المستويات
+//     tierDistribution: this.groupAndCount(leads, 'tier'),
+    
+//     // إحصائيات النشاط
+//     activityStats: {
+//       totalCalls: leads.reduce((sum, lead) => sum + (lead.calls?.length || 0), 0),
+//       totalMeetings: leads.reduce((sum, lead) => sum + (lead.meetings?.length || 0), 0),
+//       totalVisits: leads.reduce((sum, lead) => sum + (lead.visits?.length || 0), 0),
+      
+//       avgCallsPerLead: this.calculateAverage(leads.map(lead => lead.calls?.length || 0)),
+//       avgMeetingsPerLead: this.calculateAverage(leads.map(lead => lead.meetings?.length || 0)),
+//       avgVisitsPerLead: this.calculateAverage(leads.map(lead => lead.visits?.length || 0)),
+//     },
+    
+//     // إحصائيات الميزانية
+//     budgetStats: {
+//       totalBudget: leads.reduce((sum, lead) => sum + (parseInt(lead.budget) || 0), 0),
+//       avgBudget: this.calculateAverage(leads.map(lead => parseInt(lead.budget) || 0)),
+//       budgetRanges: this.getBudgetRanges(leads),
+//     },
+    
+//     // إحصائيات زمنية
+//     timeStats: {
+//       leadsLast30Days: leads.filter(lead => 
+//         new Date(lead.createdAt) >= thirtyDaysAgo
+//       ).length,
+      
+//       conversionRate: this.calculateConversionRate(leads),
+//       avgTimeToConversion: this.calculateAvgTimeToConversion(leads),
+//     },
+    
+//     // أنماط الأداء
+//     performancePatterns: {
+//       mostSuccessfulSources: this.getMostSuccessfulSources(leads),
+//       bestConvertingTiers: this.getBestConvertingTiers(leads),
+//       commonFailurePoints: this.getCommonFailurePoints(leads),
+//     }
+//   };
+// }
+
+// private groupAndCount(array: any[], key: string) {
+//   const grouped = array.reduce((acc, item) => {
+//     const value = item[key] || 'unknown';
+//     acc[value] = (acc[value] || 0) + 1;
+//     return acc;
+//   }, {});
+  
+//   return Object.entries(grouped)
+//     .sort(([,a], [,b]) => (b as number) - (a as number))
+//     .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
+// }
+
+// private calculateAverage(numbers: number[]): number {
+//   if (numbers.length === 0) return 0;
+//   return Math.round((numbers.reduce((sum, n) => sum + n, 0) / numbers.length) * 100) / 100;
+// }
+
+// private getBudgetRanges(leads: any[]) {
+//   const ranges = {
+//     'under_1M': 0,
+//     '1M_10M': 0,
+//     '10M_50M': 0,
+//     '50M_100M': 0,
+//     'over_100M': 0,
+//     'unspecified': 0
+//   };
+  
+//   leads.forEach(lead => {
+//     const budget = parseInt(lead.budget) || 0;
+//     if (budget === 0) ranges.unspecified++;
+//     else if (budget < 1000000) ranges.under_1M++;
+//     else if (budget < 10000000) ranges['1M_10M']++;
+//     else if (budget < 50000000) ranges['10M_50M']++;
+//     else if (budget < 100000000) ranges['50M_100M']++;
+//     else ranges.over_100M++;
+//   });
+  
+//   return ranges;
+// }
+
+// private calculateConversionRate(leads: any[]): number {
+//   const totalLeads = leads.length;
+//   const convertedLeads = leads.filter(lead => 
+//     lead.status === 'closed_deal' || lead.status === 'reservation'
+//   ).length;
+  
+//   return totalLeads > 0 ? Math.round((convertedLeads / totalLeads) * 10000) / 100 : 0;
+// }
+
+// private calculateAvgTimeToConversion(leads: any[]): number {
+//   const convertedLeads = leads.filter(lead => 
+//     lead.status === 'closed_deal' || lead.status === 'reservation'
+//   );
+  
+//   if (convertedLeads.length === 0) return 0;
+  
+//   const times = convertedLeads.map(lead => {
+//     const created = new Date(lead.createdAt);
+//     const firstConnection = new Date(lead.firstConection);
+//     return Math.abs(created.getTime() - firstConnection.getTime()) / (1000 * 60 * 60 * 24);
+//   });
+  
+//   return this.calculateAverage(times);
+// }
+
+// private getMostSuccessfulSources(leads: any[]) {
+//   const sourceSuccess = {};
+  
+//   leads.forEach(lead => {
+//     const source = lead.source || 'unknown';
+//     if (!sourceSuccess[source]) {
+//       sourceSuccess[source] = { total: 0, converted: 0 };
+//     }
+//     sourceSuccess[source].total++;
+//     if (lead.status === 'closed_deal' || lead.status === 'reservation') {
+//       sourceSuccess[source].converted++;
+//     }
+//   });
+  
+//   return Object.entries(sourceSuccess)
+//     .map(([source, stats]: [string, any]) => ({
+//       source,
+//       conversionRate: stats.total > 0 ? Math.round((stats.converted / stats.total) * 100) : 0,
+//       total: stats.total
+//     }))
+//     .sort((a, b) => b.conversionRate - a.conversionRate)
+//     .slice(0, 5);
+// }
+
+// private getBestConvertingTiers(leads: any[]) {
+//   return this.getMostSuccessfulSources(leads.map(lead => ({ ...lead, source: lead.tier })));
+// }
+
+// private getCommonFailurePoints(leads: any[]) {
+//   const failedLeads = leads.filter(lead => 
+//     lead.status === 'not_interested_now' || lead.status === 'lost'
+//   );
+  
+//   return {
+//     totalFailed: failedLeads.length,
+//     failureRate: leads.length > 0 ? Math.round((failedLeads.length / leads.length) * 100) : 0,
+//     commonReasons: this.groupAndCount(failedLeads, 'status'),
+//     failedSources: this.groupAndCount(failedLeads, 'source')
+//   };
+// }
+
+// private buildPrompt(role: string, email: string, analysisData: string, isStatistical: boolean): string {
+//   const analysisType = isStatistical ? 'statistical summary' : 'detailed lead data';
+//   const analysisInstruction = isStatistical 
+//     ? 'Focus on patterns, trends, and statistical insights from the summary data.'
+//     : 'Analyze individual lead patterns and behaviors.';
+
+//   return `
+// You are a world-class Sales Director and Performance Coach. Your tone is professional, direct, and highly motivational.
+
+// User Role: ${role}
+// User Email: ${email}
+
+// You are analyzing ${analysisType} for this user.
+// ${analysisInstruction}
+
+// Based on your analysis, provide a concise, motivational title and 3 actionable performance improvement tips.
+
+// IMPORTANT: Your response must be a single, valid JSON object in BOTH English and Arabic.
+
+// --- RESPONSE FORMAT ---
+// {
+//   "title": "A concise, motivational title in English",
+//   "advices": [
+//     {
+//       "ar_tip": "النصيحة الأولى باللغة العربية",
+//       "en_tip": "The first tip in English"
+//     },
+//     {
+//       "ar_tip": "النصيحة الثانية باللغة العربية", 
+//       "en_tip": "The second tip in English"
+//     },
+//     {
+//       "ar_tip": "النصيحة الثالثة باللغة العربية",
+//       "en_tip": "The third tip in English"
+//     }
+//   ]
+// }
+
+// --- ANALYSIS DATA ---
+// ${analysisData}
+// ---
+// `;
+// }
+
+// private parseResponse(text: string) {
+//   const jsonMatch = text.match(/\{[\s\S]*\}/);
+//   if (!jsonMatch) {
+//     return this.getErrorResponse();
+//   }
+
+//   try {
+//     const parsed = JSON.parse(jsonMatch[0]);
+//     if (parsed.title && Array.isArray(parsed.advices)) {
+//       return parsed;
+//     }
+//     throw new Error("Invalid JSON structure received from AI.");
+//   } catch {
+//     return this.getErrorResponse();
+//   }
+// }
+
+// private getErrorResponse() {
+//   return {
+//     title: "Error",
+//     advices: [{
+//       en_tip: "Error generating tip.",
+//       ar_tip: "خطأ أثناء إنشاء النصيحة."
+//     }]
+//   };
+// }
+
+
+
 
 }

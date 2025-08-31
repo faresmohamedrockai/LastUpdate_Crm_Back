@@ -122,7 +122,7 @@ export class MeetingsService {
       data: {
         title: dto.title,
         client: dto.client,
-        meetingDone: dto.meetingDone || false,
+        // meetingDone: dto.meetingDone || false,
         date: dto.date ?? null,
         time: dto.time,
         duration: dto.duration,

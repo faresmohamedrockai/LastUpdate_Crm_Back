@@ -48,8 +48,6 @@ export class AuthController {
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER)
   @Get('users')
-
-
   GetUsrs(@Req() req: any) {
     const { role, userId } = req.user
     console.log('🔍 Controller - req.user:', req.user);

@@ -276,6 +276,11 @@ export class LeadsService {
     return { leads: parsedLeads };
   }
 
+
+
+
+
+  
   async getLeadById(leadId: string, user: { id: string; role: Role }) {
     // 🔒 SECURITY FIX: Validate parameters
     if (!user || !user.id || !user.role) {
@@ -438,6 +443,182 @@ export class LeadsService {
 
     };
   }
+  async getLeadByIdAi(leadId: string, user: { id: string; role: Role }) {
+    // 🔒 SECURITY FIX: Validate parameters
+    if (!user || !user.id || !user.role) {
+      throw new ForbiddenException('Valid user object with id and role is required');
+    }
+
+    // Validate that the role is a valid enum value
+    if (!Object.values(Role).includes(user.role)) {
+      throw new ForbiddenException('Invalid user role');
+    }
+
+    // 🔒 SECURITY FIX: Validate user exists and role matches database
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, role: true, email: true }
+    });
+
+    if (!dbUser) {
+      throw new ForbiddenException('User not found in database');
+    }
+
+    if (dbUser.role !== user.role) {
+      throw new ForbiddenException('Role mismatch with database - potential security breach');
+    }
+
+    const { role, id: userId } = user;
+
+    let lead;
+
+    switch (role) {
+      case Role.ADMIN:
+      case Role.SALES_ADMIN:
+        // Admins can access any lead
+        lead = await this.prisma.lead.findUnique({
+          where: { id: leadId },
+          include: {
+            visits: { select: { date: true } },
+            owner: { select: { id: true, name: true, email: true } },
+            inventoryInterest: { select: { id: true, title: true, titleEn: true, titleAr: true } },
+            meetings: true,
+            calls: true,
+            transfers: {
+              orderBy: { createdAt: 'desc' }, // ✅ هنا الترتيب الصحيح
+              select: {
+                id: true,
+                notes: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+            },
+          },
+        });
+
+        break;
+
+      case Role.TEAM_LEADER:
+        // Team leaders can access leads assigned to their team members and their own leads
+        const teamMembers = await this.prisma.user.findMany({
+          where: { teamLeaderId: userId },
+          select: { id: true },
+        });
+        const memberIds = teamMembers.map(member => member.id);
+        // Include team leader's own ID along with team members' IDs
+        const allIds = [...memberIds, userId];
+
+        lead = await this.prisma.lead.findFirst({
+          where: {
+            id: leadId,
+            ownerId: { in: allIds }
+          },
+          include: {
+            visits: { select: { date: true } },
+            owner: {
+              select: { id: true, name: true, email: true }
+            },
+            inventoryInterest: {
+              select: { id: true, title: true, titleEn: true, titleAr: true }
+            },
+            meetings: true,
+            calls: true,
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+            }
+          }
+        });
+        break;
+
+      case Role.SALES_REP:
+        // Sales reps can only access their own leads
+        lead = await this.prisma.lead.findFirst({
+          where: {
+            id: leadId,
+            ownerId: userId
+          },
+          include: {
+            visits: { select: { date: true } },
+            owner: {
+              select: { id: true, name: true, email: true }
+            },
+            inventoryInterest: {
+              select: { id: true, title: true, titleEn: true, titleAr: true }
+            },
+            meetings: true,
+            calls: true,
+
+            transfers: {
+              select: {
+                id: true,
+                notes: true,
+                createdAt: true,
+                fromAgent: { select: { name: true } },
+                toAgent: { select: { name: true } },
+              },
+
+
+            }
+          }
+        });
+        break;
+
+      default:
+        throw new ForbiddenException('Access denied');
+    }
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found or access denied');
+    }
+
+    // Return data in the format expected by the form
+    return {
+      id: lead.id,
+      nameEn: lead.nameEn || '',
+      nameAr: lead.nameAr || '',
+      contact: lead.contact || '',
+      firstConection: lead.firstConection || '',
+      email: lead.email || '',
+      budget: Number(lead.budget) || 0,
+      inventoryInterestId: lead.inventoryInterestId || '',
+      source: lead.source || '',
+      status: lead.status || 'fresh_lead',
+      assignedToId: lead.ownerId || '', // Map ownerId back to assignedToId for form
+      // Additional fields
+      meetings: lead.meetings || [],
+      calls: lead.calls || [],
+      notes: lead.notes || [],
+      lastCall: lead.lastCall,
+      visists: lead.visists,
+      // lastVisit: lead.lastVisit,
+      createdAt: lead.createdAt?.toISOString(),
+      // Include related data for reference
+      owner: lead.owner,
+      inventoryInterest: lead.inventoryInterest
+
+    };
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   async updateLead(

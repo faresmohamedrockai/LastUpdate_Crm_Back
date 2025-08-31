@@ -42,12 +42,12 @@ async createLead(@Body() dto: CreateLeadDto, @Req() req) {
 
 
 
-  // @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
-  // @Get(':id')
-  // async getLeadById(@Param('id') id: string, @Req() req) {
-  //   const { id: userId, email, role } = req.user;
-  //   return this.leadsService.getLeadById(id, { id: userId, role: role });
-  // }
+  @Roles(Role.ADMIN, Role.SALES_ADMIN, Role.TEAM_LEADER, Role.SALES_REP)
+  @Get(':id')
+  async getLeadById(@Param('id') id: string, @Req() req) {
+    const { id: userId, email, role } = req.user;
+    return this.leadsService.getLeadById(id, { id: userId, role: role });
+  }
 
 
 
